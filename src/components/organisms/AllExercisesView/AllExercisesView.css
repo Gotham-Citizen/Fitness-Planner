@@ -1,0 +1,10 @@
+/* AllExercisesView styles — co-located (atomic Phase 4). Imported by AllExercisesView.jsx; global cascade. */
+.browse-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+}

@@ -1,0 +1,14 @@
+/* Header geometric accents (light/dark via tokens) */
+.brand-mark { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; }
+.brand-logo { width: 30px; height: 30px; display: block; flex: none; }
+/* Dark (default) theme: darker blue bar for contrast against the light disc. */
+.brand-logo-bar-accent { fill: #2f5fd0; }
+[data-theme='light'] .brand-logo-disc { fill: #2a211a; }
+[data-theme='light'] .brand-logo-bar { fill: #f7ebc6; }
+[data-theme='light'] .brand-logo-bar-accent { fill: #c65d21; }
+.theme-toggle {
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: 999px;
+  width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.theme-toggle:hover { background: var(--bg-hover); }

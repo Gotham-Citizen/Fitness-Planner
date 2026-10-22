@@ -1,0 +1,93 @@
+/* RestTimer styles — co-located (atomic Phase 4). Imported by RestTimer.jsx; global cascade. */
+
+/* ---------- Rest timer ---------- */
+
+.rest-timer {
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.rest-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rest-presets {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.rest-preset {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rest-preset:hover {
+  color: var(--text-strong);
+}
+
+.rest-custom {
+  width: 64px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-strong);
+  padding: 4px 6px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.rest-countdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rest-clock {
+  flex: none;
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rest-countdown.is-done .rest-clock {
+  color: var(--accent);
+  animation: rest-done-pulse 1s ease-in-out 3;
+}
+
+
+/* Rest-timer alert flash (Training preferences → Flash the screen). Like
+   openGym, it blinks the theme accent instead of a white overlay, then settles
+   back transparent. */
+.rest-flash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  animation: rest-flash-blink 0.45s ease-in-out 3;
+}
+
+.rest-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+}
+
+.rest-bar-fill {
+  background: var(--accent);
+  transition: width 0.9s linear;
+}

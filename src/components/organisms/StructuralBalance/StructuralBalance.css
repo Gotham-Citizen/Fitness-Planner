@@ -1,0 +1,13 @@
+/* StructuralBalance styles — co-located (atomic Phase 4). Imported by StructuralBalance.jsx; global cascade. */
+.balance-section { display: flex; flex-direction: column; gap: 10px; }
+
+.balance-section-head h3 { margin: 0; }
+
+.balance-ratio-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+
+
+.balance-ratio-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+.balance-ratio-label { font-weight: 600; font-size: 14px; color: var(--text-strong); }
+
+.balance-ratio-meta { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }

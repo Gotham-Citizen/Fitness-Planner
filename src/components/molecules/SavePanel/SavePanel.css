@@ -1,0 +1,113 @@
+/* SavePanel styles — co-located (atomic Phase 4). Imported by SavePanel.jsx; global cascade. */
+
+.history-exercise-placeholder,
+.save-panel-placeholder {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+}
+
+.add-button {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-weight: 600;
+}
+
+.add-button:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.added-badge {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.save-panel-exercise {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.save-panel-exercise img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex: none;
+}
+
+.save-panel-exercise span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.save-empty {
+  text-align: center;
+  padding: 18px 10px;
+}
+
+.save-empty p {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.save-section-title {
+  margin-bottom: 10px;
+}
+
+.save-list-rows {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.save-list-row {
+  align-items: stretch;
+  gap: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.save-list-row.is-highlight {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.save-list-row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.save-list-name {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.save-list-count {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.save-create {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.rename-confirm-inline {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}

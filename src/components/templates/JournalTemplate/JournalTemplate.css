@@ -1,0 +1,20 @@
+/* JournalTemplate styles — co-located (atomic Phase 4). Imported by JournalTemplate.jsx; global cascade. */
+
+/* ---------- Journal cards (weight + effort) ---------- */
+
+.journal-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  max-width: 1200px;
+  margin: 18px auto 0;
+  align-items: start;
+}
+
+.journal-cards .metric-card { max-width: none; margin: 0; }
+
+.journal-cards.is-single { grid-template-columns: minmax(0, 800px); justify-content: center; max-width: 800px; }
+
+@media (max-width: 1024px) {
+  .journal-cards { grid-template-columns: 1fr; }
+}

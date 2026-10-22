@@ -1,0 +1,144 @@
+/* WorkoutListsView styles — co-located (atomic Phase 4). Imported by WorkoutListsView.jsx; global cascade. */
+.workout-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.workout-list-card {
+  padding: 16px;
+}
+
+.workout-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: nowrap;
+  margin-bottom: 12px;
+}
+
+.workout-list-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.workout-list-name {
+  color: var(--text-strong);
+  font-size: 17px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workout-list-count {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.workout-list-empty {
+  color: var(--text-muted);
+}
+
+.workout-exercise-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workout-exercise-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 8px 6px 6px;
+}
+
+.workout-exercise-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.workout-exercise-main:hover {
+  color: var(--text-strong);
+}
+
+.workout-exercise-main img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.workout-exercise-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.workouts-create {
+  margin-top: 20px;
+}
+
+
+/* ---------- Workout List Actions ---------- */
+
+.workout-list-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+
+.workout-list-actions .ghost-button,
+.workout-list-actions .primary-button {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workout-list-actions .icon-button {
+  flex: none;
+}
+
+.workout-list-actions .wl-short { display: none; }
+
+.workout-list-actions .wl-full { display: inline; }
+
+@media (max-width: 480px) {
+  .workout-list-card { padding: 12px; }
+  .workout-list-header { gap: 8px; }
+  .workout-list-name { font-size: 15px; }
+  .workout-list-count { font-size: 12px; }
+  .workout-list-actions { gap: 6px; }
+  .workout-list-actions .ghost-button, .workout-list-actions .primary-button { font-size: 12px; padding: 6px 10px; }
+  .workout-list-actions .icon-button { width: 28px; height: 28px; }
+  .workout-list-actions .wl-full { display: none; }
+  .workout-list-actions .wl-short { display: inline; }
+}
+
+@media (max-width: 360px) {
+  .workout-list-actions { gap: 4px; }
+  .workout-list-actions .ghost-button, .workout-list-actions .primary-button { font-size: 11px; padding: 5px 8px; }
+}

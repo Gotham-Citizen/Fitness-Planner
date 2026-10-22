@@ -1,0 +1,388 @@
+
+.exercise-library {
+  overflow: visible;
+  max-height: none;
+  align-self: flex-start;
+}
+
+/* Desktop: overlay drawer sliding in from the right, covering main content. */
+.app-body > .exercise-library {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  width: min(86vw, 360px);
+  z-index: 60;
+  background: var(--bg-elev);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(103%);
+  transition: transform 0.25s ease, visibility 0.25s ease;
+  visibility: hidden;
+  border-radius: 18px 0 0 18px;
+}
+
+.app-body > .exercise-library.is-drawer-open {
+  transform: none;
+  visibility: visible;
+  box-shadow: var(--shadow);
+}
+
+.library-drawer-close {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-strong);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  cursor: pointer;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-body > .exercise-library > .panel-title-row,
+.app-body > .exercise-library > p.panel-subtitle,
+.app-body > .exercise-library > .library-tabs {
+  flex: none;
+}
+
+.app-body > .exercise-library > [role="tabpanel"] {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.parts-list {
+  flex: 1;
+  overflow-y: visible;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-right: 2px;
+}
+
+.parts-tabpanel {
+  overflow-y: auto;
+}
+
+.app-body > .exercise-library .recent-list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+
+/* ---------- Exercise library tabs ---------- */
+
+.library-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 14px;
+}
+
+.library-tab {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.library-tab:hover {
+  color: var(--text-strong);
+}
+
+/* ---------- Recent muscles ---------- */
+
+.recent-list {
+  overflow-y: auto;
+  max-height: calc(100svh - 300px);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-right: 2px;
+}
+
+.recent-section-title {
+  margin: 14px 0 8px;
+}
+
+.recent-sub {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.recent-tag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+
+
+.muscle-tree,
+.muscle-targets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.muscle-part + .muscle-part {
+  margin-top: 2px;
+}
+
+
+.muscle-part-row,
+.muscle-target-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: var(--text);
+  padding: 6px 6px 6px 2px;
+  border-radius: 10px;
+}
+
+.muscle-target-row {
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+
+.muscle-part-row:hover,
+.muscle-target-row:hover {
+  background: var(--bg-hover);
+  color: var(--text-strong);
+}
+
+.muscle-part.is-active > .muscle-part-row {
+  color: var(--text-strong);
+}
+
+.muscle-part-row {
+  border: 1px solid transparent;
+}
+
+.muscle-part-row.is-selected {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.muscle-caret-btn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-strong);
+  cursor: pointer;
+  touch-action: manipulation;
+  padding: 0;
+}
+
+.muscle-caret-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-strong);
+}
+
+.muscle-caret-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.muscle-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.muscle-part-select {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 6px 6px 6px 2px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.muscle-part-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.muscle-part-row .muscle-label {
+  font-weight: 600;
+}
+
+.muscle-targets {
+  margin: 2px 0 6px 18px;
+}
+
+.muscle-target-row {
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+
+.muscle-target-row.is-selected {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.muscle-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex: none;
+  background: var(--bg-hover);
+}
+
+.muscle-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.muscle-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muscle-count {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  background: var(--bg-hover);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+@media (max-width: 900px) {
+  .exercise-library.is-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100dvh;
+    width: min(86vw, 360px);
+    max-height: none;
+    z-index: 60;
+    background: var(--bg-elev);
+    border-left: 1px solid var(--border);
+    border-top: 0;
+    margin-top: 0;
+    padding: 12px 14px calc(20px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    transform: translateX(103%);
+    transition: transform 0.25s ease, visibility 0.25s ease;
+    visibility: hidden;
+    align-self: auto;
+    border-radius: 18px 0 0 18px;
+  }
+
+  /* Every tab scrolls inside its own box; the aside chrome
+     (title, subtitle, tabs) never moves. */
+  .exercise-library.is-drawer > [role="tabpanel"] {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .exercise-library.is-drawer > .panel-title-row,
+  .exercise-library.is-drawer > .panel-subtitle,
+  .exercise-library.is-drawer > .library-tabs {
+    flex: none;
+  }
+
+  .exercise-library.is-drawer.is-drawer-open {
+    transform: none;
+    visibility: visible;
+    box-shadow: var(--shadow);
+  }
+
+  .exercise-library.is-drawer > [role="tabpanel"] {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .recent-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .recent-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .parts-list {
+    flex: 1;
+    overflow-y: visible;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}

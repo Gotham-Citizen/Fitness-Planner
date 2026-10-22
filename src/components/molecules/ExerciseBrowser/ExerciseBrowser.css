@@ -1,0 +1,187 @@
+/* Equipment browser: picker grid -> per-equipment drill-down. Lives inside the
+   library drawer, so it fills the tabpanel and scrolls internally. */
+
+.equipment-browser {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Picker grid ---------- */
+
+.equipment-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  list-style: none;
+  margin: 0;
+  padding: 2px 2px 12px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+
+.equipment-grid > li {
+  display: flex;
+  min-width: 0;
+}
+
+.equipment-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.equipment-card:hover {
+  color: var(--text-strong);
+  border-color: var(--accent);
+}
+
+.equipment-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.equipment-card-icon {
+  border-radius: 6px;
+  object-fit: contain;
+  width: 44px;
+  height: 44px;
+}
+
+.equipment-card-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.equipment-card-count,
+.equipment-drilldown-count {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+/* ---------- Drill-down ---------- */
+
+.equipment-drilldown-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.equipment-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.equipment-back:hover {
+  color: var(--text-strong);
+}
+
+.equipment-back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.equipment-drilldown-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 700;
+  min-width: 0;
+}
+
+.equipment-drilldown-icon {
+  border-radius: 4px;
+  flex: none;
+  object-fit: contain;
+  width: 28px;
+  height: 28px;
+}
+
+.equipment-drilldown-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Exercise rows (moved from the old long-list layout) ---------- */
+
+.equipment-rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  list-style: none;
+  margin: 0;
+  padding: 0 2px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.equipment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.equipment-row:hover {
+  background: var(--bg-hover);
+  color: var(--text-strong);
+}
+
+.equipment-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

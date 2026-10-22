@@ -1,0 +1,229 @@
+/* RecoveryPanel styles — co-located (atomic Phase 4). Imported by RecoveryPanel.jsx; global cascade. */
+
+
+
+/* ---------- Right muscle tree panel ---------- */
+
+/* Inline sidebar variant is gone: the recovery panel is a fixed overlay
+   drawer sliding in from the right, opened by its FAB — same mechanics as
+   the exercise library (.app-body > .exercise-library). */
+.app-body > .recovery-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: min(86vw, 360px);
+  z-index: 60;
+  background: var(--bg-elev);
+  border-left: 1px solid var(--border);
+  padding: 18px 14px 40px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  transform: translateX(103%);
+  transition: transform 0.25s ease, visibility 0.25s ease;
+  visibility: hidden;
+  border-radius: 18px 0 0 18px;
+}
+
+.app-body > .recovery-panel.is-drawer-open {
+  transform: none;
+  visibility: visible;
+  box-shadow: var(--shadow);
+}
+
+.exercise-library {
+  width: 320px;
+  flex: none;
+  border-left: 1px solid var(--border);
+  background: var(--bg-elev);
+  padding: 18px 14px 40px;
+  overflow-y: auto;
+  max-height: calc(100svh - 61px);
+}
+
+@media (max-width: 900px) {
+  .app-body > .recovery-panel {
+    padding: 12px 14px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .exercise-library {
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    max-height: none;
+    margin-top: 16px;
+  }
+}
+
+.recovery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+
+.recovery-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.recovery-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recovery-label {
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.recovery-sub {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.recovery-badge {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.recovery-badge.is-recovered,
+.recovery-badge.is-ready {
+  background: var(--ready-soft);
+  border-color: var(--ready);
+  color: var(--ready-strong, var(--ready));
+}
+
+.recovery-badge.is-recovering {
+  background: var(--recovering-soft);
+  border-color: var(--recovering-strong);
+  color: var(--recovering-strong);
+}
+
+.recovery-badge.is-fatigued,
+.recovery-badge.is-fatigue {
+  background: var(--fatigue-soft, var(--danger-soft));
+  border-color: var(--fatigue, var(--danger, #e5534b));
+  color: var(--fatigue, var(--danger, #e5534b));
+}
+
+.recovery-bar {
+  height: 10px;
+  background: var(--border);
+}
+
+.recovery-bar-fill {
+  background: var(--ready);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: width 0.3s ease;
+}
+
+.recovery-row.is-volume .recovery-bar {
+  background: color-mix(in srgb, var(--volume) 18%, var(--border));
+}
+
+.recovery-row.is-volume .recovery-bar-fill {
+  background: var(--volume);
+}
+
+.recovery-row.is-ready .recovery-bar,
+.recovery-row.is-recovered .recovery-bar {
+  background: color-mix(in srgb, var(--ready) 18%, var(--border));
+}
+
+.recovery-row.is-ready .recovery-bar-fill,
+.recovery-row.is-recovered .recovery-bar-fill {
+  background: var(--ready);
+}
+
+.recovery-row.is-recovering .recovery-bar,
+.recovery-row.is-recovery .recovery-bar {
+  background: color-mix(in srgb, var(--recovering) 20%, var(--border));
+}
+
+.recovery-row.is-recovering .recovery-bar-fill,
+.recovery-row.is-recovery .recovery-bar-fill {
+  background: var(--recovering);
+}
+
+.recovery-row.is-fatigued .recovery-bar,
+.recovery-row.is-fatigue .recovery-bar {
+  background: color-mix(in srgb, var(--fatigue, var(--danger)) 20%, var(--border));
+}
+
+.recovery-row.is-fatigued .recovery-bar-fill,
+.recovery-row.is-fatigue .recovery-bar-fill {
+  background: var(--fatigue, var(--danger, #e5534b));
+  background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 6px, transparent 6px 12px);
+}
+
+[data-theme='light'] .recovery-row .recovery-bar {
+  background: var(--border);
+}
+
+.recovery-row.is-strength .recovery-bar-fill {
+  background: var(--strength);
+}
+
+.recovery-row.is-strength.is-untrained { opacity: 0.72; }
+
+.recovery-row.is-strength.is-untrained .recovery-bar-fill {
+  background: var(--text-muted);
+}
+
+.recovery-row.is-strength.is-untrained .recovery-badge {
+  color: var(--text-muted);
+  border-color: var(--border);
+  background: transparent;
+}
+
+.recovery-row.is-clickable {
+  cursor: pointer;
+}
+
+.recovery-row.is-clickable:hover {
+  border-color: var(--accent);
+}
+
+.recovery-row.is-clickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.recovery-row.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.recovery-row.is-selected:hover {
+  border-color: var(--accent-strong);
+}
+
+.recovery-percent {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}

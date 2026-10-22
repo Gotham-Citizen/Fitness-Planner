@@ -1,0 +1,902 @@
+:root {
+  --app-header-h: 56px;
+  --library-drawer-w: min(86vw, 360px);
+  /* FAB 宽度 + 右侧间距 + 间隙：搜索框右侧留出的安全区 */
+  --library-fab-reserve: 170px;
+}
+
+/* FAB 以 .app-body 为定位祖先，永远落在 app-header 下方（header 高度不固定）。 */
+.app-body {
+  position: relative;
+}
+
+/* 搜索框常驻、粘在 header 下方 */
+.planner-toolbar {
+  position: sticky;
+  top: var(--app-header-h);
+  z-index: 10;
+  background: var(--bg);
+  display: flex;
+  justify-content: flex-start;
+  padding: 8px 0 12px;
+  padding-right: var(--library-fab-reserve);
+}
+
+/* 搜索框本体：宽度随屏幕变化，且不铺满 */
+.planner-toolbar .search-results-bar {
+  flex: 0 1 auto;
+  width: 100%;
+  max-width: clamp(180px, 40vw, 420px);
+  margin-right: auto; /* 左对齐；改 right/auto 可切换对齐 */
+}
+
+/* 手机版：为右上角的动作库 FAB 预留空间，搜索框不再被它盖住。
+   仅作用于带侧栏（FAB 存在）的规划页；HomePage 的搜索框不受影响。 */
+@media (max-width: 900px) {
+  .app-body.has-library .app-main > .search-results-bar {
+    max-width: calc(100% - var(--library-fab-reserve));
+  }
+}
+
+.panel-title {
+  color: var(--text-strong);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+
+
+.panel-subtitle {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 2px 0 14px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  padding: 60px 0;
+  color: var(--text-muted);
+}
+
+
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid var(--bg-hover);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+
+
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+
+.movement-list-header {
+  margin-bottom: 22px;
+}
+
+
+
+.movement-list-title {
+  color: var(--text-strong);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+
+
+.movement-list-subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+
+
+.movement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+
+
+
+
+.session-exercise-placeholder,
+
+.history-exercise-placeholder,
+
+.save-panel-placeholder,
+
+.workout-exercise-placeholder {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-hover);
+  border-radius: 8px;
+}
+
+
+
+.workout-exercise-placeholder {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+
+
+
+.modal-title {
+  color: var(--text-strong);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+
+
+.tag {
+  background: var(--bg-hover);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+
+
+
+
+/* ---------- Modal / Save panel ---------- */
+
+
+
+.modal-overlay {
+  align-items: center;
+  z-index: 50;
+  padding: 20px;
+}
+
+
+
+.modal {
+  width: 460px;
+  max-width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+
+
+.modal-body {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+
+
+.create-list-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+
+
+.create-list-form .text-input {
+  flex-basis: 100%;
+}
+
+
+
+.rename-confirm {
+  margin-top: 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+
+
+.rename-confirm p {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+
+
+
+.rename-confirm-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+
+
+.modal-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+
+
+
+
+/* ---------- My Workouts ---------- */
+
+
+
+.workouts-title {
+  color: var(--text-strong);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+
+
+.workouts-empty,
+.history-empty {
+  color: var(--text-muted);
+  background: var(--bg-elev);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  padding: 32px;
+  text-align: center;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.set-rir-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+
+
+
+
+/* Tint by proximity to failure via --rir-tint (unset = unrated, neutral). */
+
+.set-rir-group[style],
+.rir-pill[style] {
+  border-color: var(--rir-tint);
+  background: color-mix(in srgb, var(--rir-tint) 14%, var(--bg-hover));
+}
+
+
+
+.rir-step {
+  flex: 0 0 26px;
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 4px 0;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+
+
+.rir-step:hover { color: var(--text-strong); background: var(--bg-elev); }
+
+
+
+/* ---------- RIR effort bottom-sheet (openGym-style) ---------- */
+
+
+
+.sheet-overlay.rir-sheet-overlay {
+  z-index: 60;
+  align-items: flex-end;
+  padding: 0;
+  animation: rir-sheet-fade 0.18s ease;
+}
+
+
+
+.sheet.rir-sheet {
+  width: min(520px, 100%);
+  max-height: 88dvh;
+  overflow-y: auto;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+  padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow);
+  animation: rir-sheet-up 0.22s ease;
+}
+
+
+
+@media (min-width: 640px) {
+  .sheet-overlay.rir-sheet-overlay { align-items: center; padding: 20px; }
+  .sheet.rir-sheet { border-radius: 18px; border-bottom: 1px solid var(--border); }
+}
+
+.rir-sheet .grab {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  margin: 2px auto 10px;
+}
+
+.rir-sheet-title {
+  color: var(--text-strong);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.rir-sheet .muted { color: var(--text-muted); }
+
+.rir-sheet .small { font-size: 13px; line-height: 1.45; }
+
+.rir-sheet .list { list-style: none; margin: 0; padding: 0; }
+
+.rir-sheet .menu-list.effpick { display: flex; flex-direction: column; gap: 8px; }
+
+.rir-sheet .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rir-sheet .menu-item:hover { border-color: var(--bc, var(--accent)); }
+
+.rir-sheet .menu-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.rir-sheet .menu-item.is-active {
+  border-color: var(--bc, var(--accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bc, var(--accent)) 28%, transparent);
+}
+
+.rir-sheet .lrow-i {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rir-sheet .effpick-n {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--bc, var(--accent));
+  border: 1.5px solid var(--bc, var(--accent));
+  background: color-mix(in srgb, var(--bc, var(--accent)) 14%, var(--bg-elev));
+}
+
+/* Sound-picker badges carry full names (e.g. "风铃声", "Chime") that exceed
+   the 36px circle at 14px — shrink the font so text stays inside the outline. */
+.rir-sheet .effpick-n-sm {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.rir-sheet .grow { flex: 1; min-width: 0; }
+
+.rir-sheet .tt {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.rir-sheet .menu-on { display: none; flex: none; color: var(--bc, var(--accent)); }
+
+.rir-sheet .menu-item.is-active .menu-on { display: inline-flex; }
+
+.rir-sheet .menu-on .icn {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rir-sheet .effpick-free { cursor: default; }
+
+.rir-sheet .effpick-free:hover { border-color: var(--border); }
+
+.rir-sheet .stp.effcell-stp {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.rir-sheet .effcell-stp button {
+  flex: 0 0 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rir-sheet .effcell-stp button:hover { color: var(--text-strong); background: var(--bg-hover); }
+
+.rir-sheet .effcell-stp .icn {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rir-sheet .effcell-stp .val { flex: 0 0 56px; display: flex; }
+
+.rir-sheet .effcell-stp .num {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  padding: 4px 2px;
+}
+
+.rir-sheet .effcell-stp .num:focus { outline: none; }
+
+.rir-sheet .effcell-stp .num::placeholder { color: var(--text-muted); }
+
+@keyframes rir-sheet-up {
+  from { transform: translateY(16px); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes rir-sheet-fade {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+.effort-hist { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+
+.effort-hist-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+
+.effort-hist-label { flex: 0 0 20px; color: var(--text-muted); font-weight: 700; text-align: right; }
+
+.effort-hist-track { flex: 1; height: 10px; background: var(--bg-hover); }
+
+.effort-hist-fill { min-width: 3px; }
+
+.effort-hist-n { flex: 0 0 28px; color: var(--text-muted); font-weight: 600; }
+
+@keyframes rest-done-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes rest-flash-blink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.35; }
+}
+
+.rest-countdown-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.history-expand-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.15s;
+}
+
+.history-expand-icon:hover {
+  background: var(--bg-hover);
+}
+
+.history-expand-icon.is-open {
+  transform: rotate(180deg);
+}
+
+.unit-toggle {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.unit-toggle-button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+
+.auth-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-error {
+  background: var(--danger-soft);
+  border: 1px solid var(--danger, #e5534b);
+  color: var(--danger, #e5534b);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .tabbar-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    line-height: 1;
+  }
+  .tabbar-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .tabbar-label {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+}
+
+@keyframes rank-pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.account-save { width: 100%; }
+
+@media (max-width: 640px) {
+  .modal-overlay:has(.edit-workout-modal) { padding: 0; }
+}
+
+.balance-hint { color: var(--text-muted); font-size: 12px; margin: 8px 0 0; }
+
+.balance-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.balance-tab { border: 1px solid var(--border); background: transparent; color: var(--text-muted); border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+
+.balance-tab.is-active { font-weight: 700; }
+
+/* ---------- Shared selected-state trio (consolidated) ----------
+   One declaration block for every selected/on control; members used to
+   repeat it under 10 different names. NOTE: .rest-preset:hover sets
+   color:text-strong, so a hovered selected preset now tints on hover
+   (previously the later in-file rule won). */
+.rir-toggle.is-on,
+.unit-toggle-button.is-selected,
+.balance-tab.is-active,
+.rest-toggle.is-on,
+.rest-preset.is-selected,
+.set-unit-button.is-kg,
+.recent-tag.is-trained,
+.auth-tracker-step.is-done .auth-tracker-num,
+.add-button {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Shared inset row card (consolidated) ----------
+   Column cards on the bg-hover surface; members keep only extras. */
+.balance-ratio,
+.edit-workout-row,
+.recovery-row,
+.save-list-row,
+.rest-timer {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---------- Shared ghost toggle buttons (consolidated) ---------- */
+.rir-toggle,
+.rest-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---------- Shared progress track/fill halves (consolidated) ----------
+   Members keep their own height/background/flex/width behavior. */
+.rest-bar,
+.recovery-bar,
+.effort-hist-track,
+.mrow .bar {
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.rest-bar-fill,
+.recovery-bar-fill,
+.effort-hist-fill,
+.mrow .bar i {
+  height: 100%;
+  border-radius: 999px;
+}
+
+/* ---------- Shared accent CTA core (consolidated) ----------
+   Members keep their own radius/padding/shadow/sizing. */
+.primary-button,
+.save-button {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 0;
+  font-weight: 800;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+/* ---------- Shared overlay base (consolidated) ----------
+   Members keep their own alignment/padding/z-index/animation. */
+.modal-overlay,
+.sheet-overlay.rir-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 13, 0.65);
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- Shared exercise thumbnails (consolidated) ----------
+   Members keep their own size/radius. */
+.session-exercise-header img,
+.history-exercise-header img,
+.workout-exercise-main img {
+  object-fit: cover;
+  flex: none;
+}
+
+/* ---------- Shared section-title + hint text (consolidated) ----------
+   Members keep their own margins. */
+.save-section-title,
+.recent-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+.rir-hint,
+.account-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+/* Inset-marker variant (library tree): same trio + left marker. */
+.library-tab.is-selected,
+.muscle-part-row.is-selected,
+.muscle-target-row.is-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text-strong);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* ---------- Shared card shell (consolidated) ----------
+   Elevated surface used by every card; members keep only their own
+   layout extras (padding, flex, shadows, markers). */
+.account-card,
+.movement-card,
+.summary-stat,
+.summary-exercise-card,
+.history-card,
+.workout-list-card,
+.session-exercise-card,
+.journal-cal-card,
+.journal-session-card,
+.instruction-step,
+.auth-tracker-step,
+.pick-banner {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}

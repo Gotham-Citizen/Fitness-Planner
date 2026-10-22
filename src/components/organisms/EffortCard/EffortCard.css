@@ -1,0 +1,10 @@
+/* EffortCard styles — co-located (atomic Phase 4). Imported by EffortCard.jsx; global cascade. */
+.mrow { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+
+.mrow .nm { flex: 0 0 70px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+
+.mrow .bar { flex: 1; height: 8px; background: var(--bg-hover); }
+
+.mrow .bar i { display: block; min-width: 3px; }
+
+.mrow .v { flex: 0 0 84px; text-align: right; font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; align-self: center; }

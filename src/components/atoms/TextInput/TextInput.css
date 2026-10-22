@@ -1,0 +1,16 @@
+/* TextInput styles — co-located (atomic Phase 4). Imported by TextInput.jsx; global cascade. */
+.text-input {
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-strong);
+  padding: 11px 18px;
+  flex: 1;
+  min-width: 0;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}

@@ -1,0 +1,65 @@
+/* AppShell styles — co-located (atomic Phase 4). Imported by AppShell.jsx; global cascade. */
+.app {
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+/* ---------- Responsive ---------- */
+
+.error-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--danger, #e5534b);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  animation: toast-in 0.3s ease;
+}
+
+.error-toast-icon {
+  font-size: 16px;
+}
+
+@media (max-width: 900px) {
+  .app-body {
+    flex-direction: column;
+  }
+  .app-main {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .app-main {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+  .error-toast {
+    bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+}

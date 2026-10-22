@@ -1,0 +1,59 @@
+/* BodyweightCard styles — co-located (atomic Phase 4). Imported by BodyweightCard.jsx; global cascade. */
+
+/* --- Effort card (openGym Stats EffortCard parity) --- */
+.metric-stats { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; }
+
+.metric-stat-v { font-size: 22px; font-weight: 700; color: var(--text-strong); line-height: 1.1; }
+
+.metric-stat-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.metric-coverage { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+
+/* --- Journal metric cards (bodyweight + effort, openGym-style) --- */
+.metric-card { width: 100%; max-width: 800px; margin: 14px auto 0; box-sizing: border-box; }
+
+.metric-card h3 { margin: 0 0 2px; }
+
+.metric-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+.metric-card-head .panel-subtitle { margin: 0; }
+
+.metric-current { font-size: 20px; font-weight: 700; color: var(--text-strong); }
+
+.metric-delta { font-size: 13px; font-weight: 600; }
+
+.metric-card-actions { display: flex; gap: 8px; flex: none; flex-wrap: wrap; }
+
+.bw-form { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin: 12px 0 0; }
+
+.bw-form .auth-label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; min-width: 130px; }
+
+.metric-card .balance-tabs { margin-top: 14px; }
+
+.metric-sec { margin: 12px 0 0; color: var(--text-strong); font-size: 13px; font-weight: 700; }
+
+.bw-history-weeks { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+
+.modal-body .bw-history-weeks { margin-top: 0; }
+
+.bw-week-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+
+.bw-week-title { color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.bw-week-average { color: var(--text-strong); font-size: 13px; font-weight: 700; }
+
+.bw-week-delta { font-size: 12px; font-weight: 600; }
+
+.bw-history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.bw-history-row { display: flex; align-items: center; gap: 10px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
+
+.bw-history-date { color: var(--text-muted); font-size: 13px; flex: 1; }
+
+.bw-history-value { color: var(--text-strong); font-weight: 600; font-size: 14px; }
+
+@media (max-width: 640px) {
+  .metric-card-head { gap: 10px; }
+  .metric-card-actions { width: 100%; justify-content: flex-end; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .metric-card-actions > button { flex: 0 0 auto; }
+}

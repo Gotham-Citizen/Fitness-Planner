@@ -1,0 +1,16 @@
+.planner-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg); /* 必须有背景，否则滚动时下方内容透出来 */
+  display: flex;
+  justify-content: flex-start;
+  padding: 8px 0 12px;
+  padding-right: var(--searchbar-reserve, 146px);
+}
+
+.planner-search-bar {
+  width: auto !important;
+  max-width: clamp(220px, 40vw, 420px);
+  flex: 0 1 auto;
+}

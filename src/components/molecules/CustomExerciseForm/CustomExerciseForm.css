@@ -1,0 +1,13 @@
+/* CustomExerciseForm styles — co-located (atomic Phase 4). Imported by CustomExerciseForm.jsx; global cascade. */
+.custom-exercise-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.custom-exercise-footer {
+  border-top: 0;
+  padding: 6px 0 0;
+  justify-content: flex-end;
+  gap: 8px;
+}

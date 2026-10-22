@@ -1,0 +1,122 @@
+/* WorkoutHistoryView styles — co-located (atomic Phase 4). Imported by WorkoutHistoryView.jsx; global cascade. */
+
+/* ---------- Workout History ---------- */
+
+.history-view {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.history-title {
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-card {
+  overflow: hidden;
+}
+
+.history-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text);
+  padding: 8px 8px 8px 0;
+}
+
+.history-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  background: none;
+  border: 0;
+  color: inherit;
+  padding: 8px 0 8px 16px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.history-card-main:hover {
+  background: var(--bg-hover);
+}
+
+.history-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-card-date {
+  color: var(--text-strong);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.history-card-summary {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.history-card-detail {
+  border-top: 1px solid var(--border);
+  padding: 16px;
+}
+
+.history-exercise {
+  margin-bottom: 14px;
+}
+
+.history-exercise:last-child {
+  margin-bottom: 0;
+}
+
+.history-exercise-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.history-exercise-header img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.history-exercise-name {
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.history-sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.history-set-tag {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}

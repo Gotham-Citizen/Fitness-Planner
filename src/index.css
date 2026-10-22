@@ -1,0 +1,171 @@
+:root,
+[data-theme='dark'] {
+  --bg: #0f1115;
+  --bg-elev: #171a21;
+  --bg-hover: #1f242e;
+  --text: #c8ccd4;
+  --strong: #f4f6f8;
+  --text-muted: #8b919c;
+  --border: #262b35;
+  --accent: #8fb6ff;
+  --accent-strong: #6a97f5;
+  --accent-soft: rgba(143, 182, 255, 0.16);
+  --on-accent: #0a1428;
+  --danger: #e5534b;
+  --info: #4d8dff;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --geo-1: #a8e6cf;
+  --geo-2: #ffd3b6;
+  --geo-3: #ffaaa5;
+  --geo-4: #a0c4ff;
+  --geo-5: #d5aaff;
+  --hero-grad: linear-gradient(135deg, rgba(143, 182, 255, 0.16), rgba(160, 196, 255, 0.14) 45%, rgba(255, 211, 182, 0.16));
+  --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --r-sm: 14px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  /* Canonical responsive breakpoints (plain comments: var() is invalid in
+     media-query conditions, so queries repeat these literals).
+     480px = small phones, 640px = phones (modal/fullscreen tweaks),
+     1024px = portable layout (bottom tab bar, single column).
+     Legacy one-offs kept as-is: 900px (AppShell/MovementDetail/RecoveryPanel),
+     860px + 360px (MuscleBalanceView/WorkoutListsView refinements). */
+  --header-bg: rgba(15, 17, 21, 0.92);
+  --nav-underline: #a0c4ff;
+  --ready: #3dd68c;
+  --ready-strong: #3dd68c;
+  --ready-soft: rgba(61, 214, 140, 0.14);
+  --strength: #a78bfa;
+  --strength-soft: rgba(167, 139, 250, 0.16);
+  --danger-soft: rgba(229, 83, 75, 0.12);
+  --fatigue: #f2555a;
+  --fatigue-soft: rgba(242, 85, 90, 0.14);
+  --recovering: #f5b844;
+  --recovering-strong: #f5b844;
+  --recovering-soft: rgba(245, 184, 68, 0.14);
+  --goal-strong: #4d8dff;
+  --volume: #5aa2e0;
+  --volume-strong: #5aa2e0;
+  --volume-soft: rgba(90, 162, 224, 0.14);
+
+  font: 16px/1.5 'Plus Jakarta Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[data-theme='light'] {
+  --bg: #faf6ef;
+  --bg-elev: #ffffff;
+  --bg-hover: #f1eadd;
+  --text: #3d3a34;
+  --text-strong: #16130e;
+  --text-muted: #6f675c;
+  --border: #e8dfd0;
+  --accent: #c65d21;
+  --accent-strong: #a34f1a;
+  --accent-soft: rgba(198, 93, 33, 0.14);
+  --on-accent: #fff7ef;
+  --danger: #d64541;
+  --info: #2f6fed;
+  --shadow: 0 16px 40px rgba(60, 45, 20, 0.12);
+  --hero-grad: linear-gradient(135deg, #fdeede, #e8efff 45%, #fff1e3);
+  --card-shadow: 0 16px 40px rgba(60, 45, 20, 0.12);
+  --header-bg: rgba(250, 246, 239, 0.9);
+  --nav-underline: #c65d21;
+  --ready: #0c8a5f;
+  --ready-strong: #0e6e3e;
+  --ready-soft: rgba(14, 159, 110, 0.14);
+  --strength: #6d4fc2;
+  --strength-soft: rgba(109, 79, 194, 0.14);
+  --danger-soft: rgba(214, 69, 65, 0.12);
+  --fatigue: #c81e1e;
+  --fatigue-soft: rgba(200, 30, 30, 0.12);
+  --recovering: #c9971f;
+  --recovering-strong: #8a5a00;
+  --recovering-soft: rgba(138, 90, 0, 0.12);
+  --goal-strong: #f5b844;
+  --volume: #2b6cb0;
+  --volume-strong: #1f5a8f;
+  --volume-soft: rgba(43, 108, 176, 0.14);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------- Floating FAB (shared by ExerciseLibrary + RecoveryPanel) ---------- */
+
+.library-fab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  right: 24px;
+  top: 0px;
+  z-index: 40;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--text-strong);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.library-fab-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.app-body.has-library .library-fab {
+  top: 27px;
+  right: 28px;
+}
+
+.library-backdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(8, 10, 13, 0.55);
+}
+
+@media (max-width: 900px) {
+  .app-body.has-library .library-fab {
+    top: 21px;
+  }
+}

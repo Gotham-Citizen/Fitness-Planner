@@ -1,0 +1,22 @@
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "fitness-planner",
+	"main": "./worker.js",
+	"compatibility_date": "2026-08-25",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": "../dist",
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "fitness-db",
+			"database_id": "f0f31aaf-8b9a-40f8-b2db-cd432b152f1a",
+			"remote": false
+		}
+	]
+}

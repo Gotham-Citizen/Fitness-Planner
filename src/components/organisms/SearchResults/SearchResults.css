@@ -1,0 +1,7 @@
+/* SearchResults styles — co-located (atomic Phase 4). Imported by SearchResults.jsx; global cascade. */
+.movement-list-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}

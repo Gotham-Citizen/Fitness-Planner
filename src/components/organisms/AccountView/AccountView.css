@@ -1,0 +1,69 @@
+/* AccountView styles — co-located (atomic Phase 4). Imported by AccountView.jsx; global cascade. */
+.account-view { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+.account-header { display: flex; align-items: center; gap: 14px; }
+
+.account-avatar { flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent); font-size: 22px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+
+.account-header-text { min-width: 0; padding-top: 6px; }
+
+.account-title { overflow-wrap: anywhere; margin-bottom: 0; }
+
+.account-view .movement-list-subtitle { margin-top: 2px; }
+
+.account-card { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+.account-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+
+.account-row:last-child { border-bottom: 0; }
+
+.account-row.is-editing { align-items: flex-start; }
+
+.account-label { color: var(--text-muted); font-size: 13px; font-weight: 600; flex: none; padding-top: 10px; }
+
+.account-row:not(.is-editing) .account-label { padding-top: 0; }
+
+.account-value { color: var(--text-strong); font-size: 14px; font-weight: 600; text-align: right; overflow-wrap: anywhere; flex: 1; min-width: 0; }
+
+.account-mono { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 400; }
+
+.account-row-edit-btn { flex: none; background: none; border: 0; color: var(--accent); font-weight: 700; font-size: 13px; padding: 4px 2px; cursor: pointer; }
+
+.account-row-edit-btn:hover:not(:disabled) { text-decoration: underline; }
+
+.account-row-edit-btn:disabled { opacity: 0.4; cursor: default; }
+
+
+/* Expandable preference rows (e.g. Timer alerts entry + Sound row). */
+.account-row-expand {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.account-row-expand .account-label { flex: none; }
+
+.account-subrows {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.account-edit { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.account-edit-row { display: flex; gap: 8px; }
+
+.account-inline-error { color: var(--danger, #e5534b); font-size: 13px; font-weight: 600; margin: 0; }
+
+.account-section-title { color: var(--text-strong); font-size: 15px; font-weight: 700; margin: 0; }
+
+.account-actions { display: flex; gap: 8px; flex-wrap: wrap; }

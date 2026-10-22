@@ -1,0 +1,336 @@
+/* WorkoutSessionView styles — co-located (atomic Phase 4). Imported by WorkoutSessionView.jsx; global cascade. */
+.session-exercise-placeholder {
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+}
+
+
+/* ---------- Workout Session ---------- */
+
+.session-view {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.session-title {
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
+}
+
+.session-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.session-exercise-card {
+  padding: 16px;
+}
+
+.session-exercise-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.session-exercise-header img {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+.session-exercise-name {
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.session-exercise-equipment {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.session-sets-table {
+  margin-bottom: 10px;
+}
+
+.session-sets-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.session-sets-header span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.session-set-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.set-col {
+  flex: 1;
+  text-align: center;
+}
+
+.set-col.set-num {
+  flex: 0 0 36px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.set-col.set-actions {
+  flex: 0 0 32px;
+}
+
+
+/* Card wrappers are transparent on desktop so the inline set-row layout is unchanged. */
+.set-card-head {
+  display: contents;
+}
+
+.set-field {
+  display: contents;
+}
+
+.set-field-label {
+  display: none;
+}
+
+.set-num-prefix {
+  display: none;
+}
+
+.set-input {
+  flex: 1;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-strong);
+  padding: 8px 10px;
+  font-size: 14px;
+  text-align: center;
+  width: 100%;
+}
+
+.set-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.set-input::placeholder {
+  color: var(--text-muted);
+}
+
+.add-set-button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.add-set-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.add-set-row .add-set-button {
+  flex: 1;
+  width: auto;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .add-set-row { flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .session-sets-header {
+    display: none;
+  }
+  .session-set-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .session-set-row.is-invalid {
+    border-radius: 14px;
+  }
+  .set-card-head {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .set-card-head .set-col.set-num {
+    flex: none;
+    color: var(--text-strong);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .set-card-head .set-num-prefix {
+    display: inline;
+  }
+  .session-set-row .icon-button {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+  .set-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .set-field-wide {
+    grid-column: 1 / -1;
+  }
+  .set-field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .session-set-row .set-input {
+    font-size: 16px;
+    min-height: 48px;
+  }
+  .session-set-row .set-unit-button {
+    min-height: 48px;
+    min-width: 52px;
+    font-size: 12px;
+  }
+  .session-set-row .rir-pill {
+    min-height: 48px;
+  }
+}
+
+.set-weight-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.set-input-weight {
+  flex: 1;
+}
+
+.set-unit-button {
+  flex: 0 0 auto;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.set-unit-button:hover {
+  border-color: var(--accent);
+}
+
+.set-unit-button.is-lbs {
+  background: var(--danger-soft);
+  border-color: var(--danger, #e5534b);
+  color: var(--danger, #e5534b);
+}
+
+.rir-value {
+  flex: 1;
+  text-align: center;
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 30px;
+}
+
+
+/* Tappable RIR pill that opens the effort bottom-sheet. */
+.rir-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 6px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.rir-pill:hover { border-color: var(--accent); }
+
+.rir-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.rir-pill.is-unrated .rir-value { color: var(--text-muted); font-weight: 600; }
+
+.session-footer {
+  text-align: center;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 1024px) {
+  .session-header .primary-button {
+    display: none;
+  }
+  .session-footer {
+    position: sticky;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    z-index: 20;
+    background: var(--bg);
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  .session-footer .primary-button {
+    width: 100%;
+    min-height: 52px;
+  }
+}
+
+
+/* ---------- Finish validation ---------- */
+.session-set-row.is-invalid { border: 1px solid var(--danger, #e5534b); border-radius: 8px; }
+
+.set-input.is-invalid { border-color: var(--danger, #e5534b); }
+
+.set-invalid-hint { color: var(--danger, #e5534b); font-size: 12px; font-weight: 600; }
