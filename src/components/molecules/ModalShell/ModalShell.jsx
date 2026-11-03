@@ -1,9 +1,13 @@
+import { useEscapeToClose } from "../../../hooks/index.js"
+
 import { Button } from "../../atoms/index.js"
 
 /**
  * Shared modal shell: overlay + dialog + header (title + icon close) +
  * body + footer. `bodyAs`/`bodyProps` cover the form-body case
  * (CustomExerciseForm); `footerInsideBody` keeps submit footers inside it.
+ * Escape closes the topmost overlay via the shared dismiss stack, so sheets
+ * opened on top of the modal close first.
  */
 export const ModalShell = ({
   dialogClassName,
@@ -21,6 +25,7 @@ export const ModalShell = ({
   footerInsideBody = false,
   children,
 }) => {
+  useEscapeToClose(onClose)
   const footerNode = footer ? <div className={footerClassName}>{footer}</div> : null
   return (
     <div className="modal-overlay" onClick={onClose}>

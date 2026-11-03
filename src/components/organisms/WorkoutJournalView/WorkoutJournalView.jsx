@@ -13,8 +13,10 @@ import { Button } from "../../atoms/index.js"
 
 const WEEKDAY_SEED_SUNDAY = new Date(2024, 0, 7, 12, 0, 0)
 
-// Tile header icons, stroke-based 24x24 paths vendored from openGym's
-// frontend/src/components/Icon.jsx (AGPL-3.0, by DuarteSantos8).
+// Tile header icons (24x24). sets/weight/progressed are stroke-based paths
+// vendored from openGym's frontend/src/components/Icon.jsx (AGPL-3.0, by
+// DuarteSantos8); workouts is a filled rotated dumbbell authored in
+// 500x500 space (scaled 24/500).
 const TILE_ICONS = {
   sets: (
     <>
@@ -23,11 +25,23 @@ const TILE_ICONS = {
     </>
   ),
   workouts: (
-    <>
-      <rect x="5.9" y="7.9" width="3.2" height="8.2" rx="1.3" />
-      <rect x="14.9" y="7.9" width="3.2" height="8.2" rx="1.3" />
-      <path d="M9.1 12h5.8M3.6 9.9v4.2M20.4 9.9v4.2" />
-    </>
+    <g
+      fill="currentColor"
+      stroke="none"
+      transform="scale(0.048) rotate(-45 250 250)"
+    >
+      {/* Center bar / handle */}
+      <rect x="163.0" y="235" width="174.0" height="30" rx="15" ry="15" />
+      {/* Inner plates */}
+      <rect x="163.0" y="160" width="36" height="180" rx="18" ry="18" />
+      <rect x="301.0" y="160" width="36" height="180" rx="18" ry="18" />
+      {/* Outer plates */}
+      <rect x="118.0" y="185" width="40" height="130" rx="18" ry="18" />
+      <rect x="342.0" y="185" width="40" height="130" rx="18" ry="18" />
+      {/* End caps */}
+      <rect x="93.0" y="225" width="20" height="50" rx="10" ry="10" />
+      <rect x="387.0" y="225" width="20" height="50" rx="10" ry="10" />
+    </g>
   ),
   weight: (
     <>
@@ -82,6 +96,7 @@ export const WorkoutJournalView = ({
   selectedDateKey,
   onSelectDate,
   onOpenSession,
+  onOpenHistory,
   loading,
   weighIns,
   weightUnit = "kg",
@@ -157,7 +172,7 @@ export const WorkoutJournalView = ({
         </div>
       </div>
 
-      <div className="journal-cal-card">
+      <div className="journal-cal-card journal-calendar-card">
         <div className="journal-cal-nav">
           <span className="journal-month-label">{monthLabel}</span>
           <div className="journal-cal-nav-actions">
@@ -280,6 +295,16 @@ export const WorkoutJournalView = ({
             </ul>
           </>
         )}
+      </div>
+
+      <div className="balance-card balance-open-card journal-history-card">
+        <div className="balance-open-text">
+          <h3>{t("journal.workoutHistory")}</h3>
+          <p className="panel-subtitle">{t("journal.workoutHistorySub")}</p>
+        </div>
+        <Button variant="primary" size="detail-small" onClick={() => onOpenHistory?.()}>
+          {t("journal.historyAction")}
+        </Button>
       </div>
     </section>
   )

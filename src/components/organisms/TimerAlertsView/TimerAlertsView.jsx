@@ -69,7 +69,7 @@ export const TimerAlertsView = ({ user, onUpdateProfile, onBack }) => {
 
   return (
     <section className="account-view" aria-label={t("timer.title")}>
-      <Button variant="ghost" size="detail-small" className="balance-back" onClick={onBack}>
+      <Button className="balance-back" onClick={onBack}>
         {t("timer.backToAccount")}
       </Button>
       <div className="account-card">

@@ -1,0 +1,121 @@
+/* MovementDetailCard styles — co-located. Imported by MovementDetailCard.jsx; global cascade.
+
+   The movement-detail-title / -gif-wrap / -instructions / .instruction-steps*
+   rules below are the SHARED presentation block for a movement, identical to
+   the ones organisms/MovementDetail/MovementDetail.css also declares. They are
+   duplicated on purpose: each co-located sheet stays self-contained, and a
+   session that forgot to load MovementDetail's sheet would silently render an
+   unstyled movement. Keep the two blocks in sync — if you change one, change
+   both (see MovementDetail.css for the other copy). */
+
+.movement-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.movement-detail-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72px;
+}
+
+.movement-detail-empty {
+  color: var(--text-muted);
+}
+
+.detail-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.detail-section-head h3 {
+  margin-bottom: 0;
+}
+
+.movement-detail-gif-wrap {
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #1b1f28;
+  border: 1px solid var(--border);
+}
+
+.movement-detail-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.movement-detail-title {
+  color: var(--text-strong);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.movement-detail-instructions h3 {
+  color: var(--text-strong);
+  font-size: var(--font-size-h4);
+  margin-bottom: 12px;
+}
+
+.instruction-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.instruction-step {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.instruction-step-num {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instruction-step p {
+  color: var(--text);
+}
+
+/* The target-prescription pill. Sits under the title and above the GIF, so the
+   first thing you read after the movement name is what you are aiming for. */
+.session-exercise-rx {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+@media (max-width: 900px) {
+  .movement-detail-gif-wrap {
+    max-width: none;
+  }
+}

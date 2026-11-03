@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
@@ -7,17 +7,40 @@ import "./AllExercisesView.css"
 import { Button } from "../../atoms/index.js"
 import { MovementCard } from "../../molecules/index.js"
 
+// "Show more" progress persists across movement-detail round-trips (the
+// planner unmounts, which would otherwise reset the visible page size).
 const PAGE_SIZE = 48
+const VISIBLE_KEY = "all-exercises-visible"
+
+const loadVisible = () => {
+  try {
+    const v = Number(sessionStorage.getItem(VISIBLE_KEY))
+    return Number.isFinite(v) && v >= PAGE_SIZE ? v : PAGE_SIZE
+  } catch {
+    return PAGE_SIZE
+  }
+}
 
 export const AllExercisesView = ({
   exercises,
+  toolbar,
   onSelectExercise,
   onSaveExercise,
   quickAddListId,
   addedIds,
 }) => {
   const { t } = useTranslation()
-  const [visible, setVisible] = useState(PAGE_SIZE)
+  const [visible, setVisible] = useState(loadVisible)
+
+  // Keep "Show more" progress alive across remounts.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(VISIBLE_KEY, String(visible))
+    } catch {
+      // ignore (storage unavailable)
+    }
+  }, [visible])
+
   const sorted = exercises || []
   const shown = sorted.slice(0, visible)
 
@@ -33,6 +56,7 @@ export const AllExercisesView = ({
           </p>
         </div>
       </div>
+      {toolbar}
       <div className="movement-grid">
         {shown.map((ex) => (
           <MovementCard

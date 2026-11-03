@@ -1,12 +1,11 @@
-
-.exercise-library {
+.exercise-panel {
   overflow: visible;
   max-height: none;
   align-self: flex-start;
 }
 
 /* Desktop: overlay drawer sliding in from the right, covering main content. */
-.app-body > .exercise-library {
+.app-body > .exercise-panel {
   position: fixed;
   top: 0;
   right: 0;
@@ -14,6 +13,7 @@
   height: 100dvh;
   max-height: none;
   width: min(86vw, 360px);
+  padding: 18px 14px 40px;
   z-index: 60;
   background: var(--bg-elev);
   border-left: 1px solid var(--border);
@@ -26,25 +26,10 @@
   border-radius: 18px 0 0 18px;
 }
 
-.app-body > .exercise-library.is-drawer-open {
+.app-body > .exercise-panel.is-drawer-open {
   transform: none;
   visibility: visible;
   box-shadow: var(--shadow);
-}
-
-.library-drawer-close {
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  color: var(--text-strong);
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  font-size: 14px;
-  cursor: pointer;
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .panel-title-row {
@@ -54,13 +39,13 @@
   gap: 8px;
 }
 
-.app-body > .exercise-library > .panel-title-row,
-.app-body > .exercise-library > p.panel-subtitle,
-.app-body > .exercise-library > .library-tabs {
+.app-body > .exercise-panel > .panel-title-row,
+.app-body > .exercise-panel > p.panel-subtitle,
+.app-body > .exercise-panel > .panel-tabs {
   flex: none;
 }
 
-.app-body > .exercise-library > [role="tabpanel"] {
+.app-body > .exercise-panel > [role="tabpanel"] {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -68,29 +53,101 @@
   overflow: hidden;
 }
 
-.parts-list {
-  flex: 1;
-  overflow-y: visible;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  padding-right: 2px;
-}
+/* ---------- Part cards (equipment-style grid; scrolls in place) ---------- */
 
-.parts-tabpanel {
-  overflow-y: auto;
-}
-
-.app-body > .exercise-library .recent-list {
+.part-grid {
   flex: 1;
   min-height: 0;
-  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  list-style: none;
+  margin: 0;
+  padding: 2px 2px 12px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+
+.part-grid > li {
+  display: flex;
+  min-width: 0;
+}
+
+.part-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.part-card:hover {
+  color: var(--text-strong);
+  border-color: var(--accent);
+}
+
+.part-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.part-card.is-active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--text-strong);
+}
+
+.part-card-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex: none;
+  background: var(--bg-elev);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.part-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.part-card-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.app-body > .exercise-panel .recent-list {
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100dvh - 40px);   /* ← 从 none 改成具体高度 */
   overflow-y: auto;
 }
 
 
 /* ---------- Exercise library tabs ---------- */
 
-.library-tabs {
+.panel-tabs {
   display: flex;
   gap: 4px;
   background: var(--bg-hover);
@@ -100,7 +157,7 @@
   margin-bottom: 14px;
 }
 
-.library-tab {
+.panel-tab {
   flex: 1;
   min-width: 0;
   background: none;
@@ -116,7 +173,7 @@
   text-overflow: ellipsis;
 }
 
-.library-tab:hover {
+.panel-tab:hover {
   color: var(--text-strong);
 }
 
@@ -154,129 +211,29 @@
 }
 
 
-
-.muscle-tree,
-.muscle-targets {
+.muscle-tree {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.muscle-part + .muscle-part {
-  margin-top: 2px;
-}
-
-
-.muscle-part-row,
 .muscle-target-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   width: 100%;
   text-align: left;
   background: none;
-  border: 0;
+  border: 1px solid transparent;
   color: var(--text);
-  padding: 6px 6px 6px 2px;
+  padding: 6px 10px;
+  font-size: 14px;
   border-radius: 10px;
 }
 
-.muscle-target-row {
-  gap: 8px;
-  padding: 6px 10px;
-}
-
-
-.muscle-part-row:hover,
 .muscle-target-row:hover {
   background: var(--bg-hover);
   color: var(--text-strong);
-}
-
-.muscle-part.is-active > .muscle-part-row {
-  color: var(--text-strong);
-}
-
-.muscle-part-row {
-  border: 1px solid transparent;
-}
-
-.muscle-part-row.is-selected {
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-
-.muscle-caret-btn {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 0;
-  border-radius: 8px;
-  color: var(--text-strong);
-  cursor: pointer;
-  touch-action: manipulation;
-  padding: 0;
-}
-
-.muscle-caret-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-strong);
-}
-
-.muscle-caret-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-.muscle-caret {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  line-height: 1;
-  transform: translateY(-1px);
-}
-
-.muscle-part-select {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: 0;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  padding: 6px 6px 6px 2px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.muscle-part-select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-.muscle-part-row .muscle-label {
-  font-weight: 600;
-}
-
-.muscle-targets {
-  margin: 2px 0 6px 18px;
-}
-
-.muscle-target-row {
-  padding: 6px 10px;
-  font-size: 14px;
-  border: 1px solid transparent;
-}
-
-.muscle-target-row.is-selected {
-  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .muscle-thumb {
@@ -312,7 +269,7 @@
 }
 
 @media (max-width: 900px) {
-  .exercise-library.is-drawer {
+  .exercise-panel.is-drawer {
     position: fixed;
     top: 0;
     right: 0;
@@ -338,26 +295,26 @@
 
   /* Every tab scrolls inside its own box; the aside chrome
      (title, subtitle, tabs) never moves. */
-  .exercise-library.is-drawer > [role="tabpanel"] {
+  .exercise-panel.is-drawer > [role="tabpanel"] {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
   }
 
-  .exercise-library.is-drawer > .panel-title-row,
-  .exercise-library.is-drawer > .panel-subtitle,
-  .exercise-library.is-drawer > .library-tabs {
+  .exercise-panel.is-drawer > .panel-title-row,
+  .exercise-panel.is-drawer > .panel-subtitle,
+  .exercise-panel.is-drawer > .panel-tabs {
     flex: none;
   }
 
-  .exercise-library.is-drawer.is-drawer-open {
+  .exercise-panel.is-drawer.is-drawer-open {
     transform: none;
     visibility: visible;
     box-shadow: var(--shadow);
   }
 
-  .exercise-library.is-drawer > [role="tabpanel"] {
+  .exercise-panel.is-drawer > [role="tabpanel"] {
     flex: 1;
     min-height: 0;
     display: flex;
@@ -375,13 +332,6 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-  }
-
-  .parts-list {
-    flex: 1;
-    overflow-y: visible;
     overscroll-behavior: contain;
     scrollbar-width: thin;
   }

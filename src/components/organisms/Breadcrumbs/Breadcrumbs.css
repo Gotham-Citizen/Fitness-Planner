@@ -1,0 +1,23 @@
+/* Breadcrumbs styles — co-located (atomic Phase 4). */
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-xs);
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: var(--space-2) 0;
+}
+
+.breadcrumbs a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  color: var(--accent);
+}
+
+.breadcrumbs span {
+  color: var(--text-muted);
+}

@@ -24,12 +24,7 @@ export const BalancePage = ({
     <AuthTemplate banner={banner}>
       {mode === "structural" ? (
         <section className="balance-view" aria-label="Structural balance detail">
-          <Button
-            variant="ghost"
-            size="detail-small"
-            className="balance-back"
-            onClick={onBackToBalance}
-          >
+          <Button className="balance-back" onClick={onBackToBalance}>
             {t("balance.backToStats")}
           </Button>
           <StructuralBalance

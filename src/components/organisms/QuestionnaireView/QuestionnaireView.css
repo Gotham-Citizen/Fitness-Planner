@@ -1,0 +1,250 @@
+/* QuestionnaireView styles — co-located. Uses the same option card styles as AuthView
+   so the retake questionnaire feels like a continuation of the signup flow. */
+
+.questionnaire {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 8px 0 32px;
+}
+
+.questionnaire-header h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  color: var(--text-strong);
+}
+
+.questionnaire-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.questionnaire-tracker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.questionnaire-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.questionnaire-step.is-active {
+  border-color: var(--accent);
+  color: var(--text-strong);
+  background: var(--accent-soft);
+}
+
+.questionnaire-step.is-done {
+  color: var(--accent-strong);
+}
+
+.questionnaire-step-num {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  font-weight: 700;
+}
+
+.questionnaire-step.is-active .questionnaire-step-num {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.questionnaire-panel {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* --- Option cards (mirrors AuthView) --- */
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-field-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Short choices (days, session length) wrap as a centered row. */
+.auth-options-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.auth-options-row .auth-option {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.auth-option {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.auth-option:hover {
+  border-color: var(--accent);
+  color: var(--text-strong);
+}
+
+.auth-option.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+
+.auth-option-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.auth-option-inner strong {
+  display: block;
+  font-size: 15px;
+  color: inherit;
+}
+
+.auth-option-inner small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.auth-option-icon {
+  font-size: 22px;
+}
+
+/* Compact single-line cards (days / session length). */
+.auth-option-plain {
+  justify-content: center;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* --- Generate plan step --- */
+
+.questionnaire-generate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.questionnaire-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.questionnaire-error {
+  color: var(--danger, #e5484d);
+  font-size: 13px;
+}
+
+/* --- Step CTA (mirrors AuthView's .auth-submit / .auth-step-next) ---
+   Scoped to .questionnaire so these win over AuthView.css regardless of
+   stylesheet load order, and keep the nav row buttons vertically aligned. */
+
+.questionnaire .auth-submit {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0;
+  font-size: 16px;
+}
+
+.questionnaire .auth-submit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.questionnaire .auth-step-back {
+  flex: none;
+  min-height: 48px;
+  margin-top: 0;
+}
+
+.questionnaire .auth-step-back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.questionnaire .auth-step-next {
+  flex: 1;
+  margin-top: 0;
+}
+
+.questionnaire .auth-step-next:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* --- Navigation --- */
+
+.questionnaire-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.questionnaire-step-of {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .questionnaire-step-label {
+    display: none;
+  }
+}

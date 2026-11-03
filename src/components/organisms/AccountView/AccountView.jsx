@@ -2,17 +2,20 @@ import { useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
+import { equipmentName, goalName } from "../../../lib/presets/index.js"
 import { formatLongDate } from "../../../utils/format.js"
 import { persistLanguage } from "../../../utils/i18n.js"
 import { localeFromI18n } from "../../../utils/locale.js"
+import { normalizeTheme, THEMES } from "../../../utils/themes.js"
 import { isValidEmail } from "../../../utils/validation.js"
 
 import "./AccountView.css"
 
 import { Button, FieldError, SegmentedToggle, TextInput } from "../../atoms/index.js"
-import { SaveCancelRow } from "../../molecules/index.js"
+import { SaveCancelRow  } from "../../molecules/index.js"
 
-export const AccountView = ({ user, onUpdateProfile, onLogout, onDeleteAccount, onOpenTimerAlerts }) => {
+
+export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogout, onDeleteAccount, onOpenTimerAlerts, onOpenQuestionnaire, onOpenPlanSchedule }) => {
   const { t, i18n } = useTranslation()
   const locale = localeFromI18n(i18n)
   const [editing, setEditing] = useState(null)
@@ -63,6 +66,8 @@ export const AccountView = ({ user, onUpdateProfile, onLogout, onDeleteAccount, 
   const cancelEdit = () => {
     setEditing(null)
     setFieldError(null)
+    setEffortError(null)
+    setLanguageError(null)
     setSavingField(null)
   }
 
@@ -147,6 +152,7 @@ export const AccountView = ({ user, onUpdateProfile, onLogout, onDeleteAccount, 
     try {
       setSavingField("effort")
       setEffortError(null)
+      setFieldError(null)
       await onUpdateProfile({ effortScale: next })
     } catch (err) {
       setEffortError(err?.message || t("account.failedEffort"))
@@ -162,6 +168,7 @@ export const AccountView = ({ user, onUpdateProfile, onLogout, onDeleteAccount, 
     try {
       setSavingField("language")
       setLanguageError(null)
+      setFieldError(null)
       await i18n.changeLanguage(next)
       persistLanguage(next)
       await onUpdateProfile({ language: next })
@@ -186,6 +193,16 @@ export const AccountView = ({ user, onUpdateProfile, onLogout, onDeleteAccount, 
     if ((user?.timerVibrate ?? 1)) parts.push(t("timer.vibrate"))
     if ((user?.timerFlash ?? 0)) parts.push(t("timer.flash"))
     return parts.length > 0 ? parts.join(" · ") : t("common.off")
+  })()
+
+  const planScheduleSummary = (() => {
+    const s = user?.schedule
+    if (!s || typeof s !== "object") return t("common.notSet")
+    if (s.mode === "rotation") {
+      return t("account.planRotationSummary", { count: (Array.isArray(s.rotation) ? s.rotation : []).length })
+    }
+    const days = Object.values(s.fixed || {}).filter(Boolean).length
+    return t("account.planFixedSummary", { count: days })
   })()
 
   const startDelete = () => {
@@ -357,6 +374,54 @@ export const AccountView = ({ user, onUpdateProfile, onLogout, onDeleteAccount, 
       </div>
 
       <div className="account-card">
+        <h3 className="account-section-title">{t("account.goalsTitle")}</h3>
+        {user?.questionnaire ? (
+          <>
+            <div className="account-row">
+              <span className="account-label">{t("questionnaire.q1")}</span>
+              <span className="account-value">{goalName(user.questionnaire.goal, currentLanguage)}</span>
+            </div>
+            <div className="account-row">
+              <span className="account-label">{t("questionnaire.experienceLabel")}</span>
+              <span className="account-value">{t(`questionnaire.experience.${user.questionnaire.experience}`)}</span>
+            </div>
+            <div className="account-row">
+              <span className="account-label">{t("questionnaire.q3")}</span>
+              <span className="account-value">{t("questionnaire.daysOption", { count: user.questionnaire.daysPerWeek })}</span>
+            </div>
+            <div className="account-row">
+              <span className="account-label">{t("questionnaire.q4")}</span>
+              <span className="account-value">{equipmentName(user.questionnaire.equipment, currentLanguage)}</span>
+            </div>
+            {user.questionnaire.sessionMinutes ? (
+              <div className="account-row">
+                <span className="account-label">{t("questionnaire.q5")}</span>
+                <span className="account-value">{t("questionnaire.sessionOption", { count: user.questionnaire.sessionMinutes })}</span>
+              </div>
+            ) : null}
+            <div className="account-row">
+              <span className="account-label">{t("account.goalsUpdated")}</span>
+              <span className="account-value">{user.questionnaireUpdatedAt ? formatDate(user.questionnaireUpdatedAt) : "—"}</span>
+            </div>
+            <div className="account-goals-actions">
+              <Button variant="secondary" onClick={onOpenQuestionnaire}>
+                {t("account.goalsRetake")}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="account-goals-empty">{t("account.goalsEmpty")}</p>
+            <div className="account-goals-actions">
+              <Button variant="secondary" onClick={onOpenQuestionnaire}>
+                {t("account.goalsFill")}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="account-card">
         <h3 className="account-section-title">{t("account.prefs")}</h3>
         <div className="account-row">
           <span className="account-label">{t("account.effortPerSet")}</span>
@@ -386,6 +451,16 @@ export const AccountView = ({ user, onUpdateProfile, onLogout, onDeleteAccount, 
         </div>
         {languageError && <p className="account-inline-error">{languageError}</p>}
 
+        <div className="account-row account-row--theme">
+          <span className="account-label">{t("account.theme")}</span>
+          <SegmentedToggle
+            options={THEMES.map(({ id, nameKey }) => ({ value: id, label: t(`account.${nameKey}`) }))}
+            value={normalizeTheme(theme)}
+            onPick={(v) => {onPickTheme?.(normalizeTheme(v))}}
+            ariaLabel={t("account.theme")}
+          />
+        </div>
+
         <div className="account-row">
           <button
             type="button"
@@ -395,6 +470,19 @@ export const AccountView = ({ user, onUpdateProfile, onLogout, onDeleteAccount, 
           >
             <span className="account-label">{t("account.timerAlerts")}</span>
             <span className="account-value">{currentTimerSummary}</span>
+            <span className="history-expand-icon" aria-hidden="true">&rsaquo;</span>
+          </button>
+        </div>
+
+        <div className="account-row">
+          <button
+            type="button"
+            className="account-row-expand"
+            onClick={() => onOpenPlanSchedule?.()}
+            aria-label={t("account.planScheduleAria", { summary: planScheduleSummary })}
+          >
+            <span className="account-label">{t("account.planSchedule")}</span>
+            <span className="account-value">{planScheduleSummary}</span>
             <span className="history-expand-icon" aria-hidden="true">&rsaquo;</span>
           </button>
         </div>

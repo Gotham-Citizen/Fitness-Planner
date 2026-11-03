@@ -2,8 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
-import { CustomExerciseForm, MobileTabBar, PickBanner, SavePanel } from "../components/molecules/index.js"
+import { useLeaveGuard } from "../hooks/useLeaveGuard.js"
+
+import { CustomExerciseForm, LeavePrompt, MobileTabBar, PickBanner, SavePanel } from "../components/molecules/index.js"
 import { AppHeader, EditWorkoutView, ExerciseLibrary, MovementDetail } from "../components/organisms/index.js"
+import { PlanScheduleView } from "../components/organisms/PlanScheduleView/PlanScheduleView.jsx"
+import { QuestionnaireView } from "../components/organisms/QuestionnaireView/QuestionnaireView.jsx"
 import { AppShell, AuthTemplate } from "../components/templates/index.js"
 
 import { AccountPage } from "./AccountPage/AccountPage.jsx"
@@ -16,10 +20,10 @@ import { PlannerPage } from "./PlannerPage/PlannerPage.jsx"
 import { SessionPage } from "./SessionPage/SessionPage.jsx"
 import { SummaryPage } from "./SummaryPage/SummaryPage.jsx"
 import { TimerAlertsPage } from "./TimerAlertsPage/TimerAlertsPage.jsx"
+import { WorkoutHistoryPage } from "./WorkoutHistoryPage/WorkoutHistoryPage.jsx"
 import { WorkoutsPage } from "./WorkoutsPage/WorkoutsPage.jsx"
 
-import {
-  addExerciseToList,
+import {   addExerciseToList,
   clearSessionsForList,
   completeSession,
   createExercise,
@@ -42,33 +46,37 @@ import {
   logWeighIn,
   removeExerciseFromList,
   renameWorkoutList,
+reorderWorkoutListExercises,
+  saveQuestionnaire,
   setTargetWeight,
   setToken,
   updateExercise,
   updateProfile,
   updateSet,
-  updateWorkoutExerciseSettings,
-} from "../lib/api.js"
+  updateWorkoutExerciseSettings } from "../lib/api.js"
 import { profileBodyweightKg } from "../lib/bodyweight.js"
 import { hasEffort } from "../lib/effort.js"
 import { todayKeyLocal } from "../lib/journal.js"
 import { buildHierarchy, findExercise, searchExercises, titleCase } from "../lib/muscles.js"
+import { generatePlan } from "../lib/planGenerator.js"
 import { appendViewedTarget, buildRecentRows, loadViewedTargets } from "../lib/recent.js"
 import { computeRecovery } from "../lib/recovery.js"
 import { classifySets } from "../lib/setValidation.js"
 import { resolveAlertSound } from "../lib/timerAlert.js"
 import { clearStoredLanguage, persistLanguage, storedLanguage } from "../utils/i18n.js"
 import { normalizeLang } from "../utils/locale.js"
+import { isValidTheme, loadStoredTheme, persistTheme, THEMES, themeScheme } from "../utils/themes.js"
 
 import "./App.css"
 
 export const App = () => {
   const { t, i18n } = useTranslation()
-  const [theme, setTheme] = useState(() => localStorage.getItem("fitplan-theme") || "dark")
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    localStorage.setItem("fitplan-theme", theme)
-  }, [theme])
+  const [theme, setTheme] = useState(loadStoredTheme)
+  const [focusSearchOnNextPlanner, setFocusSearchOnNextPlanner] = useState(false)
+  const clearFocusOnNextPlanner = useCallback(
+    () => setFocusSearchOnNextPlanner(false),
+    [],
+  )
   const [authLoaded, setAuthLoaded] = useState(!getToken())
   const [user, setUser] = useState(null)
   const [exercises, setExercises] = useState(null)
@@ -106,12 +114,31 @@ export const App = () => {
   const [savingWeighIn, setSavingWeighIn] = useState(false)
   const [sortAlpha, setSortAlpha] = useState(false)
   const [sortByDifficulty, setSortByDifficulty] = useState(false)
+  const [questionnaireReturnView, setQuestionnaireReturnView] = useState("account")
   const bwBackfillFor = useRef({})
+  const errorTimerRef = useRef(null)
 
-  const showError = (msg) => {
-    setError(msg)
-    setTimeout(() => setError(null), 5000)
-  }
+  const showError = useCallback((msg) => {
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    if (msg) {
+      setError(msg)
+      errorTimerRef.current = setTimeout(() => setError(null), 5000)
+    } else {
+      setError(null)
+    }
+  }, [])
+
+  useEffect(() => () => {
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+  }, [])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.theme = theme
+    // Light-themed components read this to adapt their colors.
+    root.dataset.scheme = themeScheme(theme)
+    persistTheme(theme)
+  }, [theme])
 
   useEffect(() => {
     fetchMe()
@@ -133,6 +160,7 @@ export const App = () => {
     const next = normalizeLang(user?.language || storedLanguage())
     if (normalizeLang(i18n.language) !== next) {
       i18n.changeLanguage(next)
+      document.documentElement.lang = next
       // Only a signed-in account caches its language — guests always follow
       // the browser (clearStoredLanguage on logout resets to it).
       if (user?.language) persistLanguage(next)
@@ -187,12 +215,14 @@ export const App = () => {
     return [...set].sort((a, b) => a.localeCompare(b))
   }, [exercises])
 
-  const handleCreateExercise = async ({ name, category, target, equipment }) => {
+  const handleCreateExercise = async ({ name, category, target, equipment, gifUrl, instructionSteps,
+  instructions,
+  instructionsLang, }) => {
     if (!authenticated) {
       goLogin()
       return null
     }
-    const ex = await createExercise({ name, category, target, equipment })
+    const ex = await createExercise({ name, category, target, equipment, gifUrl, instructionSteps, instructions, instructionsLang, })
     setExercises((prev) => (prev ? [...prev, ex] : [ex]))
     // Created from inside Edit workout: add straight into that list and stay in the modal.
     if (customFormListId && workoutLists.some((l) => l.id === customFormListId)) {
@@ -425,6 +455,15 @@ export const App = () => {
     setSortByDifficulty(false)
   }
 
+  // M6 — equipment scope selection from the library's Equipment tab.
+  const handleSelectEquipment = (equipment) => {
+    setView("planner")
+    setSelectedExercise(null)
+    setSelected(equipment ? { equipment } : null)
+    setSortAlpha(false)
+    setSortByDifficulty(false)
+  }
+
   const handleSelectMuscle = (category, target) => {
     setSearchQuery("")
     handleSelectTarget(category, target)
@@ -499,6 +538,26 @@ export const App = () => {
       console.error(err)
       showError(t("errors.addExercise"))
       return null
+    }
+  }
+
+  // C2 — persist drag/arrow reorders. Optimistic, rollback on failure.
+  const handleReorderExercises = async (listId, order) => {
+    const previous = workoutLists
+    setWorkoutLists((prev) =>
+      prev.map((list) => {
+        if (list.id !== listId) return list
+        const byId = new Map(list.exercises.map((ex) => [ex.id, ex]))
+        const reordered = order.map((id) => byId.get(id)).filter(Boolean)
+        return { ...list, exercises: reordered }
+      }),
+    )
+    try {
+      await reorderWorkoutListExercises(listId, order)
+    } catch (err) {
+      console.error(err)
+      showError(err?.message || t("errors.updateRest"))
+      setWorkoutLists(previous)
     }
   }
 
@@ -601,6 +660,42 @@ export const App = () => {
       }
       showError(err?.status === 409 ? err.message : t("errors.createList"))
       return { status: "error" }
+    }
+  }
+
+  // M6 — add a preset as a new workout list. Uses only APIs with known
+  // signatures; the preset shape ({ name, exerciseIds | exercises }) is
+  // tolerant of a string-id array or an array of exercise objects.
+  const handleAddPreset = async (preset) => {
+    if (!authenticated) {
+      goLogin()
+      return null
+    }
+    if (!preset?.name) return null
+    try {
+      const ids = (preset.exerciseIds ?? preset.exercises ?? [])
+        .map((ex) => (typeof ex === "string" ? ex : ex?.id))
+        .filter(Boolean)
+      if (ids.length === 0) {
+        const list = await createWorkoutList(preset.name)
+        setWorkoutLists((prev) => [list, ...prev])
+        return list
+      }
+      const list = await createWorkoutList(preset.name, ids[0])
+      for (let i = 1; i < ids.length; i++) {
+        try {
+          await addExerciseToList(list.id, ids[i])
+        } catch (err) {
+          console.error("handleAddPreset: failed to add", ids[i], err)
+        }
+      }
+      const fresh = await fetchWorkoutLists()
+      setWorkoutLists(fresh)
+      return list
+    } catch (err) {
+      console.error("handleAddPreset failed", err)
+      showError(err?.message || t("errors.createList"))
+      return null
     }
   }
 
@@ -772,6 +867,28 @@ export const App = () => {
     }
   }
 
+  // M4 — all-sessions history. Uses a synthetic list so the shared
+  // "history-summary" branch (which requires `historyList`) can render.
+  const handleShowAllHistory = async () => {
+    try {
+      const all = await fetchAllUserSessions()
+      const sorted = [...all].sort((a, b) =>
+        String(b.completedAt || "").localeCompare(String(a.completedAt || "")),
+      )
+      setHistorySessions(sorted)
+      setHistoryList({
+        id: "__all",
+        name: t("journal.workoutHistory"),
+        exercises: [],
+      })
+      setHistoryReturnView("workout-history")
+      setView("workout-history")
+    } catch (err) {
+      console.error(err)
+      showError(err?.message || t("errors.loadSessions"))
+    }
+  }
+
   const handleOpenJournalSession = (session) => {
     const list = workoutLists.find((l) => l.id === session.listId) || {
       id: session.listId,
@@ -799,15 +916,17 @@ export const App = () => {
     setHistorySummarySession(null)
   }
 
-  const handleOpenHistorySummary = (session) => {
+  const handleOpenHistorySummary = (session, from = "history") => {
     setHistorySummarySession(session)
-    setHistoryReturnView("history")
+    setHistoryReturnView(from)
     setView("history-summary")
   }
 
   const handleBackFromHistorySummary = () => {
     setHistorySummarySession(null)
-    setView(historyReturnView === "journal" ? "journal" : "history")
+    if (historyReturnView === "journal") setView("journal")
+    else if (historyReturnView === "workout-history") setView("workout-history")
+    else setView("history")
   }
 
   const handleDeleteHistorySession = async (sessionId) => {
@@ -818,7 +937,9 @@ export const App = () => {
       setSessionTick((n) => n + 1)
       if (historySummarySession?.id === sessionId) {
         setHistorySummarySession(null)
-        setView(historyReturnView === "journal" ? "journal" : "history")
+        if (historyReturnView === "journal") setView("journal")
+        else if (historyReturnView === "workout-history") setView("workout-history")
+        else setView("history")
       }
     } catch (err) {
       console.error(err)
@@ -840,12 +961,54 @@ export const App = () => {
     }
   }
 
-  const handleAuth = (token, authedUser) => {
+  // M7 — accept the signup mode and its options; generate starter lists
+  // when the signup wizard asked for a plan.
+  const handleAuth = async (token, authedUser, mode = "login", options = {}) => {
     setToken(token)
     setUser(authedUser)
     setView("home")
     setSelectedExercise(null)
-    fetchWorkoutLists().then(setWorkoutLists).catch((err) => console.error("Failed to refresh lists", err))
+
+    if (mode === "signup" && options?.generatePlan && options?.answers) {
+      try {
+        const plan = generatePlan(options.answers)
+        for (const list of plan?.lists ?? []) {
+          const ids = (list.exerciseIds ?? list.exercises ?? [])
+            .map((ex) => (typeof ex === "string" ? ex : ex?.id))
+            .filter(Boolean)
+          if (ids.length === 0) continue
+          try {
+            const created = await createWorkoutList(list.name, ids[0])
+            for (let i = 1; i < ids.length; i++) {
+              try {
+                await addExerciseToList(created.id, ids[i])
+              } catch (e) {
+                console.error("generatePlan: add exercise failed", e)
+              }
+            }
+          } catch (err) {
+            console.error("generatePlan: create list failed", list.name, err)
+          }
+        }
+        if (plan?.schedule) {
+          try {
+            const { user: updated } = await updateProfile({ schedule: plan.schedule })
+            if (updated) setUser(updated)
+          } catch (err) {
+            console.error("generatePlan: save schedule failed", err)
+          }
+        }
+      } catch (err) {
+        console.error("generatePlan failed", err)
+      }
+    }
+
+    try {
+      const fresh = await fetchWorkoutLists()
+      setWorkoutLists(fresh)
+    } catch (err) {
+      console.error("Failed to refresh lists", err)
+    }
   }
 
   const handleOpenCustomInEdit = (list) => {
@@ -861,6 +1024,10 @@ export const App = () => {
   const handleCloseCustomForm = () => {
     setShowCustomForm(false)
     setCustomFormListId(null)
+  }
+
+  const handlePickTheme = (next) => {
+    if (isValidTheme(next)) setTheme(next)
   }
 
   const handleLogout = () => {
@@ -889,9 +1056,9 @@ export const App = () => {
     setSearchQuery("")
   }
 
-  const handleUpdateProfile = async ({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language }) => {
+  const handleUpdateProfile = async ({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule }) => {
     try {
-      const { user: updated } = await updateProfile({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language })
+      const { user: updated } = await updateProfile({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule })
       if (updated) setUser(updated)
       return updated
     } catch (err) {
@@ -902,7 +1069,22 @@ export const App = () => {
       else if (effortScale !== undefined) showError(err?.message || t("account.failedEffort"))
       else if (timerSound !== undefined || timerPlaySound !== undefined || timerVibrate !== undefined || timerFlash !== undefined) showError(err?.message || t("timer.failed"))
       else if (language !== undefined) showError(err?.message || t("account.failedLanguage"))
+      else if (schedule !== undefined) showError(err?.message || t("schedule.failed"))
       else showError(t("account.failedGender"))
+      throw err
+    }
+  }
+
+  const handleUpdateQuestionnaire = async (answers) => {
+    try {
+      const { user: updated } = await saveQuestionnaire(answers)
+      if (updated) setUser(updated)
+      // Return to whichever view opened the questionnaire.
+      setView(questionnaireReturnView)
+      return updated
+    } catch (err) {
+      console.error(err)
+      showError(err?.message || t("account.failedQuestionnaire"))
       throw err
     }
   }
@@ -968,11 +1150,16 @@ export const App = () => {
     [workoutLists, editingListId],
   )
 
+  // Leave guard for the active session. Called before the early return for
+  // !authLoaded (Rules of Hooks) and after handleBackFromSession is defined.
+  const hasActiveSession = view === "session" && Boolean(activeSession?.id)
+  const { requestLeave, leavePromptOpen, stay, leave } = useLeaveGuard(hasActiveSession, handleBackFromSession)
+
   if (!authLoaded) {
     return (
       <div className="app">
         <div className="app-body">
-          <main className="app-main">
+          <main className="app-main" id="main-content">
             <section className="loading">
               <span className="spinner" aria-hidden="true"></span> {t("nav.loading")}
             </section>
@@ -982,12 +1169,19 @@ export const App = () => {
     )
   }
 
-  const protectedViews = ["workouts", "journal", "balance", "structural-balance", "session", "summary", "history", "history-summary", "account", "timer-alerts"]
+  const protectedViews = [
+    "workouts", "journal", "balance", "structural-balance", "session", "summary",
+    "history", "history-summary", "workout-history", "account", "timer-alerts",
+    "questionnaire", "plan-schedule",
+  ]
   const showAuthGate = !authenticated && (view === "auth" || protectedViews.includes(view))
 
   const handleSearchChange = (value) => {
     setSearchQuery(value)
-    if (view === "home" && value.trim() !== "") setView("planner")
+    if (view === "home" && value.trim() !== "") {
+      setView("planner")
+      setFocusSearchOnNextPlanner(true)
+    }
   }
 
   const handleNavigate = (next) => {
@@ -1003,9 +1197,20 @@ export const App = () => {
     else if (tab === "balance") requireAuthOrGo("balance")
   }
 
+  // Every "leave the session" entry point goes through requestLeave: in-session
+  // triggers the prompt; otherwise the action runs unchanged.
+  const guardedTabNavigate = (tab) => requestLeave(() => handleTabNavigate(tab))
+  const guardedNavigate = (next) => requestLeave(() => handleNavigate(next))
+  const guardedGoHome = () => requestLeave(goHome)
+  const guardedLogin = () => requestLeave(goLogin)
+  const guardedOpenAccount = () =>
+    requestLeave(() => { setView("account"); setSelectedExercise(null) })
+  const guardedBackFromSession = () => requestLeave(handleBackFromSession)
+
   const tabId = view === "home" ? "home"
     : view === "planner" ? "planner"
-      : view === "journal" || (view === "history-summary" && historyReturnView === "journal") ? "journal"
+      : view === "journal" || view === "workout-history"
+        || (view === "history-summary" && (historyReturnView === "journal" || historyReturnView === "workout-history")) ? "journal"
         : view === "balance" || view === "structural-balance" ? "balance"
           : view === "workouts" || view === "session" || view === "summary" || view === "history" || view === "history-summary" ? "workouts"
             : "home"
@@ -1069,7 +1274,7 @@ export const App = () => {
         onUpdateSet={handleUpdateSet}
         onDeleteSet={handleDeleteSet}
         onFinish={handleFinishSession}
-        onBack={handleBackFromSession}
+        onBack={guardedBackFromSession}
       />
     )
   } else if (view === "summary" && summarySession && summaryList) {
@@ -1098,11 +1303,27 @@ export const App = () => {
         onClearAll={handleClearHistorySessions}
       />
     )
+  } else if (view === "workout-history") {
+    body = (
+      <WorkoutHistoryPage
+        banner={banner}
+        list={historyList}
+        title={t("journal.workoutHistory")}
+        sessions={historySessions}
+        onBack={() => {
+          setHistorySessions([])
+          setHistoryList(null)
+          setView("journal")
+        }}
+        onOpenSummary={(session) => handleOpenHistorySummary(session, "workout-history")}
+        onDeleteSession={handleDeleteHistorySession}
+      />
+    )
   } else if (view === "history-summary" && historySummarySession && historyList) {
     body = (
       <SummaryPage
         banner={banner}
-        sidebar={historyReturnView === "journal" ? null : librarySidebar}
+        sidebar={historyReturnView === "journal" || historyReturnView === "workout-history" ? null : librarySidebar}
         list={historyList}
         session={historySummarySession}
         mode="history"
@@ -1128,6 +1349,13 @@ export const App = () => {
         onStartSession={handleStartSession}
         onHistory={handleShowHistory}
         onSelectMuscle={handleSelectMuscle}
+        showGoalsPrompt={authenticated && !user?.questionnaire}
+        onOpenQuestionnaire={() => {
+          setQuestionnaireReturnView("workouts")
+          setSelectedExercise(null)
+          setView("questionnaire")
+        }}
+        onOpenPresets={() => setView("planner")}
       />
     )
   } else if (view === "journal") {
@@ -1141,6 +1369,7 @@ export const App = () => {
         selectedDateKey={journalDateKey}
         onSelectDate={setJournalDateKey}
         onOpenSession={handleOpenJournalSession}
+        onOpenHistory={handleShowAllHistory}
         loading={journalLoading}
         weighIns={weighIns}
         weightUnit={user?.bodyweightUnit || "kg"}
@@ -1160,10 +1389,18 @@ export const App = () => {
         key={`${user?.id ?? "account"}-${user?.name ?? ""}-${user?.email ?? ""}-${user?.gender ?? ""}-${user?.bodyweight ?? ""}-${user?.bodyweightUnit ?? ""}-${user?.effortScale ?? ""}-${user?.timerSound ?? ""}-${user?.timerPlaySound ?? ""}-${user?.timerVibrate ?? ""}-${user?.timerFlash ?? ""}`}
         banner={banner}
         user={user}
+        theme={theme}
+        onPickTheme={handlePickTheme}
         onUpdateProfile={handleUpdateProfile}
         onDeleteAccount={handleDeleteAccount}
         onLogout={handleLogout}
         onOpenTimerAlerts={() => { setSelectedExercise(null); setView("timer-alerts") }}
+        onOpenQuestionnaire={() => {
+          setQuestionnaireReturnView("account")
+          setSelectedExercise(null)
+          setView("questionnaire")
+        }}
+        onOpenPlanSchedule={() => { setSelectedExercise(null); setView("plan-schedule") }}
       />
     )
   } else if (view === "timer-alerts") {
@@ -1175,6 +1412,33 @@ export const App = () => {
         onUpdateProfile={handleUpdateProfile}
         onBack={() => { setSelectedExercise(null); setView("account") }}
       />
+    )
+  } else if (view === "questionnaire") {
+    body = (
+      <AuthTemplate banner={banner}>
+        <QuestionnaireView
+          initialAnswers={{
+            goal: user?.questionnaire?.goal,
+            experience: user?.questionnaire?.experience,
+            daysPerWeek: user?.questionnaire?.daysPerWeek,
+            equipment: user?.questionnaire?.equipment,
+            sessionMinutes: user?.questionnaire?.sessionMinutes,
+          }}
+          onSave={handleUpdateQuestionnaire}
+          onBack={() => { setSelectedExercise(null); setView(questionnaireReturnView) }}
+        />
+      </AuthTemplate>
+    )
+  } else if (view === "plan-schedule") {
+    body = (
+      <AuthTemplate banner={banner}>
+        <PlanScheduleView
+          user={user}
+          workoutLists={workoutLists}
+          onUpdateProfile={handleUpdateProfile}
+          onBack={() => { setSelectedExercise(null); setView("account") }}
+        />
+      </AuthTemplate>
     )
   } else if (view === "balance" || view === "structural-balance") {
     body = (
@@ -1198,6 +1462,10 @@ export const App = () => {
         searching={searching}
         onSearchChange={handleSearchChange}
         onClearSearch={() => setSearchQuery("")}
+        schedule={user?.schedule}
+        workoutLists={workoutLists}
+        startingSession={startingSession}
+        onStartSession={handleStartSession}
       />
     )
   } else {
@@ -1210,10 +1478,13 @@ export const App = () => {
         searchQuery={searchQuery}
         selectedTarget={selectedTarget}
         selectedCategory={selectedCategory}
+        autoFocusSearch={focusSearchOnNextPlanner}
+        onAutoFocusSearchHandled={clearFocusOnNextPlanner}
         pendingAddList={pendingAddList}
         pendingAddExerciseIds={pendingAddExerciseIds}
         hierarchy={hierarchy}
         selected={selected}
+        questionnaire={user?.questionnaire || null}
         recentRows={recentRows}
         recentLoading={recentLoading}
         onSelectExercise={handleSelectExercise}
@@ -1222,6 +1493,8 @@ export const App = () => {
         onQueryChange={handleSearchChange}
         onSelectCategory={handleSelectCategory}
         onSelectTarget={handleSelectTarget}
+        onSelectEquipment={handleSelectEquipment}
+        onAddPreset={handleAddPreset}
         onRequestRecent={() => setRecentRequested(true)}
         sortAlpha={sortAlpha}
         sortByDifficulty={sortByDifficulty}
@@ -1259,8 +1532,10 @@ export const App = () => {
           onCreateCustom={handleOpenCustomInEdit}
           onRemoveExercise={handleRemoveExercise}
           onUpdateSettings={handleUpdateWorkoutSettings}
+          onReorderExercises={handleReorderExercises}
         />
       )}
+      <LeavePrompt open={leavePromptOpen} onStay={stay} onLeave={leave} />
     </>
   )
 
@@ -1273,16 +1548,19 @@ export const App = () => {
           authenticated={authenticated}
           userName={user?.name?.trim() || "user"}
           theme={theme}
-          onGoHome={goHome}
-          onNavigate={handleNavigate}
-          onLogin={goLogin}
-          onOpenAccount={() => { setView("account"); setSelectedExercise(null) }}
-          onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+          onGoHome={guardedGoHome}
+          onNavigate={guardedNavigate}
+          onLogin={guardedLogin}
+          onOpenAccount={guardedOpenAccount}
+          onToggleTheme={() => {
+            const i = THEMES.findIndex((x) => x.id === theme)
+            setTheme(THEMES[(i + 1) % THEMES.length].id)
+          }}
         />
       )}
       body={body}
       tabBar={(
-        <MobileTabBar active={tabId} onNavigate={handleTabNavigate} />
+        <MobileTabBar active={tabId} onNavigate={guardedTabNavigate} />
       )}
       overlays={overlays}
       error={error}

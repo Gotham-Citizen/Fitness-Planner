@@ -9,6 +9,59 @@
   padding-right: var(--searchbar-reserve, 146px);
 }
 
+/* Planner page tabs — openGym-style segmented control rendered below the
+   global app header on desktop. `--n` = segment count, `--i` = active index;
+   `.seg-sel` slides under the active button. */
+.seg {
+  position: relative;
+  display: inline-flex;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.seg-sel {
+  position: absolute;
+  inset: 1px;
+  width: calc(100% / var(--n, 1));
+  height: auto;
+  transform: translateX(calc(var(--i, 0) * (100% / var(--n, 1))));
+  background: var(--accent-soft);
+  border-radius: 9px;
+  transition: transform 0.2s ease, width 0.2s ease;
+  pointer-events: none;
+}
+
+.seg button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  padding: 9px 6px;
+  cursor: pointer;
+}
+
+.seg button:hover {
+  color: var(--text-strong);
+}
+
+.seg button.on {
+  color: var(--accent-strong);
+}
+
+/* planner-mode-tabs occupies the full main-column width on desktop. */
+.planner-mode-tabs {
+  width: 100%;
+  margin: 0 0 16px;
+}
+
+/* Old pill-tab leftovers removed — keep nothing referencing planner-mode-tab. */
 .planner-search-bar {
   width: auto !important;
   max-width: clamp(220px, 40vw, 420px);

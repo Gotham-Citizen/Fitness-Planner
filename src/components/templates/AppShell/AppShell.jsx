@@ -14,10 +14,10 @@ export const AppShell = ({ header, body, tabBar, overlays, error, onDismissError
       {tabBar}
       {overlays}
       {error && (
-        <div className="error-toast" onClick={onDismissError}>
-          <span className="error-toast-icon">⚠</span>
+        <button className="error-toast" onClick={onDismissError} type="button">
+          <span className="error-toast-icon" aria-hidden="true">⚠</span>
           {error}
-        </div>
+        </button>
       )}
     </div>
   )

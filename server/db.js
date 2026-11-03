@@ -50,6 +50,15 @@ function toListExercise(row) {
     restSecs,
     restEnabled: row.rest_enabled === null || row.rest_enabled === undefined ? true : Number(row.rest_enabled) !== 0,
     rirEnabled: row.rir_enabled === null || row.rir_enabled === undefined ? false : Number(row.rir_enabled) !== 0,
+    prescribedSets: row.prescribed_sets ?? null,
+    prescribedReps: row.prescribed_reps ?? null,
+    // MovementDetail parity: the active session renders the same title / GIF /
+    // instruction classes as the library detail view, so list exercises carry
+    // the same instructional payload as the base catalog rows.
+    secondary_muscles: parseJson(row.secondary_muscles, []),
+    instructions: parseJson(row.instructions, {}),
+    instruction_steps: parseJson(row.instruction_steps, {}),
+    difficulty: row.difficulty ?? 1,
   }
 }
 
@@ -66,11 +75,113 @@ function normalizeLanguage(value) {
   return String(value ?? '').trim().toLowerCase() === 'zh' ? 'zh' : 'en'
 }
 
+// --- Plan & schedule (fixed week / rotation) -------------------------------
+
+const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
+
+// Validates + normalizes the plan & schedule blob stored on the user. Null
+// clears it. Shape:
+//   fixed:    { mode:'fixed', weekStartsOn, fixed: { '0'..'6': listId|null } }
+//   rotation: { mode:'rotation', weekStartsOn, rotation: [entry...],
+//               rotationStartedAt: 'YYYY-MM-DD' }
+// Entries are { type:'workout', listId } or { type:'rest' }; the sequence
+// loops. Unknown list ids are kept as-is (the UI flags missing routines —
+// lists can be deleted after scheduling).
+export function normalizeSchedule(value) {
+  if (value == null) return null
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('schedule must be an object')
+  }
+  const weekStartsOn = Number(value.weekStartsOn)
+  if (!Number.isInteger(weekStartsOn) || !WEEKDAYS.includes(weekStartsOn)) {
+    throw new Error('schedule.weekStartsOn must be 0-6')
+  }
+  const out = { weekStartsOn }
+
+  if (value.mode === 'fixed') {
+    out.mode = 'fixed'
+    const raw = typeof value.fixed === 'object' && value.fixed !== null ? value.fixed : {}
+    const fixed = {}
+    for (const day of WEEKDAYS) {
+      const listId = raw[String(day)] ?? raw[day]
+      if (listId == null || listId === '') continue
+      if (typeof listId !== 'string') throw new Error('schedule.fixed values must be list ids or null')
+      fixed[String(day)] = listId
+    }
+    out.fixed = fixed
+    return out
+  }
+
+  if (value.mode === 'rotation') {
+    out.mode = 'rotation'
+    if (!Array.isArray(value.rotation) || value.rotation.length === 0) {
+      throw new Error('schedule.rotation must contain at least one entry')
+    }
+    if (value.rotation.length > 60) {
+      throw new Error('schedule.rotation must contain at most 60 entries')
+    }
+    out.rotation = value.rotation.map((entry) => {
+      if (!entry || typeof entry !== 'object') throw new Error('each rotation entry must be an object')
+      if (entry.type === 'rest') return { type: 'rest' }
+      if (entry.type === 'workout') {
+        if (typeof entry.listId !== 'string' || !entry.listId.trim()) {
+          throw new Error('rotation workout entries need a listId')
+        }
+        return { type: 'workout', listId: entry.listId.trim() }
+      }
+      throw new Error('rotation entry type must be "workout" or "rest"')
+    })
+    const started = typeof value.rotationStartedAt === 'string' ? value.rotationStartedAt.trim() : ''
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(started) || Number.isNaN(Date.parse(started))) {
+      throw new Error('schedule.rotationStartedAt must be a YYYY-MM-DD date')
+    }
+    out.rotationStartedAt = started
+    return out
+  }
+
+  throw new Error('schedule.mode must be "fixed" or "rotation"')
+}
+
 const TIMER_SOUNDS = ['off', 'beep', 'chime', 'bell']
 
 function normalizeTimerSound(value) {
   const v = String(value ?? '').trim().toLowerCase()
   return TIMER_SOUNDS.includes(v) ? v : 'beep'
+}
+
+// --- Questionnaire (goal onboarding; refillable) ---
+// Answers are validated + normalized server-side and stored as JSON.
+
+const QUESTIONNAIRE_GOALS = ['slim', 'strength', 'build', 'endurance']
+const QUESTIONNAIRE_EXPERIENCE = ['beginner', 'intermediate', 'advanced']
+const QUESTIONNAIRE_EQUIPMENT = ['gym', 'dumbbell', 'bodyweight']
+const QUESTIONNAIRE_SESSION_MINUTES = [30, 45, 60, 90, 120, 150, 180]
+
+export function normalizeQuestionnaire(answers) {
+  if (answers == null || typeof answers !== 'object' || Array.isArray(answers)) return null
+  const goal = QUESTIONNAIRE_GOALS.includes(answers.goal) ? answers.goal : null
+  const experience = QUESTIONNAIRE_EXPERIENCE.includes(answers.experience) ? answers.experience : null
+  const days = Number(answers.daysPerWeek)
+  const daysPerWeek = Number.isFinite(days) && days >= 2 && days <= 6 ? Math.round(days) : null
+  const equipment = QUESTIONNAIRE_EQUIPMENT.includes(answers.equipment) ? answers.equipment : null
+  const mins = Number(answers.sessionMinutes)
+  const sessionMinutes = QUESTIONNAIRE_SESSION_MINUTES.includes(mins) ? mins : null
+  if (!goal || !experience || !daysPerWeek || !equipment) {
+    throw new Error('goal, experience, daysPerWeek, and equipment are required')
+  }
+  const out = { goal, experience, daysPerWeek, equipment }
+  if (sessionMinutes) out.sessionMinutes = sessionMinutes
+  return out
+}
+
+function parsePlan(raw) {
+  if (!raw) return null
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
 }
 
 function toUser(row) {
@@ -85,6 +196,9 @@ function toUser(row) {
     targetWeight: row.target_weight ?? null,
     effortScale: normalizeEffortScale(row.effort_scale),
     language: normalizeLanguage(row.language),
+    questionnaire: parseJson(row.questionnaire, null),
+    questionnaireUpdatedAt: row.questionnaire_updated_at ?? null,
+    schedule: parseJson(row.schedule, null),
     timerSound: normalizeTimerSound(row.timer_sound === 'off' ? 'beep' : (row.timer_sound ?? 'beep')),
     // Legacy rows predate timer_sound_on: a stored 'off' sound means play-off.
     timerPlaySound: row.timer_sound_on === null || row.timer_sound_on === undefined
@@ -92,6 +206,7 @@ function toUser(row) {
       : (Number(row.timer_sound_on) !== 0 ? 1 : 0),
     timerVibrate: row.timer_vibrate === null || row.timer_vibrate === undefined ? 1 : (Number(row.timer_vibrate) !== 0 ? 1 : 0),
     timerFlash: row.timer_flash === null || row.timer_flash === undefined ? 0 : (Number(row.timer_flash) !== 0 ? 1 : 0),
+    plan: parsePlan(row.plan),
   }
 }
 
@@ -122,11 +237,14 @@ function toSessionBodyweight(row) {
 
 const SELECT_LIST_EXERCISES = `SELECT e.id, e.name, e.name_zh AS name_zh, e.name_pinyin AS name_pinyin, e.name_initials AS name_initials,
     e.category, e.target, e.equipment, e.image, e.gif_url,
-    wle.rest_secs AS rest_secs, wle.rest_enabled AS rest_enabled, wle.rir_enabled AS rir_enabled
+    e.secondary_muscles, e.instructions, e.instruction_steps, e.difficulty,
+    wle.rest_secs AS rest_secs, wle.rest_enabled AS rest_enabled, wle.rir_enabled AS rir_enabled,
+    wle.prescribed_sets AS prescribed_sets, wle.prescribed_reps AS prescribed_reps,
+    wle.position AS position
   FROM workout_list_exercises wle
   JOIN exercises e ON e.id = wle.exercise_id
   WHERE wle.list_id = ?
-  ORDER BY wle.added_at ASC`
+  ORDER BY wle.position ASC, wle.added_at ASC`
 
 const SELECT_LIST_BY_ID = 'SELECT * FROM workout_lists WHERE id = ? AND user_id = ? AND deleted_at IS NULL'
 
@@ -185,6 +303,14 @@ function conflictError(existing) {
   return err
 }
 
+// Pull the media row id out of a ".../api/media/<id>" gif_url (uploaded
+// custom-exercise GIFs). External/pasted GIF URLs return null.
+function extractMediaId(gifUrl) {
+  if (typeof gifUrl !== 'string') return null
+  const match = gifUrl.match(/\/api\/media\/([a-z0-9-]+)\/?$/i)
+  return match ? match[1] : null
+}
+
 const db = {
   async getExercises(userId) {
     const { results } = userId
@@ -204,24 +330,38 @@ const db = {
     return toExercise(row)
   },
 
-  async createExercise(userId, { name, category, target, equipment }) {
+  async createExercise(userId, { name, category, target, equipment, gifUrl, instructionSteps, instructions, instructionsLang }) {
     const trimmed = {
       name: typeof name === 'string' ? name.trim() : '',
       category: typeof category === 'string' ? category.trim() : '',
       target: typeof target === 'string' ? target.trim() : '',
       equipment: typeof equipment === 'string' && equipment.trim() ? equipment.trim() : 'body weight',
+      gifUrl: typeof gifUrl === 'string' ? gifUrl.trim() : '',
     }
     if (!trimmed.name || !trimmed.category || !trimmed.target) {
       throw new Error('name, category, and target are required')
     }
+    // Instructions join the same per-language map shape updateExercise writes
+    // ({ en: "...", zh: "..." }). The step list lives in instruction_steps with
+    // the same shape ({ en: [ ... ] }); a newline-joined copy of the steps is
+    // also stored in instructions so views that only read prose still work.
+    const steps = Array.isArray(instructionSteps)
+      ? instructionSteps.filter((s) => typeof s === 'string' && s.trim())
+      : []
+    const instrText = typeof instructions === 'string' ? instructions.trim() : ''
+    const fallbackText = steps.join('\n')
+    const text = instrText || fallbackText
+    const instrLang = instructionsLang === 'zh' ? 'zh' : 'en'
+    const instructionsJson = text ? JSON.stringify({ [instrLang]: text }) : '{}'
+    const stepsJson = steps.length ? JSON.stringify({ [instrLang]: steps }) : '{}'
     const id = `custom-${crypto.randomUUID()}`
     await env.DB
       .prepare(
         `INSERT INTO exercises
-          (id, name, category, target, equipment, user_id, secondary_muscles, instructions, instruction_steps, difficulty)
-          VALUES (?, ?, ?, ?, ?, ?, '[]', '{}', '{}', 2)`,
+          (id, name, category, target, equipment, user_id, gif_url, secondary_muscles, instructions, instruction_steps, difficulty)
+          VALUES (?, ?, ?, ?, ?, ?, ?, '[]', ?, ?, 2)`,
       )
-      .bind(id, trimmed.name, trimmed.category, trimmed.target, trimmed.equipment, userId)
+      .bind(id, trimmed.name, trimmed.category, trimmed.target, trimmed.equipment, userId, trimmed.gifUrl || null, instructionsJson, stepsJson)
       .run()
     return this.getExercise(id, userId)
   },
@@ -263,7 +403,7 @@ const db = {
 
   async deleteExercise(userId, id) {
     const row = await env.DB
-      .prepare('SELECT id FROM exercises WHERE id = ? AND user_id = ?')
+      .prepare('SELECT id, gif_url FROM exercises WHERE id = ? AND user_id = ?')
       .bind(id, userId)
       .first()
     if (!row) return false
@@ -272,20 +412,77 @@ const db = {
       .prepare('DELETE FROM exercises WHERE id = ? AND user_id = ?')
       .bind(id, userId)
       .run()
+    await this.deleteGifMedia(userId, row.gif_url)
+    return result.meta.changes > 0
+  },
+
+  // Best-effort cleanup of the uploaded GIF behind a custom exercise's
+  // /api/media/<id> gif_url (called from deleteExercise). Skips when another
+  // exercise still references the same URL (a user can paste one custom's
+  // upload URL into another), and never touches another user's media row.
+  // Catches so a missing exercise_media table never blocks the exercise
+  // delete — orphans are reclaimed by deleteUser/resetDemoData.
+  async deleteGifMedia(userId, gifUrl) {
+    const mediaId = extractMediaId(gifUrl)
+    if (!mediaId) return
+    try {
+      const refs = await env.DB
+        .prepare('SELECT COUNT(*) AS refs FROM exercises WHERE gif_url = ?')
+        .bind(gifUrl)
+        .first()
+      if ((refs?.refs ?? 0) > 0) return
+      await env.DB
+        .prepare('DELETE FROM exercise_media WHERE id = ? AND user_id = ?')
+        .bind(mediaId, userId)
+        .run()
+    } catch {
+      // Table may not exist — never block the delete.
+    }
+  },
+
+  // --- Exercise media (uploaded custom-exercise GIFs, base64 in D1) ---
+
+  async createMedia(userId, contentType, dataBase64) {
+    const id = `media-${crypto.randomUUID()}`
+    await env.DB
+      .prepare(
+        'INSERT INTO exercise_media (id, user_id, content_type, data, created_at) VALUES (?, ?, ?, ?, ?)',
+      )
+      .bind(id, userId, contentType, dataBase64, new Date().toISOString())
+      .run()
+    return this.getMedia(id)
+  },
+
+  async getMedia(id) {
+    return env.DB
+      .prepare('SELECT * FROM exercise_media WHERE id = ?')
+      .bind(id)
+      .first()
+      ?? null
+  },
+
+  async deleteMedia(id, userId) {
+    const result = await env.DB
+      .prepare('DELETE FROM exercise_media WHERE id = ? AND user_id = ?')
+      .bind(id, userId)
+      .run()
     return result.meta.changes > 0
   },
 
   // --- Users ---
 
-  async createUser(email, passwordHash, gender = null, name = null, language = null) {
+  async createUser(email, passwordHash, gender = null, name = null, language = null, questionnaire = null) {
     const id = crypto.randomUUID()
     const createdAt = new Date().toISOString()
     const cleanGender = normalizeGender(gender)
     const cleanName = normalizeDisplayName(name)
     const cleanLanguage = normalizeLanguage(language)
+    // Expected to be pre-normalized by the signup route; store as JSON like
+    // the retake endpoint does. Null = signup without survey answers.
+    const questionnaireJson = questionnaire == null ? null : JSON.stringify(questionnaire)
     const insert = () => env.DB
-      .prepare('INSERT INTO users (id, email, password_hash, created_at, gender, name, language) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(id, email, passwordHash, createdAt, cleanGender, cleanName, cleanLanguage)
+      .prepare('INSERT INTO users (id, email, password_hash, created_at, gender, name, language, questionnaire, questionnaire_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, email, passwordHash, createdAt, cleanGender, cleanName, cleanLanguage, questionnaireJson, questionnaireJson ? createdAt : null)
       .run()
     await insert()
     return this.getUserById(id)
@@ -304,6 +501,7 @@ const db = {
   // --- Workout lists ---
 
   async getWorkoutList(userId, id) {
+    await this.ensureListExercisePosition()
     const list = await env.DB.prepare(SELECT_LIST_BY_ID).bind(id, userId).first()
     if (!list) return null
     const { results: rows } = await env.DB.prepare(SELECT_LIST_EXERCISES).bind(id).all()
@@ -332,7 +530,38 @@ const db = {
     return row || null
   },
 
-  async createWorkoutList(userId, name, exerciseId) {
+  // Clamp rest seconds to the same range updateExerciseSettings validates.
+  // Batch preset creation clamps instead of throwing so one bad value never
+  // kills a whole generated plan.
+  normalizePrescriptionRest(secs) {
+    if (secs === null || secs === undefined) return null
+    const n = Number(secs)
+    if (!Number.isFinite(n)) return null
+    return Math.min(1800, Math.max(5, Math.round(n)))
+  },
+
+  // Preset prescriptions: optional per-exercise set/rep guidance stored on
+  // the list-exercise join row. Unknown/invalid values fall back to null.
+  normalizePrescription(prescription) {
+    const out = {}
+    if (prescription == null) return out
+    if (prescription.restSecs !== undefined) {
+      out.restSecs = this.normalizePrescriptionRest(prescription.restSecs)
+    }
+    if (prescription.prescribedSets !== undefined) {
+      const n = Number(prescription.prescribedSets)
+      out.prescribedSets = Number.isFinite(n) && n > 0 ? Math.min(20, Math.round(n)) : null
+    }
+    if (prescription.prescribedReps !== undefined) {
+      out.prescribedReps =
+        typeof prescription.prescribedReps === 'string' && prescription.prescribedReps.trim()
+          ? prescription.prescribedReps.trim().slice(0, 20)
+          : null
+    }
+    return out
+  },
+
+  async createWorkoutList(userId, name, exerciseId, exercises = null) {
     const trimmed = typeof name === 'string' ? name.trim() : ''
     const existing = await this.findWorkoutListByNameInsensitive(userId, trimmed)
     if (existing) throw conflictError(existing)
@@ -343,13 +572,42 @@ const db = {
         .prepare('INSERT INTO workout_lists (id, name, user_id, created_at) VALUES (?, ?, ?, ?)')
         .bind(id, trimmed, userId, createdAt),
     ]
-    if (exerciseId) {
+    if (Array.isArray(exercises) && exercises.length > 0) {
+      // Preset/plan creation: seed the whole list in one batch. Rows keep
+      // their array order (added_at ties broken by rowid).
+      const addedAtBase = Date.parse(createdAt)
+      for (const [index, entry] of exercises.entries()) {
+        if (!entry || typeof entry.exerciseId !== 'string' || !entry.exerciseId) continue
+        const rx = this.normalizePrescription(entry)
+        statements.push(
+          env.DB
+            .prepare(
+              `INSERT OR IGNORE INTO workout_list_exercises
+                (list_id, exercise_id, added_at, rest_secs, rest_enabled, prescribed_sets, prescribed_reps, position)
+                VALUES (?, ?, ?, COALESCE(?, 60), 1, ?, ?, ?)`,
+            )
+            .bind(
+              id,
+              entry.exerciseId,
+              new Date(addedAtBase + index).toISOString(),
+              rx.restSecs ?? null,
+              rx.prescribedSets ?? null,
+              rx.prescribedReps ?? null,
+              // Seeded plans need explicit 1-based positions: every row would
+              // otherwise default to 0, and the first later append (which uses
+              // MAX(position) + 1) would sort ahead of the whole plan.
+              index + 1,
+            ),
+        )
+      }
+    } else if (exerciseId) {
       statements.push(
         env.DB
           .prepare(
-            'INSERT OR IGNORE INTO workout_list_exercises (list_id, exercise_id, added_at) VALUES (?, ?, ?)',
+            `INSERT OR IGNORE INTO workout_list_exercises (list_id, exercise_id, added_at, position)
+              VALUES (?, ?, ?, ?)`,
           )
-          .bind(id, exerciseId, createdAt),
+          .bind(id, exerciseId, createdAt, 1),
       )
     }
     try {
@@ -397,7 +655,7 @@ const db = {
     return result.meta.changes > 0
   },
 
-  async addExerciseToList(userId, listId, exerciseId) {
+  async addExerciseToList(userId, listId, exerciseId, prescription = null) {
     const list = await env.DB.prepare(SELECT_LIST_BY_ID).bind(listId, userId).first()
     if (!list) return null
     const exercise = await env.DB
@@ -405,12 +663,36 @@ const db = {
       .bind(exerciseId, userId)
       .first()
     if (!exercise) return null
+    const rx = this.normalizePrescription(prescription)
     await env.DB
       .prepare(
-        'INSERT OR IGNORE INTO workout_list_exercises (list_id, exercise_id, added_at) VALUES (?, ?, ?)',
+        `INSERT OR IGNORE INTO workout_list_exercises
+          (list_id, exercise_id, added_at, rest_secs, rest_enabled, prescribed_sets, prescribed_reps, position)
+          VALUES (?, ?, ?, COALESCE(?, 60), 1, ?, ?,
+            (SELECT COALESCE(MAX(position), 0) + 1 FROM workout_list_exercises WHERE list_id = ?))`,
       )
-      .bind(listId, exerciseId, new Date().toISOString())
+      .bind(
+        listId,
+        exerciseId,
+        new Date().toISOString(),
+        rx.restSecs ?? null,
+        rx.prescribedSets ?? null,
+        rx.prescribedReps ?? null,
+        listId,
+      )
       .run()
+    // A preset add onto a row that already exists should still refresh the
+    // prescription guidance (INSERT OR IGNORE skips it otherwise).
+    if ((rx.prescribedSets != null || rx.prescribedReps != null) && Object.keys(rx).length > 0) {
+      await env.DB
+        .prepare(
+          `UPDATE workout_list_exercises SET prescribed_sets = COALESCE(?, prescribed_sets), prescribed_reps = COALESCE(?, prescribed_reps)
+            WHERE list_id = ? AND exercise_id = ?`,
+        )
+        .bind(rx.prescribedSets ?? null, rx.prescribedReps ?? null, listId, exerciseId)
+        .run()
+        .catch(() => {})
+    }
     return this.getWorkoutList(userId, listId)
   },
 
@@ -424,6 +706,38 @@ const db = {
     return this.getWorkoutList(userId, listId)
   },
 
+  // Rewrites the manual `position` column in one batch so the caller's array
+  // order becomes the list order. The payload must describe the list exactly:
+  // every current exercise_id, once each, no extras. A partial or padded order
+  // would silently drop or duplicate movements, so it is rejected rather than
+  // partially applied. Returns the refreshed list on success, null otherwise.
+  async reorderListExercises(userId, listId, exerciseIds) {
+    if (!Array.isArray(exerciseIds) || exerciseIds.length === 0 || exerciseIds.length > 200) return null
+    if (exerciseIds.some((id) => typeof id !== 'string' || !id)) return null
+    if (new Set(exerciseIds).size !== exerciseIds.length) return null
+    const list = await env.DB.prepare(SELECT_LIST_BY_ID).bind(listId, userId).first()
+    if (!list) return null
+    const { results: rows } = await env.DB
+      .prepare('SELECT exercise_id FROM workout_list_exercises WHERE list_id = ?')
+      .bind(listId)
+      .all()
+    const current = (rows || []).map((r) => r.exercise_id)
+    if (current.length !== exerciseIds.length) return null
+    const currentSet = new Set(current)
+    if (exerciseIds.some((id) => !currentSet.has(id))) return null
+    const statements = exerciseIds.map((exerciseId, index) =>
+      env.DB
+        .prepare('UPDATE workout_list_exercises SET position = ? WHERE list_id = ? AND exercise_id = ?')
+        .bind(index + 1, listId, exerciseId),
+    )
+    try {
+      await env.DB.batch(statements)
+    } catch {
+      return null
+    }
+    return this.getWorkoutList(userId, listId)
+  },
+
   // RIR effort logging never applies to stretching moves or cardio — mirrors
   // src/lib/effort.js isRirEligible (canonical English fields, both languages).
   rirEligibleExercise(ex) {
@@ -433,7 +747,7 @@ const db = {
     return true
   },
 
-  async updateExerciseSettings(userId, listId, exerciseId, { restSecs, restEnabled, rirEnabled }) {
+  async updateExerciseSettings(userId, listId, exerciseId, { restSecs, restEnabled, rirEnabled, prescribedSets, prescribedReps }) {
     const list = await env.DB.prepare(SELECT_LIST_BY_ID).bind(listId, userId).first()
     if (!list) return null
     const link = await env.DB
@@ -448,6 +762,19 @@ const db = {
       if (!Number.isFinite(n) || n < 5 || n > 1800) throw new Error('restSecs must be between 5 and 1800')
       updates.push('rest_secs = ?')
       values.push(Math.round(n))
+    }
+    if (prescribedSets !== undefined) {
+      const n = Number(prescribedSets)
+      updates.push('prescribed_sets = ?')
+      values.push(Number.isFinite(n) && n > 0 ? Math.min(20, Math.round(n)) : null)
+    }
+    if (prescribedReps !== undefined) {
+      updates.push('prescribed_reps = ?')
+      values.push(
+        typeof prescribedReps === 'string' && prescribedReps.trim()
+          ? prescribedReps.trim().slice(0, 20)
+          : null,
+      )
     }
     if (restEnabled !== undefined) {
       updates.push('rest_enabled = ?')
@@ -506,10 +833,65 @@ const db = {
     return this.getOwnedSession(userId, sessionId)
   },
 
+  // Lazy migration: `schedule` postdates the original users schema. Older
+  // local D1 files get the column on first profile write; fresh databases
+  // Adds the manual `position` ordering column to workout_list_exercises and
+  // backfills it once. Existing databases predate the column and are not reset,
+  // so the ALTER runs lazily on the first list read (same idempotent pattern
+  // as ensureScheduleColumn). The backfill only fires while the ALTER actually
+  // succeeded — i.e. on the very first migration — so a steady-state read does
+  // no extra writes beyond the failing ALTER itself.
+  //
+  // Backfill keeps the legacy insertion order: rank each row within its own
+  // list by (added_at, rowid), which is exactly how SELECT_LIST_EXERCISES used
+  // to sort. rowid breaks the millisecond ties that preset/plan seeding creates
+  // (added_at = createdAt + index), so generated plans keep their authored
+  // sequence. Ranks are 1-based; `addExerciseToList` and `reorderListExercises`
+  // also write 1-based positions, so 0 only ever means "not migrated".
+  async ensureListExercisePosition() {
+    let created = false
+    try {
+      await env.DB
+        .prepare('ALTER TABLE workout_list_exercises ADD COLUMN position INTEGER NOT NULL DEFAULT 0')
+        .run()
+      created = true
+    } catch {
+      // Column already exists — nothing to migrate.
+    }
+    if (!created) return
+    await env.DB
+      .prepare(
+        `UPDATE workout_list_exercises SET position = (
+           SELECT COUNT(*) FROM workout_list_exercises prev
+             WHERE prev.list_id = workout_list_exercises.list_id
+               AND (prev.added_at < workout_list_exercises.added_at
+                 OR (prev.added_at = workout_list_exercises.added_at AND prev.rowid <= workout_list_exercises.rowid))
+         )`,
+      )
+      .run()
+      .catch(() => {})
+  },
+
+  // create it via schema.sql. Never fails the request if the ALTER races.
+  async ensureScheduleColumn() {
+    await env.DB
+      .prepare('ALTER TABLE users ADD COLUMN schedule TEXT')
+      .run()
+      .catch(() => {})
+  },
+
+  async ensurePlanColumn() {
+    if (this._planColumnReady) return
+    const { results } = await env.DB.prepare('PRAGMA table_info(users)').all()
+    if (!results.some((c) => c.name === 'plan')) {
+      await env.DB.prepare('ALTER TABLE users ADD COLUMN plan TEXT').run()
+    }
+    this._planColumnReady = true
+  },
+
   // --- Weigh-in history (journal bodyweight card) ---
 
-  async ensureWeighInTable() {
-    await env.DB.prepare(
+  async ensureWeighInTable() {    await env.DB.prepare(
       `CREATE TABLE IF NOT EXISTS bodyweight_log (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
@@ -726,7 +1108,12 @@ const db = {
     return this.updateUserProfile(userId, { gender })
   },
 
-  async updateUserProfile(userId, { email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language }) {
+  async updateUserProfile(userId, { email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule, plan }) {
+    if (schedule !== undefined) {
+      // The schedule column postdates the original schema — older local D1
+      // files need the ALTER before the first write (reads default to null).
+      await this.ensureScheduleColumn()
+    }
     if (bodyweight !== undefined || bodyweightUnit !== undefined) {
       let bw = bodyweight === null ? null : bodyweight !== undefined ? Number(bodyweight) : undefined
       if (bw !== undefined && bw !== null && !isPositiveNumber(bw)) throw new Error('bodyweight must be positive')
@@ -787,6 +1174,23 @@ const db = {
       const update = () => env.DB.prepare('UPDATE users SET language = ? WHERE id = ?').bind(clean, userId).run()
       await update()
     }
+    if (schedule !== undefined) {
+      // Null clears the plan; an object must pass normalizeSchedule.
+      const clean = schedule === null ? null : normalizeSchedule(schedule)
+      const update = () => env.DB
+        .prepare('UPDATE users SET schedule = ? WHERE id = ?')
+        .bind(clean === null ? null : JSON.stringify(clean), userId)
+        .run()
+      await update()
+    }
+    if (plan !== undefined) {
+      // Questionnaire answers, validated in the route; stored as JSON text.
+      const update = () => env.DB
+        .prepare('UPDATE users SET plan = ? WHERE id = ?')
+        .bind(plan === null ? null : JSON.stringify(plan), userId)
+        .run()
+      await update()
+    }
     if (timerSound !== undefined || timerPlaySound !== undefined || timerVibrate !== undefined || timerFlash !== undefined) {
       const sets = []
       const vals = []
@@ -813,6 +1217,19 @@ const db = {
     return this.getUserById(userId)
   },
 
+  // Save (or re-save) the registration questionnaire answers. Refills simply
+  // overwrite — the timestamp lets the UI show "last updated".
+  async saveQuestionnaire(userId, answers) {
+    const clean = normalizeQuestionnaire(answers)
+    const row = await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first()
+    if (!row) return null
+    await env.DB
+      .prepare('UPDATE users SET questionnaire = ?, questionnaire_updated_at = ? WHERE id = ?')
+      .bind(JSON.stringify(clean), new Date().toISOString(), userId)
+      .run()
+    return this.getUserById(userId)
+  },
+
   async deleteUser(userId) {
     // Explicit deletes so account removal works even if FK enforcement is off.
     // Order: sets -> sessions -> list links -> lists -> custom exercises -> user.
@@ -833,8 +1250,29 @@ const db = {
     await env.DB.prepare('DELETE FROM workout_lists WHERE user_id = ?').bind(userId).run()
     await env.DB.prepare('DELETE FROM exercises WHERE user_id = ?').bind(userId).run()
     await env.DB.prepare('DELETE FROM bodyweight_log WHERE user_id = ?').bind(userId).run().catch(() => {})
+    await env.DB.prepare('DELETE FROM exercise_media WHERE user_id = ?').bind(userId).run().catch(() => {})
     const result = await env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId).run()
     return result.meta.changes > 0
+  },
+
+  // Weekly demo maintenance (cron trigger in wrangler.jsonc): delete every
+  // registered user and all their data. Child-first like deleteUser so it
+  // works even without FK enforcement; the seeded exercise catalog
+  // (user_id IS NULL) is kept. Batched = one atomic transaction.
+  async resetDemoData() {
+    const results = await env.DB.batch([
+      env.DB.prepare('DELETE FROM workout_session_sets'),
+      env.DB.prepare('DELETE FROM workout_sessions'),
+      env.DB.prepare('DELETE FROM workout_list_exercises'),
+      env.DB.prepare('DELETE FROM workout_lists'),
+      env.DB.prepare('DELETE FROM exercises WHERE user_id IS NOT NULL'),
+      env.DB.prepare('DELETE FROM users'),
+    ])
+    // Older DBs may predate bodyweight_log / exercise_media — never fail the
+    // reset over them.
+    await env.DB.prepare('DELETE FROM bodyweight_log').run().catch(() => {})
+    await env.DB.prepare('DELETE FROM exercise_media').run().catch(() => {})
+    return { deletedUsers: results[results.length - 1]?.meta?.changes ?? 0 }
   },
 }
 

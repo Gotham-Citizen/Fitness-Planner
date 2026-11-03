@@ -1,4 +1,10 @@
-/* MovementDetail styles — co-located (atomic Phase 4). Imported by MovementDetail.jsx; global cascade. */
+/* MovementDetail styles — co-located (atomic Phase 4). Imported by MovementDetail.jsx; global cascade.
+
+   NOTE: the .movement-detail-title / .movement-detail-gif-wrap /
+   .movement-detail-instructions / .instruction-steps* block here is also
+   declared in molecules/MovementDetailCard/MovementDetailCard.css (the other
+   copy), which renders the same movement presentation inside a session. They
+   are kept identical by hand so each sheet stands alone; change both together. */
 .movement-detail-placeholder {
   width: 100%;
   height: 100%;
@@ -35,24 +41,31 @@
   min-width: 180px;
 }
 
-.detail-edit-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.detail-textarea {
-  resize: vertical;
-  min-height: 90px;
-  line-height: 1.5;
-}
-
+/* Rename flush left, delete flush right; the row spans the whole container so
+   the two buttons plus the gap cover the same width as .save-button below.
+   Both stretch to half the row (minus the gap) so they read like two halves
+   of the save bar rather than small remote islands. The confirm box replaces
+   the delete button in the row (App.css's .rename-confirm margin-top suits
+   its stacked use in other views only). */
 .detail-manage {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+  justify-content: space-between;
   margin-top: 22px;
+}
+
+.detail-manage > button {
+  flex: 1 1 0;
+  min-height: 48px;
+  padding: 12px 18px;
+  font-size: var(--font-size-small);
+}
+
+.detail-manage .rename-confirm {
+  margin-top: 0;
 }
 
 
@@ -63,17 +76,10 @@
   margin: 0 auto;
 }
 
+/* Back button shares the primary Button chrome (see the Button atom); only
+   the top-of-page spacing is local. */
 .back-button {
-  background: none;
-  border: 0;
-  color: var(--accent);
-  font-weight: 600;
-  padding: 6px 0;
   margin-bottom: 14px;
-}
-
-.back-button:hover {
-  text-decoration: underline;
 }
 
 .movement-detail-hero {
@@ -81,6 +87,22 @@
   flex-direction: column;
   gap: 16px;
   margin-bottom: 24px;
+}
+
+.movement-detail-title {
+  width: 100%;
+  max-width: 520px;     
+  margin: 0 auto;        /* 同样居中，左边缘就和图片对齐 */
+  text-align: left;      /* 在这个宽度内左对齐，去掉 !important */
+}
+
+.session-exercise-rx {
+  width: fit-content;                 /* 宽度随文字内容 */
+  max-width: min(100%, 520px);        /* 不超过图片宽度 */
+  margin-inline: auto auto;           /* 先清掉，下面再覆盖 */
+  margin-left: max(0px, calc((100% - 520px) / 2));  /* 对齐图片左边缘 */
+  margin-right: auto;
+  text-align: left;
 }
 
 .movement-detail-gif-wrap {
@@ -102,9 +124,9 @@
 
 .movement-detail-title {
   color: var(--text-strong);
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.15;
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }
 
 .movement-detail-cats {
@@ -121,7 +143,7 @@
 
 .movement-detail-instructions h3 {
   color: var(--text-strong);
-  font-size: 17px;
+  font-size: var(--font-size-h4);
   margin-bottom: 12px;
 }
 
@@ -163,7 +185,9 @@
   width: 100%;
   border-radius: var(--r-md);
   padding: 14px;
-  font-size: 16px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 

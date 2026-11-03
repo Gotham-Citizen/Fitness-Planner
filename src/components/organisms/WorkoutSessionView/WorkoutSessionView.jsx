@@ -1,38 +1,45 @@
-import { useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
-import { effortColor, effortDisplayValue, effortFeelKey, isRirEligible, normalizeEffortScale, rirOf } from "../../../lib/effort.js"
-import { exerciseName, localizedEquipment, mediaUrl } from "../../../lib/muscles.js"
+import { normalizeEffortScale, rirOf } from "../../../lib/effort.js"
 
 import "./WorkoutSessionView.css"
 
 import { Button } from "../../atoms/index.js"
-import { RestTimer, RirPickerSheet } from "../../molecules/index.js"
+import { MovementDetailCard, RirPickerSheet, SessionProgressBar } from "../../molecules/index.js"
+import { SessionExerciseSets } from "./SessionExerciseSets.jsx"
+import { parseWeightInput } from "./weightInput.js"
 
+// How many movements a workout may hold. Bounds the progress bar and the index
+// arithmetic below; presets are seeded with at most 30 exercises anyway.
+const MAX_EXERCISES = 200
 
-const WEIGHT_INPUT_RE = /^\s*(\d*\.?\d+|\d+\.?)\s*(kg|kgs|lb|lbs)?\s*$/i
+const clampIndex = (value, last) => (value < 0 ? 0 : value > last ? last : value)
 
-// Parses weight input like "50", "50kg", "110lbs". The unit suffix (if any)
-// is returned separately so the caller can flip the set-unit button and the
-// input itself keeps showing just the number.
-const parseWeightInput = (value) => {
-  if (value == null || String(value).trim() === "") return { ok: true, weight: null, weightUnit: null }
-  const match = String(value).match(WEIGHT_INPUT_RE)
-  if (!match) return { ok: false }
-  const weight = parseFloat(match[1])
-  if (!Number.isFinite(weight)) return { ok: false }
-  const suffix = (match[2] || "").toLowerCase()
-  const weightUnit = suffix.startsWith("lb") ? "lbs" : suffix.startsWith("kg") ? "kg" : null
-  return { ok: true, weight, weightUnit }
-}
-
+/**
+ * Active workout session, one movement at a time.
+ *
+ * The whole session is driven by `currentIndex`: everything above the set table
+ * (title, prescription, GIF, instructions) comes from the single movement that
+ * index points at, and the progress bar above it doubles as nav — Previous /
+ * Next move by one, and each segment jumps straight to that movement. Movement
+ * is always manual: there is no auto-advance, so a rest timer running on one
+ * movement never yanks you to the next one before you are done with it.
+ *
+ * Per-exercise session state (an open set, resting, weight drafts) is keyed by
+ * exercise id rather than by index, so hopping around the list cannot strand a
+ * half-logged set behind you.
+ */
 export const WorkoutSessionView = ({ list, session, effortScale, timerSound, timerVibrate, timerFlash, onLogSet, onUpdateSet, onDeleteSet, onFinish, onBack, invalidSetIds }) => {
-  const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const { t } = useTranslation()
   const userScale = normalizeEffortScale(effortScale)
   const timerApis = useRef({})
   const invalidIds = new Set(invalidSetIds || [])
+
+  const exercises = list.exercises || []
+  const lastIndex = Math.max(0, exercises.length - 1)
+
   // Tracks per exercise whether the latest set is still open (being performed).
   // Finished state is purely local: reloads and pre-existing sets count as finished.
   const [openEx, setOpenEx] = useState({})
@@ -44,14 +51,23 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
   const [weightDrafts, setWeightDrafts] = useState({})
   // Which set's RIR bottom-sheet is open (set id or null).
   const [rirSheetSetId, setRirSheetSetId] = useState(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
 
-  const setsByExercise = {}
-  for (const s of session.sets) {
-    if (!setsByExercise[s.exercise_id]) setsByExercise[s.exercise_id] = []
-    setsByExercise[s.exercise_id].push(s)
-  }
+  // The session can run alongside a list that changes (an exercise removed
+  // elsewhere, or an empty list), so the index is always clamped on read.
+  const activeIndex = clampIndex(currentIndex, Math.min(lastIndex, MAX_EXERCISES - 1))
+  const current = exercises[activeIndex]
 
-  const setReady = (exerciseId) => {
+  const setsByExercise = useMemo(() => {
+    const grouped = {}
+    for (const s of session.sets || []) {
+      if (!grouped[s.exercise_id]) grouped[s.exercise_id] = []
+      grouped[s.exercise_id].push(s)
+    }
+    return grouped
+  }, [session.sets])
+
+  const setReady = useCallback((exerciseId) => {
     setOpenEx((prev) => {
       if (!prev[exerciseId]) return prev
       const next = { ...prev }
@@ -64,29 +80,34 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
       delete next[exerciseId]
       return next
     })
-  }
+  }, [])
 
-  const setResting = (exerciseId) => {
+  const setResting = useCallback((exerciseId) => {
     setRestingEx((prev) => (prev[exerciseId] ? prev : { ...prev, [exerciseId]: true }))
-  }
+  }, [])
 
-  const handleAddSet = (exerciseId) => {
-    const existing = setsByExercise[exerciseId] || []
-    const nextNumber = existing.length + 1
-    onLogSet(session.id, exerciseId, nextNumber, null, null, "kg", null, userScale)
-    setOpenEx((prev) => ({ ...prev, [exerciseId]: true }))
-  }
+  const handleAddSet = useCallback(
+    (exerciseId) => {
+      const existing = setsByExercise[exerciseId] || []
+      onLogSet(session.id, exerciseId, existing.length + 1, null, null, "kg", null, userScale)
+      setOpenEx((prev) => ({ ...prev, [exerciseId]: true }))
+    },
+    [onLogSet, setsByExercise, session.id, userScale],
+  )
 
-  const handleDuplicateSet = (exerciseId) => {
-    const existing = setsByExercise[exerciseId] || []
-    const last = existing[existing.length - 1]
-    if (!last) {
-      handleAddSet(exerciseId)
-      return
-    }
-    onLogSet(session.id, exerciseId, existing.length + 1, last.reps ?? null, last.weight ?? null, last.weight_unit || "kg", last.rir ?? null, userScale)
-    setOpenEx((prev) => ({ ...prev, [exerciseId]: true }))
-  }
+  const handleDuplicateSet = useCallback(
+    (exerciseId) => {
+      const existing = setsByExercise[exerciseId] || []
+      const last = existing[existing.length - 1]
+      if (!last) {
+        handleAddSet(exerciseId)
+        return
+      }
+      onLogSet(session.id, exerciseId, existing.length + 1, last.reps ?? null, last.weight ?? null, last.weight_unit || "kg", last.rir ?? null, userScale)
+      setOpenEx((prev) => ({ ...prev, [exerciseId]: true }))
+    },
+    [handleAddSet, onLogSet, setsByExercise, session.id, userScale],
+  )
 
   const handleFinishSet = (exerciseId) => {
     const started = timerApis.current[exerciseId]?.start?.() === true
@@ -95,8 +116,8 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
     else setResting(exerciseId)
   }
 
-  const handleDeleteSet = (sessionId, setId, exerciseId) => {
-    onDeleteSet(sessionId, setId)
+  const handleDeleteSet = (exerciseId, setId) => {
+    onDeleteSet(session.id, setId)
     try {
       timerApis.current[exerciseId]?.stop?.()
     } catch {
@@ -167,200 +188,88 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
     onUpdateSet(session.id, set.id, { reps: set.reps, weight: set.weight, weightUnit: newUnit, rir: set.rir ?? null })
   }
 
+  // An empty workout can reach the session (every exercise deleted after start),
+  // in which case there is nothing to present and finishing is the only action.
+  if (!current) {
+    return (
+      <section className="session-view">
+        <div className="session-header">
+          <Button onClick={onBack}>{t("session.back")}</Button>
+          <h2 className="session-title">{t("session.activeTitle", { name: list.name })}</h2>
+        </div>
+        <p className="workout-list-empty">{t("editWorkout.empty")}</p>
+        <div className="session-footer">
+          <Button onClick={() => onFinish(session.id)}>{t("session.finish")}</Button>
+        </div>
+      </section>
+    )
+  }
+
+  const exSets = setsByExercise[current.id] || []
+
   return (
     <section className="session-view">
       <div className="session-header">
-        <Button variant="ghost" onClick={onBack}>
-          {t("session.back")}
-        </Button>
+        <Button onClick={onBack}>{t("session.back")}</Button>
         <h2 className="session-title">{t("session.activeTitle", { name: list.name })}</h2>
-        <Button onClick={() => onFinish(session.id)}>
-          {t("session.finish")}
-        </Button>
       </div>
 
-      <div className="session-exercises">
-        {list.exercises.map((ex) => {
-          const exSets = setsByExercise[ex.id] || []
-          return (
-            <div key={ex.id} className="session-exercise-card">
-              <div className="session-exercise-header">
-                {mediaUrl(ex.image) ? (
-                  <img src={mediaUrl(ex.image)} alt="" loading="lazy" />
-                ) : (
-                  <span className="session-exercise-placeholder" aria-hidden="true">💪</span>
-                )}
-                <div>
-                  <h3 className="session-exercise-name">{exerciseName(ex, lang)}</h3>
-                  <span className="session-exercise-equipment">{localizedEquipment(ex.equipment)}</span>
-                </div>
-              </div>
+      <SessionProgressBar
+        current={activeIndex}
+        total={exercises.length}
+        onSelect={(index) => setCurrentIndex(clampIndex(index, lastIndex))}
+      />
 
-              <RestTimer
-                exerciseId={ex.id}
-                initialSecs={ex.restSecs}
-                initialEnabled={ex.restEnabled}
-                readOnly
-                sound={timerSound}
-                vibrate={timerVibrate}
-                flash={timerFlash}
-                onFinish={() => setReady(ex.id)}
-                onStart={() => setResting(ex.id)}
-                apiRef={(api) => {
-                  if (api) timerApis.current[ex.id] = api
-                  else delete timerApis.current[ex.id]
-                }}
-              />
+      <MovementDetailCard exercise={current}>
+        <SessionExerciseSets
+          exercise={current}
+          sets={exSets}
+          userScale={userScale}
+          timerSound={timerSound}
+          timerVibrate={timerVibrate}
+          timerFlash={timerFlash}
+          invalidIds={invalidIds}
+          weightDrafts={weightDrafts}
+          resting={Boolean(restingEx[current.id])}
+          open={Boolean(openEx[current.id])}
+          onAddSet={() => handleAddSet(current.id)}
+          onDuplicateSet={() => handleDuplicateSet(current.id)}
+          onFinishSet={() => handleFinishSet(current.id)}
+          onDeleteSet={handleDeleteSet}
+          onSetChange={handleSetChange}
+          onToggleUnit={handleToggleUnit}
+          onCommitWeight={commitWeight}
+          onWeightDraft={(setId, value) => setWeightDrafts((prev) => ({ ...prev, [setId]: value }))}
+          onOpenRir={setRirSheetSetId}
+          onRestFinish={() => setReady(current.id)}
+          onRestStart={() => setResting(current.id)}
+          onRestApi={(api) => {
+            if (api) timerApis.current[current.id] = api
+            else delete timerApis.current[current.id]
+          }}
+        />
+      </MovementDetailCard>
 
-              <div className="session-sets-table">
-                <div className="session-sets-header">
-                  <span className="set-col set-num">{t("session.set")}</span>
-                  <span className="set-col">{t("session.reps")}</span>
-                  <span className="set-col">{t("session.weight")}</span>
-                  {ex.rirEnabled && isRirEligible(ex) && <span className="set-col">{userScale === "rpe" ? "RPE" : "RIR"}</span>}
-                  <span className="set-col set-actions"></span>
-                </div>
-                {exSets.map((s, i) => {
-                  const rir = rirOf(s)
-                  const tint = effortColor(rir)
-                  const feelKey = effortFeelKey(rir)
-                  const feel = feelKey ? t(feelKey) : null
-                  // Fixed scale for the whole active session: every pill shows
-                  // the user's current preference (old RIR values convert via
-                  // RPE = 10 - RIR). History views keep the original scale.
-                  const setScaleLabel = userScale === "rpe" ? "RPE" : "RIR"
-                  const displayVal = effortDisplayValue(rir, userScale)
-                  return (
-                  <div key={s.id}>
-                    <div className={`session-set-row${invalidIds.has(s.id) ? " is-invalid" : ""}`}>
-                    <div className="set-card-head">
-                      <span className="set-col set-num"><span className="set-num-prefix" aria-hidden="true">{t("session.set")} </span>{i + 1}</span>
-                      <Button
-                        variant="icon"
-                        tone="danger"
-                        onClick={() => handleDeleteSet(session.id, s.id, ex.id)}
-                        aria-label={t("session.removeSet", { n: i + 1 })}
-                      >
-                        &times;
-                      </Button>
-                    </div>
-                    <div className="set-field">
-                      <span className="set-field-label" aria-hidden="true">{t("session.reps")}</span>
-                      <input
-                        className={`set-input${invalidIds.has(s.id) ? " is-invalid" : ""}`}
-                        type="number"
-                        min="0"
-                        value={s.reps ?? ""}
-                        onChange={(e) => handleSetChange(s.id, "reps", e.target.value)}
-                        placeholder="0"
-                        aria-label={t("session.setReps", { n: i + 1 })}
-                        aria-invalid={invalidIds.has(s.id) || undefined}
-                      />
-                    </div>
-                    <div className="set-field">
-                      <span className="set-field-label" aria-hidden="true">{t("session.weight")}</span>
-                      <div className="set-weight-group">
-                        <input
-                          className="set-input set-input-weight"
-                          type="text"
-                          inputMode="decimal"
-                          value={weightDrafts[s.id] ?? (s.weight ?? "")}
-                          onChange={(e) => {
-                            const v = e.target.value
-                            setWeightDrafts((prev) => ({ ...prev, [s.id]: v }))
-                          }}
-                          onBlur={() => commitWeight(s.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault()
-                              commitWeight(s.id)
-                              e.currentTarget.blur()
-                            }
-                          }}
-                          placeholder="0"
-                          aria-label={t("session.setWeight", { n: i + 1 })}
-                        />
-                        <button
-                          type="button"
-                          className={`set-unit-button ${s.weight_unit === "kg" ? "is-kg" : "is-lbs"}`}
-                          onClick={() => handleToggleUnit(s)}
-                          title={t("session.unitTitle", { u: s.weight_unit === "kg" ? "lbs" : "kg" })}
-                          aria-label={t("session.unitSwitch", { u: s.weight_unit, o: s.weight_unit === "kg" ? "lbs" : "kg" })}
-                        >
-                          {s.weight_unit}
-                        </button>
-                      </div>
-                    </div>
-                    {ex.rirEnabled && isRirEligible(ex) && (
-                      <div className="set-field set-field-wide">
-                        <span className="set-field-label" aria-hidden="true">{setScaleLabel}</span>
-                        <button
-                          type="button"
-                          className={`rir-pill${rir == null ? " is-unrated" : ""}`}
-                          style={tint ? { "--rir-tint": tint } : undefined}
-                          title={feel ? t("session.ratedHint", { scale: setScaleLabel, v: displayVal, feel }) : t("session.unratedHint", { scale: setScaleLabel })}
-                          aria-label={feel ? t("session.ratedHint", { scale: setScaleLabel, v: displayVal, feel }) : t("session.unratedAria", { n: i + 1, scale: setScaleLabel })}
-                          onClick={() => setRirSheetSetId(s.id)}
-                        >
-                          <span className="rir-value" role="status">
-                            {displayVal ?? "–"}
-                          </span>
-                        </button>
-                      </div>
-                    )}
-                    </div>
-                    {invalidIds.has(s.id) && (
-                      <div className="set-invalid-hint" role="alert">{t("session.needsReps")}</div>
-                    )}
-                  </div>
-                  )
-                })}
-              </div>
-
-              {!restingEx[ex.id] && (
-                openEx[ex.id] ? (
-                  <Button
-                    className="add-set-button"
-                    onClick={() => handleFinishSet(ex.id)}
-                  >
-                    {t("session.finishSet")}
-                  </Button>
-                ) : exSets.length > 0 ? (
-                  <div className="add-set-row">
-                    <Button
-                      variant="ghost"
-                      className="add-set-button"
-                      onClick={() => handleAddSet(ex.id)}
-                    >
-                      {t("session.addSet")}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="add-set-button"
-                      onClick={() => handleDuplicateSet(ex.id)}
-                    >
-                      {t("session.addDup")}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    className="add-set-button"
-                      onClick={() => handleAddSet(ex.id)}
-                  >
-                    {t("session.addSet")}
-                  </Button>
-                )
-              )}
-            </div>
-          )
-        })}
+      <div className="session-nav">
+        <Button
+          variant="ghost"
+          onClick={() => setCurrentIndex((index) => clampIndex(index - 1, lastIndex))}
+          disabled={activeIndex <= 0}
+        >
+          {t("session.previous")}
+        </Button>
+        <span className="session-nav-count">{t("session.movementOf", { n: activeIndex + 1, total: exercises.length })}</span>
+        <Button
+          variant="ghost"
+          onClick={() => setCurrentIndex((index) => clampIndex(index + 1, lastIndex))}
+          disabled={activeIndex >= lastIndex}
+        >
+          {t("session.next")}
+        </Button>
       </div>
 
       <div className="session-footer">
-        <Button onClick={() => onFinish(session.id)}>
-          {t("session.finish")}
-        </Button>
+        <Button onClick={() => onFinish(session.id)}>{t("session.finish")}</Button>
       </div>
 
       {(() => {

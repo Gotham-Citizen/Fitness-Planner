@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 
+import { useEscapeToClose } from "./useEscapeToClose.js"
+
 /**
  * Shared FAB + overlay-drawer mechanics (exercise library, recovery panel).
  * The panel starts folded on every viewport; the FAB's `open()` reveals it
@@ -50,19 +52,6 @@ export const usePanelDrawer = () => {
     }
   }, [isSmall, drawerOpen])
 
-  // Escape closes the drawer.
-  useEffect(() => {
-    if (!isSmall || !drawerOpen) return undefined
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        setDrawerOpen(false)
-        setPanelOpen(false)
-      }
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [isSmall, drawerOpen])
-
   const touchStartRef = useRef(null)
 
   const open = () => {
@@ -78,6 +67,11 @@ export const usePanelDrawer = () => {
   const collapse = () => {
     setDrawerOpen(false)
   }
+
+  // Escape closes the mobile slide-in drawer — via the shared dismiss stack,
+  // so a modal opened above it (e.g. SavePanel from the movement detail)
+  // closes first instead of both layers going at once.
+  useEscapeToClose(close, isSmall && drawerOpen)
 
   // Swipe-right on the drawer folds it back (small screens only).
   const onTouchStart = (e) => {

@@ -57,6 +57,15 @@
 
 .journal-cal-card { padding: 16px; min-width: 0; max-width: 100%; overflow: hidden; overflow-wrap: anywhere; }
 
+/* Calendar card shell — hugs the 7-col grid so it never reads "too wide".
+   Mobile (< 640px): full width. Tablet/Desktop/Wide (>= 640px): compact + centered
+   (512px = 480px grid + 2x16px padding). */
+.journal-calendar-card { width: 100%; }
+
+@media (min-width: 640px) {
+  .journal-calendar-card { max-width: 512px; margin-inline: auto; }
+}
+
 .journal-cal-nav { display: flex; flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; min-width: 0; max-width: 100%; }
 
 .journal-month-label { color: var(--text-strong); font-weight: 700; font-size: 16px; text-align: center; }
@@ -108,7 +117,7 @@
 
 .journal-day.is-selected.has-workout .journal-day-num { border-width: 2px; }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .journal-grid, .journal-weekdays, .journal-cal-nav-actions { max-width: 480px; margin-inline: auto; }
   .journal-day { width: 100%; max-width: 60px; max-height: 60px; justify-self: center; }
 }
@@ -116,6 +125,14 @@
 .journal-loading { padding: 32px 0; }
 
 .journal-day-detail { margin-top: 18px; }
+
+/* "Workout History" open card (balance-card styles come from the global cascade). */
+.journal-history-card { margin-top: 18px; }
+
+/* Light-scheme themes (Ember, Violet): the shared balance-card tint
+   (var(--bg-hover)) reads dark next to the white session cards — use the
+   light elevated surface instead. */
+[data-scheme='light'] .journal-history-card { background: var(--bg-elev); }
 
 .journal-day-title { color: var(--text-strong); font-size: 16px; font-weight: 700; margin-bottom: 10px; }
 

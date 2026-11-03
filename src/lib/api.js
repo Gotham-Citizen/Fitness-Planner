@@ -51,15 +51,15 @@ const request = async (path, { method, body, auth = true } = {}) => {
 
 // --- Auth ---
 
-export const signup = (email, password, gender = null, name = null, language = null) =>
-  request("/auth/signup", { method: "POST", body: { email, password, gender, name, language }, auth: false })
+export const signup = (email, password, gender = null, name = null, language = null, questionnaire = null) =>
+  request("/auth/signup", { method: "POST", body: { email, password, gender, name, language, questionnaire }, auth: false })
 
 export const login = (email, password) =>
   request("/auth/login", { method: "POST", body: { email, password }, auth: false })
 
 export const fetchMe = () => request("/auth/me")
 
-export const updateProfile = ({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language } = {}) => {
+export const updateProfile = ({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule } = {}) => {
   const body = {}
   if (email !== undefined) body.email = email
   if (gender !== undefined) body.gender = gender
@@ -72,8 +72,13 @@ export const updateProfile = ({ email, gender, name, bodyweight, bodyweightUnit,
   if (timerVibrate !== undefined) body.timerVibrate = timerVibrate
   if (timerFlash !== undefined) body.timerFlash = timerFlash
   if (language !== undefined) body.language = language
+  if (schedule !== undefined) body.schedule = schedule
   return request("/auth/profile", { method: "PUT", body })
 }
+
+// Save (or re-save) the registration questionnaire answers.
+export const saveQuestionnaire = (answers) =>
+  request("/auth/questionnaire", { method: "PUT", body: { answers } })
 
 export const deleteAccount = () =>
   request("/auth/me", { method: "DELETE" })
@@ -82,8 +87,8 @@ export const deleteAccount = () =>
 
 export const fetchExercises = () => request("/exercises")
 
-export const createExercise = ({ name, category, target, equipment }) =>
-  request("/exercises", { method: "POST", body: { name, category, target, equipment } })
+export const createExercise = ({ name, category, target, equipment, gifUrl, instructionSteps, instructions, instructionsLang }) =>
+  request("/exercises", { method: "POST", body: { name, category, target, equipment, gifUrl, instructionSteps, instructions, instructionsLang } })
 
 export const updateExercise = (id, fields) =>
   request(`/exercises/${id}`, { method: "PUT", body: fields })
@@ -91,12 +96,46 @@ export const updateExercise = (id, fields) =>
 export const deleteExercise = (id) =>
   request(`/exercises/${id}`, { method: "DELETE" })
 
+// --- Exercise media (uploaded custom-exercise GIFs) ---
+// Server stores uploads base64 in a single D1 row; D1 caps rows at 2 MB, so
+// raw GIFs are capped well below that (base64 inflates by ~4/3).
+export const MAX_GIF_BYTES = 1400000
+
+// Raw-body upload (the shared request() helper JSON-encodes bodies).
+export const uploadExerciseGif = async (file) => {
+  const token = getToken()
+  const res = await fetch(`${API_BASE}/api/media`, {
+    method: "POST",
+    headers: {
+      "Content-Type": file.type || "image/gif",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: file,
+  })
+  if (!res.ok) {
+    let message = `Upload failed (${res.status})`
+    try {
+      const data = await res.json()
+      if (data?.error) message = data.error
+    } catch {
+      // keep default message
+    }
+    throw new Error(message)
+  }
+  return res.json()
+}
+
 // --- Workout lists (private) ---
 
 export const fetchWorkoutLists = () => request("/workoutlists")
 
 export const createWorkoutList = (name, exerciseId) =>
   request("/workoutlists", { method: "POST", body: { name, exerciseId } })
+
+// Preset/plan creation: the whole exercise sequence (with prescribed
+// sets/reps and rest settings) in one call.
+export const createWorkoutListWithExercises = (name, exercises) =>
+  request("/workoutlists", { method: "POST", body: { name, exercises } })
 
 export const renameWorkoutList = (id, name) =>
   request(`/workoutlists/${id}`, { method: "PUT", body: { name } })
@@ -110,14 +149,27 @@ export const findListByNameInsensitive = (lists, name) => {
 export const deleteWorkoutList = (id) =>
   request(`/workoutlists/${id}`, { method: "DELETE" })
 
-export const addExerciseToList = (listId, exerciseId) =>
-  request(`/workoutlists/${listId}/exercises`, { method: "POST", body: { exerciseId } })
+export const addExerciseToList = (listId, exerciseId, prescription = null) => {
+  const body = { exerciseId }
+  if (prescription) {
+    if (prescription.restSecs !== undefined) body.restSecs = prescription.restSecs
+    if (prescription.prescribedSets !== undefined) body.prescribedSets = prescription.prescribedSets
+    if (prescription.prescribedReps !== undefined) body.prescribedReps = prescription.prescribedReps
+  }
+  return request(`/workoutlists/${listId}/exercises`, { method: "POST", body })
+}
 
 export const removeExerciseFromList = (listId, exerciseId) =>
   request(`/workoutlists/${listId}/exercises/${exerciseId}`, { method: "DELETE" })
 
 export const updateWorkoutExerciseSettings = (listId, exerciseId, settings) =>
   request(`/workoutlists/${listId}/exercises/${exerciseId}`, { method: "PUT", body: settings })
+
+// Manual ordering for the drag-to-reorder editor. `order` is the full list of
+// the workouts exercise ids in the new sequence; the server rewrites the
+// position column in one batch and returns the updated list.
+export const reorderWorkoutListExercises = (listId, order) =>
+  request(`/workoutlists/${listId}/exercises/reorder`, { method: "PUT", body: { order } })
 
 // --- Workout Sessions (private) ---
 

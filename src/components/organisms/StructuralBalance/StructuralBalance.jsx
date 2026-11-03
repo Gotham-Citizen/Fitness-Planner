@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+﻿import { useMemo, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
@@ -60,7 +60,7 @@ export const StructuralBalance = ({ sessions, exercises, bodyweightKg, gender })
           // In zh the role label is English-only: show the Chinese exercise
           // name in the label and keep the English name in the sub line.
           const displayId = row.mappedExerciseId ?? row.configuredExerciseId
-          const subName = (id) => exerciseName(exercises, id, lang === "zh" ? "en" : lang)
+          const subName = (id) => exerciseName(exercises, id, lang)
           return (
             <li key={row.roleId} className={`balance-ratio is-${row.status}`}>
               <div className="balance-ratio-head">

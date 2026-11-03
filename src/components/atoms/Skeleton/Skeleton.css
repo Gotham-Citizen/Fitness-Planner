@@ -1,0 +1,60 @@
+/* Skeleton styles — co-located (atomic Phase 4). Imported by Skeleton.jsx; global cascade. */
+
+/* Shimmer effect for loading placeholders */
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xs);
+}
+
+/* Avatar placeholder */
+.skeleton-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Text placeholders */
+.skeleton-text {
+  background: var(--bg-hover);
+  border-radius: var(--r-sm);
+  animation: shimmer 1.5s ease-in-out infinite;
+  height: 12px;
+}
+
+.skeleton-text-small {
+  width: 50%;
+  height: 10px;
+  border-radius: var(--r-sm);
+}
+
+.skeleton-text-tiny {
+  width: 30%;
+  height: 10px;
+  border-radius: var(--r-sm);
+}
+
+/* Progress bar placeholder */
+.skeleton-bar {
+  width: 100%;
+  height: 10px;
+  background: var(--bg-hover);
+  border-radius: 999px;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Shimmer keyframes */
+@keyframes shimmer {
+  0% {
+    background: var(--bg-hover);
+    background-size: 200% 100%;
+  }
+  50% {
+    background-size: 100% 100%;
+  }
+  100% {
+    background-size: 200% 100%;
+  }
+}

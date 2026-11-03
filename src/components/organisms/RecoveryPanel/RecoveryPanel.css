@@ -6,7 +6,7 @@
 
 /* Inline sidebar variant is gone: the recovery panel is a fixed overlay
    drawer sliding in from the right, opened by its FAB — same mechanics as
-   the exercise library (.app-body > .exercise-library). */
+   the exercise panel (.app-body > .exercise-panel). */
 .app-body > .recovery-panel {
   position: fixed;
   top: 0;
@@ -17,7 +17,7 @@
   z-index: 60;
   background: var(--bg-elev);
   border-left: 1px solid var(--border);
-  padding: 18px 14px 40px;
+  padding: var(--space-4) var(--space-3) var(--space-10);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -34,27 +34,9 @@
   box-shadow: var(--shadow);
 }
 
-.exercise-library {
-  width: 320px;
-  flex: none;
-  border-left: 1px solid var(--border);
-  background: var(--bg-elev);
-  padding: 18px 14px 40px;
-  overflow-y: auto;
-  max-height: calc(100svh - 61px);
-}
-
 @media (max-width: 900px) {
   .app-body > .recovery-panel {
-    padding: 12px 14px calc(20px + env(safe-area-inset-bottom));
-  }
-
-  .exercise-library {
-    width: 100%;
-    border-left: 0;
-    border-top: 1px solid var(--border);
-    max-height: none;
-    margin-top: 16px;
+    padding: var(--space-3) var(--space-3) calc(var(--space-5) + env(safe-area-inset-bottom));
   }
 }
 
@@ -64,7 +46,10 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--gap-xs);
+}
+
+.recovery-panel .recovery-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -77,13 +62,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--gap-xs);
 }
 
 .recovery-row-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -100,12 +85,12 @@
 
 .recovery-badge {
   flex: none;
-  font-size: 11px;
+  font-size: var(--font-size-overline);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--letter-spacing-wide);
   border-radius: 999px;
-  padding: 3px 10px;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--border);
   color: var(--text-muted);
 }
@@ -180,7 +165,7 @@
   background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 6px, transparent 6px 12px);
 }
 
-[data-theme='light'] .recovery-row .recovery-bar {
+[data-scheme='light'] .recovery-row .recovery-bar {
   background: var(--border);
 }
 

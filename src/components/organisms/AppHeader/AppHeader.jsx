@@ -1,8 +1,8 @@
-import { useTranslation } from "react-i18next"
+import { Trans, useTranslation } from "react-i18next"
 
 import "./AppHeader.css"
 
-import { BrandLogo, Button, ThemeToggle } from "../../atoms/index.js"
+import { BrandLogo, Button } from "../../atoms/index.js"
 
 
 
@@ -15,23 +15,21 @@ export const AppHeader = ({
   historyReturnView,
   authenticated,
   userName,
-  theme,
   onGoHome,
   onNavigate,
   onLogin,
   onOpenAccount,
-  onToggleTheme,
 }) => {
   const { t } = useTranslation()
-  const isJournalActive = view === "journal" || (view === "history-summary" && historyReturnView === "journal")
+  const isJournalActive = view === "journal" || view === "workout-history" || (view === "history-summary" && ["journal", "workout-history"].includes(historyReturnView))
   const isBalanceActive = view === "balance" || view === "structural-balance"
   const isAccountActive = view === "account" || view === "timer-alerts"
 
   return (
     <header className="app-header">
-      <button type="button" className="brand" onClick={onGoHome}>
+      <a href="/" className="brand" onClick={(e) => { e.preventDefault(); onGoHome(); }}>
         <span className="brand-mark" aria-hidden="true"><BrandLogo /></span> Fitness Planner
-      </button>
+      </a>
       <nav className="header-nav">
         <Button variant="nav" active={view === "home"} onClick={() => onNavigate("home")}>
           {t("nav.home")}
@@ -51,21 +49,26 @@ export const AppHeader = ({
       </nav>
       <div className="header-actions">
         {authenticated ? (
-          <Button
-            variant="nav"
-            className="nav-button--account"
-            active={isAccountActive}
-            onClick={(e) => { onOpenAccount(); if (e.detail !== 0) e.currentTarget.blur() }}
-            title={userName}
+          <button
+            type="button"
+            className={`header-user${isAccountActive ? " is-active" : ""}`}
+            onClick={onOpenAccount}
+            title={t("nav.accountSettings")}
+            aria-label={t("nav.accountSettings")}
           >
-            <span className="header-user">{t("nav.hi", { name: userName })}</span>
-          </Button>
+            <span className="header-user-greeting">
+              <Trans
+                i18nKey="nav.hi"
+                values={{ name: userName }}
+                components={[<span className="header-user-name" />]}
+              />
+            </span>
+          </button>
         ) : (
           <Button className="nav-login" onClick={onLogin}>
             {t("nav.getStarted")}
           </Button>
         )}
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
     </header>
   )

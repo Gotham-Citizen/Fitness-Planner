@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next"
 
-import { usePanelDrawer } from "../../../hooks/usePanelDrawer.js"
+import { usePanelDrawer } from "../../../hooks/index.js"
 
 import { localizedCategory, localizedTarget } from "../../../lib/muscles.js"
 import { formatLastTrained } from "../../../lib/recovery.js"
@@ -34,19 +34,19 @@ export const RecoveryPanel = ({ recovery, loading, onSelectMuscle }) => {
       {!panelOpen && (
         <button
           type="button"
-          className="library-fab"
+          className="panel-fab"
           onClick={open}
           aria-expanded={panelOpen}
           aria-controls="recovery-panel-drawer"
           aria-label={t("recovery.openMenu")}
           title={t("recovery.title")}
         >
-          <span aria-hidden="true" className="library-fab-icon">☰</span>
-          <span className="library-fab-label">{t("recovery.title")}</span>
+          <span aria-hidden="true" className="panel-fab-icon">☰</span>
+          <span className="panel-fab-label">{t("recovery.title")}</span>
         </button>
       )}
       {panelOpen && (
-        <div className="library-backdrop" onClick={close} aria-hidden="true" />
+        <div className="panel-backdrop" onClick={close} aria-hidden="true" />
       )}
       <aside
         id="recovery-panel-drawer"
@@ -62,7 +62,7 @@ export const RecoveryPanel = ({ recovery, loading, onSelectMuscle }) => {
           <h2 className="panel-title">{t("recovery.title")}</h2>
           <button
             type="button"
-            className="library-drawer-close"
+            className="panel-drawer-close"
             onClick={close}
             aria-label={t("recovery.closeMenu")}
           >

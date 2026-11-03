@@ -96,6 +96,49 @@
   margin-top: 20px;
 }
 
+.workouts-create-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Goals-questionnaire prompt (shown until the user saves answers). */
+.goals-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.goals-prompt strong {
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.goals-prompt p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Preset prescription badge on list rows (sets × reps). */
+.workout-exercise-rx {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
 
 /* ---------- Workout List Actions ---------- */
 

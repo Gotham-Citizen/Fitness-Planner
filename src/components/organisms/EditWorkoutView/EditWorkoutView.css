@@ -1,49 +1,267 @@
-/* EditWorkoutView styles — co-located (atomic Phase 4). Imported by EditWorkoutView.jsx; global cascade. */
+/* =========================================================
+   Edit Workout Modal
+   布局：每行 = grid（上：↑；中：左 grip + 右内容；下：↓）
+   ========================================================= */
+
+/* ---------- Modal 尺寸 ---------- */
+
+/* Tablet (640–1024) */
+@media (min-width: 640px) {
+  .modal.edit-workout-modal {
+    width: min(760px, 92vw);
+    max-width: min(760px, 92vw);
+  }
+}
+
+/* Desktop (1024–1440) */
+@media (min-width: 1024px) {
+  .modal.edit-workout-modal {
+    width: min(1000px, 92vw);
+    max-width: min(600px, 92vw);
+  }
+}
+
+/* Wide (≥1440) */
+@media (min-width: 1440px) {
+  .modal.edit-workout-modal {
+    width: min(1200px, 90vw);
+    max-width: min(800px, 90vw);
+  }
+}
+
+/* ---------- Modal：关闭按钮 → 右上角 ---------- */
+.edit-workout-modal .modal-close,
+.edit-workout-modal .modal-shell__close,
+.edit-workout-modal [data-modal-close] {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+}
+
+/* ---------- 顶部「添加 / 自定义」行 ---------- */
 .edit-workout-add-row {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
-.edit-workout-add-row .secondary-button {
-  flex: 1;
-  min-width: 180px;
+/* ---------- 列表容器 ---------- */
+.edit-workout-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
 }
 
-
-/* ---------- RIR effort logging ---------- */
-
-.edit-workout-rir { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-
-
-/* ---------- Edit workout modal ---------- */
-.edit-workout-modal {
-  width: min(980px, calc(100vw - 40px));
-  height: min(92vh, 860px);
-  max-height: calc(100dvh - 40px);
+/* ---------- 行：grid ----------
+   用 .edit-workout-list .edit-workout-row 提高特异性 (0,2,0)，
+   稳压基础规则里的 .edit-workout-row { padding: 10px 12px }。 */
+.edit-workout-list .edit-workout-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-areas:
+    "up      up"
+    "grip    main"
+    "grip    rx"
+    "grip    settings"
+    "down    down";
+  column-gap: 12px;
+  row-gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px 12px 6px 8px;
+  text-align: left;
+  overflow: visible;
+  border: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+  border-radius: 12px;
 }
 
-.edit-workout-modal .modal-body { flex: 1; min-height: 0; }
-
-.edit-workout-empty { margin-top: 14px; }
-
-.edit-workout-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-
-
-
-.edit-workout-row-main { display: flex; align-items: center; gap: 10px; }
-
-.edit-workout-row-main img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex: none; }
-
-.edit-workout-row-main .workout-exercise-name { flex: 1; }
-
-.edit-workout-timer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
-@media (max-width: 640px) {
-  .edit-workout-modal {
-    width: 100%;
-    height: 100dvh;
-    max-height: none;
-    border-radius: 0;
+/* Mobile (<640)：左列收窄 */
+@media (max-width: 639px) {
+  .edit-workout-list .edit-workout-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 8px;
+    padding: 6px 10px 6px 4px;
   }
+}
+
+/* ---------- ReorderControls：↑ 顶部居中 / grip 左列 / ↓ 底部居中 ----------
+   容器 display: contents，三个控件直接成为 li 的 grid 子项，
+   各占独立的行/列，内容区永远夹在 ↑ 与 ↓ 之间，不会重叠。
+
+   ⚠ 下面的 reset 用来清掉别处（ReorderControls.css、旧版 CSS）残留的
+   position:absolute / top / left / transform，否则控件会脱离 grid flow 压在内容上。 */
+.edit-workout-list .edit-workout-row .reorder-controls {
+  display: contents;
+}
+
+.edit-workout-list .edit-workout-row .reorder-controls > * {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  max-width: none;
+}
+
+.edit-workout-list .edit-workout-row .reorder-controls [data-move="up"] {
+  grid-area: up;
+  justify-self: center;
+}
+
+.edit-workout-list .edit-workout-row .reorder-controls [data-move="down"] {
+  grid-area: down;
+  justify-self: center;
+}
+
+/* grip：没有 data-move 属性的那个子元素，位于左列，垂直居中
+   （如果 grip 有明确类名，如 .reorder-controls-grip，可换成它） */
+.edit-workout-list .edit-workout-row .reorder-controls > :not([data-move]) {
+  grid-area: grip;
+  align-self: center;
+  justify-self: center;
+}
+
+/* ---------- 右列第 1 行：图片 + 名称 + ✕ ---------- */
+.edit-workout-row-main {
+  grid-area: main;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* 图片 / 占位符 48×48 */
+.edit-workout-row-main > img,
+.edit-workout-row-main > .workout-exercise-placeholder {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.edit-workout-row-main > .workout-exercise-placeholder > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 名称占剩余空间，可收缩省略 */
+.workout-exercise-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ✕ 回到正常流，靠右对齐 */
+.edit-workout-row-remove {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* ---------- 右列第 2 行：处方 ---------- */
+.edit-workout-rx {
+  grid-area: rx;
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+/* ---------- 右列第 3 行：休息设置在上，力竭设置在下（纵向排列） ---------- */
+.edit-workout-settings {
+  grid-area: settings;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.edit-workout-timer,
+.edit-workout-rir {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rir-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  opacity: 0.7;
+}
+
+/* ---------- 拖拽：整行可拖 ---------- */
+.edit-workout-row.sortable-row {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.edit-workout-row.sortable-row:active,
+.edit-workout-row.sortable-row.is-lifted {
+  cursor: grabbing;
+}
+
+/* grip 视觉 */
+.edit-workout-row .reorder-controls [class*="grip"],
+.edit-workout-row .reorder-controls [class*="handle"],
+.edit-workout-row .reorder-controls [data-drag-handle] {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+/* 拖动中抬升层级 */
+.edit-workout-row.is-lifted {
+  position: relative;
+  z-index: 10;
+  will-change: transform;
+}
+
+.edit-workout-row.is-lifted .reorder-controls [class*="grip"],
+.edit-workout-row.is-lifted .reorder-controls [class*="handle"],
+.edit-workout-row.is-lifted .reorder-controls [data-drag-handle] {
+  cursor: grabbing;
+}
+
+/* 触屏：整行允许滚动，仅 grip 用于拖拽 */
+@media (hover: none) and (pointer: coarse) {
+  .edit-workout-row.sortable-row {
+    touch-action: pan-y;
+    cursor: auto;
+  }
+  .edit-workout-row .reorder-controls [class*="grip"],
+  .edit-workout-row .reorder-controls [data-drag-handle] {
+    touch-action: none;
+  }
+}
+
+/* ---------- 空状态 ---------- */
+.edit-workout-empty {
+  padding: 24px 0;
+  text-align: center;
 }

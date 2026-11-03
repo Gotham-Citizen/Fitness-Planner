@@ -328,28 +328,33 @@ export const MuscleBalanceView = ({ sessions, exercises, user, onOpenStructural 
                 key={slug}
                 data-slug={slug}
                 className={`recovery-row is-clickable is-${mode === "recovery" ? "recovering" : mode === "fatigue" ? "fatigued" : mode}${mode === "strength" && !strengthTrained[slug] ? " is-untrained" : ""} ${selected === slug ? "is-selected" : ""}`}
-                role="button"
-                tabIndex={0}
-                aria-pressed={selected === slug}
-                aria-label={`${selected === slug ? t("balance.deselect") : t("balance.highlight")} ${localizedMuscleLabel(slug)} ${t("balance.onMap")}`}
-                onClick={() => toggleSelect(slug)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
-                    toggleSelect(slug)
-                  }
-                }}
               >
-                <div className="recovery-row-head">
-                  <div className="recovery-row-info">
-                    <span className="recovery-label">{localizedMuscleLabel(slug)}</span>
-                    <span className="recovery-sub">{detailFor(slug)}</span>
+                <button
+                  type="button"
+                  className="recovery-row-button"
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={selected === slug}
+                  aria-label={`${selected === slug ? t("balance.deselect") : t("balance.highlight")} ${localizedMuscleLabel(slug)} ${t("balance.onMap")}`}
+                  onClick={() => toggleSelect(slug)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      toggleSelect(slug)
+                    }
+                  }}
+                >
+                  <div className="recovery-row-head">
+                    <div className="recovery-row-info">
+                      <span className="recovery-label">{localizedMuscleLabel(slug)}</span>
+                      <span className="recovery-sub">{detailFor(slug)}</span>
+                    </div>
+                    <span className="recovery-badge">{badgeFor(slug)}</span>
                   </div>
-                  <span className="recovery-badge">{badgeFor(slug)}</span>
-                </div>
-                <div className="recovery-bar" role="progressbar" aria-valuenow={barPercentFor(slug)} aria-valuemin={0} aria-valuemax={100} aria-label={`${localizedMuscleLabel(slug)} ${barPercentFor(slug)}%`}>
-                  <div className="recovery-bar-fill" style={{ width: `${barPercentFor(slug)}%` }} />
-                </div>
+                  <div className="recovery-bar" role="progressbar" aria-valuenow={barPercentFor(slug)} aria-valuemin={0} aria-valuemax={100} aria-label={`${localizedMuscleLabel(slug)} ${barPercentFor(slug)}%`}>
+                    <div className="recovery-bar-fill" style={{ width: `${barPercentFor(slug)}%` }} />
+                  </div>
+                </button>
               </li>
             ))}
           </ul>

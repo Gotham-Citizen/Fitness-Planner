@@ -19,6 +19,9 @@
 
 .account-row.is-editing { align-items: flex-start; }
 
+/* Theme picker holds 5 options — let the segmented toggle wrap on narrow screens. */
+.account-row--theme .unit-toggle { flex-wrap: wrap; }
+
 .account-label { color: var(--text-muted); font-size: 13px; font-weight: 600; flex: none; padding-top: 10px; }
 
 .account-row:not(.is-editing) .account-label { padding-top: 0; }
@@ -67,3 +70,16 @@
 .account-section-title { color: var(--text-strong); font-size: 15px; font-weight: 700; margin: 0; }
 
 .account-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Goals & plan card: questionnaire summary + retake entry. */
+.account-goals-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.account-goals-empty {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}

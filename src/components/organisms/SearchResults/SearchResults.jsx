@@ -8,6 +8,7 @@ import { MovementCard } from "../../molecules/index.js"
 export const SearchResults = ({
   query,
   results,
+  toolbar,
   onSelectExercise,
   onSaveExercise,
   quickAddListId,
@@ -27,6 +28,7 @@ export const SearchResults = ({
           </p>
         </div>
       </div>
+      {toolbar}
       {results.length === 0 ? (
         <div className="workouts-empty">
           <p>{t("movement.noMatch", { q: query.trim() })}</p>

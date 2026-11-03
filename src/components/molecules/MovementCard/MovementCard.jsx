@@ -4,18 +4,20 @@ import { exerciseName, localizedEquipment, mediaUrl } from "../../../lib/muscles
 
 import "./MovementCard.css"
 
+import { GifFrame } from "../../atoms/index.js"
+
 export const MovementCard = ({ exercise, onSelect, onSave, quickAddActive, isAdded, lang }) => {
   const { t, i18n } = useTranslation()
   const l = lang || (String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en")
   const name = exerciseName(exercise, l)
-  const img = mediaUrl(exercise.image)
+  const gifSrc = mediaUrl(exercise.gif_url || exercise.image)
   const added = quickAddActive && isAdded
   return (
     <div className="movement-card">
       <button type="button" className="movement-card-open" onClick={() => onSelect(exercise)} aria-label={t("movement.openAria", { name })}>
         <span className="movement-card-media" aria-hidden="true">
-          {img ? (
-            <img src={img} alt="" loading="lazy" />
+          {gifSrc ? (
+            <GifFrame src={gifSrc} alt={name} />
           ) : (
             <span className="movement-card-placeholder">💪</span>
           )}

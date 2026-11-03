@@ -12,7 +12,7 @@ import "./WorkoutHistoryView.css"
 import { Button } from "../../atoms/index.js"
 import { SetTags } from "../../molecules/index.js"
 
-export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDeleteSession, onClearAll }) => {
+export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDeleteSession, onClearAll, showListNames, title }) => {
   const { t, i18n } = useTranslation()
   const locale = localeFromI18n(i18n)
   const [expanded, setExpanded] = useState(null)
@@ -55,10 +55,10 @@ export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDe
   return (
     <section className="history-view">
       <div className="history-header">
-        <Button variant="ghost" onClick={onBack}>
+        <Button onClick={onBack}>
           {t("history.back")}
         </Button>
-        <h2 className="history-title">{t("history.title", { name: list.name })}</h2>
+        <h2 className="history-title">{title || t("history.title", { name: list.name })}</h2>
         {sessions.length > 0 && onClearAll && (
           <Button
             variant="ghost"
@@ -97,10 +97,15 @@ export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDe
                     aria-label={t("history.openSummary", { date: formatDate(session.startedAt, locale) })}
                   >
                     <div className="history-card-info">
-                      <span className="history-card-date">{formatDate(session.startedAt, locale)}</span>
+                      <span className="history-card-date">
+                        {showListNames && session.listName && (
+                          <span className="history-card-list-name">{session.listName}</span>
+                        )}
+                        {formatDate(session.startedAt, locale)}
+                      </span>
                       <span className="history-card-summary">
-                        {t("history.exerciseCount", { count: exercisesLogged })} &middot; {t("history.setCount", { count: totalSets })}
-                        {session.completedAt ? ` &middot; ${t("history.doneAt", { date: formatDate(session.completedAt, locale) })}` : ` ${t("history.incomplete")}`}
+                        {t("history.exerciseCount", { count: exercisesLogged })} · {t("history.setCount", { count: totalSets })}
+                        {session.completedAt ? ` · ${t("history.doneAt", { date: formatDate(session.completedAt, locale) })}` : ` ${t("history.incomplete")}`}
                       </span>
                     </div>
                   </button>

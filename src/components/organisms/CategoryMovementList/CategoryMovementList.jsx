@@ -8,7 +8,7 @@ import "./CategoryMovementList.css"
 
 import { MovementCard } from "../../molecules/index.js"
 
-export const CategoryMovementList = ({ category, exercises, onSelectExercise, onSaveExercise, quickAddListId, addedIds }) => {
+export const CategoryMovementList = ({ category, toolbar, exercises, onSelectExercise, onSaveExercise, quickAddListId, addedIds }) => {
   const { t } = useTranslation()
   const groupedExercises = useMemo(() => {
     if (!exercises) {
@@ -30,7 +30,8 @@ export const CategoryMovementList = ({ category, exercises, onSelectExercise, on
         count: groups.get(tg.name)?.length || 0,
       })
     }
-    return result
+    // Sub-muscle filtering empties the other groups — drop them.
+    return result.filter((g) => g.count > 0)
   }, [exercises, category])
 
   return (
@@ -43,6 +44,7 @@ export const CategoryMovementList = ({ category, exercises, onSelectExercise, on
           </p>
         </div>
       </div>
+      {toolbar}
       {groupedExercises.map((tg) => (
         <div key={tg.name} className="movement-group">
           <h3 className="movement-group-title">

@@ -4,7 +4,7 @@
 }
 
 @media (min-width: 640px) {   /* Tablet */
-  .search-results-bar { width: 70%; }
+  .search-results-bar { width: 100%; }
 }
 
 @media (min-width: 1024px) {  /* Desktop */
@@ -23,12 +23,12 @@
 
 .planner-search {
   display: flex;
-  gap: 8px;
-  margin-bottom: 18px;
+  gap: var(--gap-xs);
+  margin-bottom: var(--space-4);
 }
 
 .planner-search-welcome {
-  margin-top: 20px;
+  margin-top: var(--space-5);
   margin-bottom: 0;
   text-align: left;
 }
@@ -49,11 +49,14 @@ input[type="search"] {
   appearance: textfield;
 }
 
-.sort-alpha-toggle {
+.sort-alpha-toggle,
+.sort-difficulty-toggle,
+.clear-scope-toggle,
+.target-chip {
   flex-shrink: 0;
   align-self: center;
   height: 41.5px;
-  padding: 0 14px;
+  padding: 0 var(--space-3);
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-elev);
@@ -65,12 +68,17 @@ input[type="search"] {
   white-space: nowrap;
 }
 
-.sort-alpha-toggle:hover {
+.sort-alpha-toggle:hover,
+.sort-difficulty-toggle:hover,
+.clear-scope-toggle:hover,
+.target-chip:hover {
   background: var(--bg-hover);
   color: var(--text-strong);
 }
 
-.sort-alpha-toggle[aria-pressed="true"] {
+.sort-alpha-toggle[aria-pressed="true"],
+.sort-difficulty-toggle[aria-pressed="true"],
+.target-chip[aria-pressed="true"] {
   background: var(--accent);
   color: var(--bg);
   border-color: var(--accent);
@@ -78,32 +86,11 @@ input[type="search"] {
 
 .sort-toggles {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--gap-xs);
 }
 
-.sort-difficulty-toggle {
-  flex-shrink: 0;
-  align-self: center;
-  height: 41.5px;
-  padding: 0 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-elev);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-  white-space: nowrap;
-}
-
-.sort-difficulty-toggle:hover {
-  background: var(--bg-hover);
-  color: var(--text-strong);
-}
-
-.sort-difficulty-toggle[aria-pressed="true"] {
-  background: var(--accent);
-  color: var(--bg);
-  border-color: var(--accent);
+/* Toolbar row rendered below the movement-list-header. */
+.list-toolbar {
+  margin-bottom: var(--space-5);
 }

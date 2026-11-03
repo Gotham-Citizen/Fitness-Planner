@@ -24,45 +24,59 @@
   margin-top: 4px;
 }
 
+/* Stat tiles — always 2×2 (2 top, 2 bottom), generously spaced. Width is
+   governed by the carousel card frame below; tile chrome lives on StatCard
+   (atom); see StatCard.css. */
 .summary-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
-.summary-stat {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+/* ---------- Story-style carousel card (stats + fun pages) ---------- */
+
+/* Unified card frame — one surface holds both carousel pages. */
+.summary-carousel {
+  margin-bottom: 20px;
 }
 
-.summary-stat-value {
-  color: var(--text-strong);
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.summary-stat-label {
-  color: var(--text-muted);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 700;
-}
-
-.summary-fun {
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  color: var(--text-strong);
+/* Card frame — capped at 480px (hugging the stats grid + fun image) and
+   centered so the card does not stretch across the full summary width
+   on desktop. */
+.summary-carousel .page-carousel-frame {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 14px 16px;
+  box-shadow: var(--card-shadow);
+  padding: 16px 16px 14px;
+  max-width: 680px;
+  margin-inline: auto;
+}
+
+/* Fun comparison page — fills the frame; the frame provides the surface.
+   The image is capped so the card does not balloon on wide screens. */
+.summary-fun {
+  color: var(--text-strong);
+  padding: 0 4px;
   font-size: 15px;
   font-weight: 600;
   text-align: center;
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.summary-fun-text {
+  margin: 0;
+}
+
+.summary-fun-img {
+  width: 100%;
+  max-width: min(420px, 100%);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--r-md);
 }
 
 .summary-exercises {

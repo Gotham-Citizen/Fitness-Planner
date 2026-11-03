@@ -1,0 +1,45 @@
+/* SessionProgressBar styles — co-located. Imported by SessionProgressBar.jsx; global cascade.
+   Mirrors AuthView's .auth-progress (signup wizard) so the two read as one system. */
+
+.session-progress {
+  display: flex;
+  gap: 6px;
+  width: 90%;
+  max-width: 1080px;
+  margin: 0 auto;
+  margin-top: 20px;
+  margin-bottom: 25px;
+}
+
+.session-progress-segment {
+  flex: 1;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+.session-progress-segment:hover {
+  background: var(--accent-strong);
+}
+
+/* ---------- Focus-visible ---------- */
+.session-progress-segment:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Indicator for reached step */
+.session-progress-segment.is-reached {
+  background: var(--accent);
+}
+
+/* The movement you are on stays the accent colour but grows/picks up a halo, so
+   "where am I" is answerable without counting the filled segments. */
+.session-progress-segment.is-active {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}

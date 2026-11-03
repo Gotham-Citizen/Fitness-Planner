@@ -6,10 +6,10 @@ import { exerciseName, mediaUrl } from "../../../lib/muscles.js"
 
 import "./WorkoutListsView.css"
 
-import { Button, TextInput } from "../../atoms/index.js"
+import { Button, GifFrame, TextInput } from "../../atoms/index.js"
 
 
-export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, onCreateList, onRenameList, onEditWorkout, onStartSession, onHistory, startingSession }) => {
+export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, onCreateList, onRenameList, onEditWorkout, onStartSession, onHistory, startingSession, showGoalsPrompt, onOpenQuestionnaire, onOpenPresets }) => {
   const { t, i18n } = useTranslation()
   const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
   const [showCreate, setShowCreate] = useState(false)
@@ -63,6 +63,16 @@ export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, o
   return (
     <section className="workouts-view">
       <h2 className="workouts-title">{t("lists.title")}</h2>
+
+      {showGoalsPrompt && (
+        <div className="goals-prompt">
+          <div>
+            <strong>{t("lists.goalsPromptTitle")}</strong>
+            <p>{t("lists.goalsPromptBody")}</p>
+          </div>
+          <Button onClick={onOpenQuestionnaire}>{t("lists.goalsPromptCta")}</Button>
+        </div>
+      )}
 
       {workoutLists.length === 0 ? (
         <div className="workouts-empty">
@@ -121,11 +131,24 @@ export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, o
                       <button type="button" className="workout-exercise-main" onClick={() => onOpenExercise(ex)}>
                         {mediaUrl(ex.image) ? (
                           <img src={mediaUrl(ex.image)} alt="" loading="lazy" />
+                        ) : mediaUrl(ex.gif_url) ? (
+                          // No static image: show one frame of the movement's GIF.
+                          <span className="workout-exercise-placeholder" aria-hidden="true">
+                            <GifFrame src={mediaUrl(ex.gif_url)} />
+                          </span>
                         ) : (
                           <span className="workout-exercise-placeholder" aria-hidden="true">💪</span>
                         )}
                         <span className="workout-exercise-name">{exerciseName(ex, lang)}</span>
                       </button>
+                      {(ex.prescribedSets != null || ex.prescribedReps) && (
+                        <span className="workout-exercise-rx">
+                          {t("presets.setsReps", {
+                            sets: ex.prescribedSets ?? "–",
+                            reps: ex.prescribedReps ?? "",
+                          })}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -177,9 +200,16 @@ export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, o
             )}
           </>
         ) : (
-          <Button variant="secondary" onClick={() => setShowCreate(true)}>
-            {t("lists.newList")}
-          </Button>
+          <div className="workouts-create-actions">
+            <Button variant="secondary" onClick={() => setShowCreate(true)}>
+              {t("lists.newList")}
+            </Button>
+            {onOpenPresets && (
+              <Button variant="ghost" onClick={onOpenPresets}>
+                {t("lists.browsePresets")}
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </section>

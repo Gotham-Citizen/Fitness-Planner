@@ -1,0 +1,18 @@
+/* Planner page style overrides. Two-class selectors are required: a bare
+   `.planner-mode-tabs { … }` rule would tie with the global `.seg` rules
+   leaked from MuscleBalanceView.css and resolve by bundle order. */
+
+/* Distance below the mode tabs — keeps the search bar clear of the
+   segmented control instead of flush against it. */
+.seg.planner-mode-tabs {
+  margin-bottom: 20px;
+}
+
+/* Desktop: hug the two short labels and center, instead of stretching
+   across the whole main column (previously inherited width: 100%). */
+@media (min-width: 1024px) {
+  .seg.planner-mode-tabs {
+    width: clamp(360px, 40vw, 640px); 
+    margin-inline: auto;
+  }
+}

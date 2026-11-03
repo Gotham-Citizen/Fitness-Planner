@@ -32,7 +32,7 @@
 .movement-card-add {
   display: block;
   width: calc(100% - 24px);
-  margin: auto 12px 12px;
+  margin: auto var(--space-3) var(--space-3);
   border-radius: 999px;
   border: 1.5px solid var(--accent);
   background: var(--bg-hover);
@@ -40,7 +40,7 @@
   font-size: 14px;
   font-weight: 800;
   line-height: 1;
-  padding: 11px 12px;
+  padding: var(--space-2) var(--space-3);
   text-align: center;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -90,10 +90,10 @@
 }
 
 .movement-card-body {
-  padding: 10px 12px 12px;
+  padding: var(--padding-sm) var(--padding-sm) var(--padding-md);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   flex: 1;
 }
 

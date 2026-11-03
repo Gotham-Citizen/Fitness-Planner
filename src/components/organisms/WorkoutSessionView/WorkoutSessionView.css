@@ -1,336 +1,357 @@
-/* WorkoutSessionView styles — co-located (atomic Phase 4). Imported by WorkoutSessionView.jsx; global cascade. */
-.session-exercise-placeholder {
-  width: 48px;
-  height: 48px;
-  font-size: 24px;
-}
-
-
-/* ---------- Workout Session ---------- */
-
-.session-view {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.session-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
 .session-title {
-  color: var(--text-strong);
-  font-size: 20px;
-  font-weight: 700;
-  flex: 1;
+  grid-column: 2;                        /* 标题固定在中间列 */
+  margin: 10px 0 0 0;
   text-align: center;
 }
 
-.session-exercises {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.session-exercise-card {
-  padding: 16px;
-}
-
-.session-exercise-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.session-exercise-header img {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-}
-
-.session-exercise-name {
-  color: var(--text-strong);
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.session-exercise-equipment {
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
+/* ===== 共用列定义：表头和每一行用同一份，保证对齐 ===== */
 .session-sets-table {
-  margin-bottom: 10px;
+  --set-cols: 44px minmax(0, 1fr) minmax(0, 1.5fr) 36px;
+}
+.session-sets-table.has-rir {
+  --set-cols: 44px minmax(0, 1fr) minmax(0, 1.5fr) 72px 36px;
+}
+
+.session-sets-header,
+.session-set-row {
+  display: grid;
+  grid-template-columns: var(--set-cols);
+  column-gap: 8px;
+  align-items: center;
 }
 
 .session-sets-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 6px;
+  padding: 0 0 2px;
 }
-
-.session-sets-header span {
-  color: var(--text-muted);
+.session-sets-header .set-col {
   font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-align: center;
+  color: var(--text-muted, #888);
 }
 
 .session-set-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  position: relative;
+  padding: 6px 0;
 }
 
-.set-col {
-  flex: 1;
-  text-align: center;
-}
-
-.set-col.set-num {
-  flex: 0 0 36px;
-  color: var(--text-muted);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.set-col.set-actions {
-  flex: 0 0 32px;
-}
-
-
-/* Card wrappers are transparent on desktop so the inline set-row layout is unchanged. */
-.set-card-head {
+/* 内部两层容器"消失"，子元素直接成为行 grid 的单元格 */
+.set-card-head,
+.set-fields-row {
   display: contents;
 }
 
+.set-num {
+  text-align: center;
+}
 .set-field {
-  display: contents;
-}
-
-.set-field-label {
-  display: none;
-}
-
-.set-num-prefix {
-  display: none;
-}
-
-.set-input {
-  flex: 1;
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-strong);
-  padding: 8px 10px;
-  font-size: 14px;
-  text-align: center;
-  width: 100%;
-}
-
-.set-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.set-input::placeholder {
-  color: var(--text-muted);
-}
-
-.add-set-button {
-  width: 100%;
-  margin-top: 4px;
-}
-
-.add-set-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.add-set-row .add-set-button {
-  flex: 1;
-  width: auto;
-  margin-top: 0;
-  white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-  .add-set-row { flex-direction: column; }
-}
-
-@media (max-width: 480px) {
-  .session-sets-header {
-    display: none;
-  }
-  .session-set-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    background: var(--bg-hover);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 12px;
-    margin-bottom: 10px;
-  }
-  .session-set-row.is-invalid {
-    border-radius: 14px;
-  }
-  .set-card-head {
-    display: flex;
-    grid-column: 1 / -1;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .set-card-head .set-col.set-num {
-    flex: none;
-    color: var(--text-strong);
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .set-card-head .set-num-prefix {
-    display: inline;
-  }
-  .session-set-row .icon-button {
-    width: 44px;
-    height: 44px;
-    font-size: 20px;
-  }
-  .set-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-  }
-  .set-field-wide {
-    grid-column: 1 / -1;
-  }
-  .set-field-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-  }
-  .session-set-row .set-input {
-    font-size: 16px;
-    min-height: 48px;
-  }
-  .session-set-row .set-unit-button {
-    min-height: 48px;
-    min-width: 52px;
-    font-size: 12px;
-  }
-  .session-set-row .rir-pill {
-    min-height: 48px;
-  }
-}
-
-.set-weight-group {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.set-input-weight {
-  flex: 1;
-}
-
-.set-unit-button {
-  flex: 0 0 auto;
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  border-radius: 6px;
-  padding: 4px 6px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.set-unit-button:hover {
-  border-color: var(--accent);
-}
-
-.set-unit-button.is-lbs {
-  background: var(--danger-soft);
-  border-color: var(--danger, #e5534b);
-  color: var(--danger, #e5534b);
-}
-
-.rir-value {
-  flex: 1;
-  text-align: center;
-  color: var(--text-strong);
-  font-size: 14px;
-  font-weight: 700;
-  min-width: 30px;
-}
-
-
-/* Tappable RIR pill that opens the effort bottom-sheet. */
-.rir-pill {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 6px;
-  cursor: pointer;
   min-width: 0;
 }
 
-.rir-pill:hover { border-color: var(--accent); }
+/* 桌面端不显示卡片用的标签 */
+.set-field-label,
+.set-num-prefix {
+  display: none;
+}
+/* =========================================================
+   断点
+   Mobile  < 640        卡片布局
+   Tablet  640 – 1023   表格布局（紧凑）
+   Desktop 1024 – 1440  表格布局（标准）
+   Wide    > 1440       表格布局（限宽居中）
+   ========================================================= */
 
-.rir-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* ===== 设计变量（默认 = Mobile） ===== */
+.session-sets-table {
+  --set-h: 40px;          /* 输入框 / 按钮统一高度 */
+  --set-gap: 8px;
+  --set-radius: 10px;
+  --set-num-w: 44px;
+  --set-rir-w: 64px;
+  --set-del-w: 36px;
+  --set-font: 15px;
 
-.rir-pill.is-unrated .rir-value { color: var(--text-muted); font-weight: 600; }
-
-.session-footer {
-  text-align: center;
-  padding: 20px 0;
-  border-top: 1px solid var(--border);
+  /* 表格模式的列定义（表头和行共用） */
+  --set-cols: var(--set-num-w) minmax(0, 1fr) minmax(0, 1.6fr) var(--set-del-w);
+}
+.session-sets-table.has-rir {
+  --set-cols: var(--set-num-w) minmax(0, 1fr) minmax(0, 1.6fr) var(--set-rir-w) var(--set-del-w);
 }
 
-@media (max-width: 1024px) {
-  .session-header .primary-button {
+/* ===== 通用：控件外观 ===== */
+.set-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  height: var(--set-h);
+  padding: 0 8px;
+  text-align: center;
+  font: inherit;
+  font-size: var(--set-font);
+  color: inherit;
+  background: var(--input-bg, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.18));
+  border-radius: var(--set-radius);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.set-input:focus {
+  border-color: var(--accent, #4f8cff);
+}
+.set-input.is-invalid {
+  border-color: var(--danger, #e5484d);
+}
+.set-input[type="number"] {
+  -moz-appearance: textfield;
+}
+.set-input[type="number"]::-webkit-outer-spin-button,
+.set-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.set-weight-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  height: var(--set-h);
+  min-width: 0;
+}
+.set-weight-group .set-input-weight {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.set-unit-button {
+  flex: none;
+  height: var(--set-h);
+  padding: 0 10px;
+  border-radius: var(--set-radius);
+}
+
+.rir-pill {
+  display: block;
+  width: 100%;
+  height: var(--set-h);
+  box-sizing: border-box;
+  border-radius: var(--set-radius);
+}
+
+.set-field-label {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: var(--text-muted, #888);
+}
+
+/* ===== Mobile（< 640）：卡片 ===== */
+.session-sets-header {
+  display: none;
+}
+
+.session-set-row {
+  position: relative;
+  display: block;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+}
+
+.set-card-head {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  margin-bottom: 8px;
+}
+.set-num {
+  font-weight: 600;
+  text-align: left;
+}
+.set-num-prefix {
+  display: inline;
+}
+
+/* 关键：标签一行、控件一行，按列自动排布 → 三项必然同一水平线 */
+.set-fields-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: 16px var(--set-h);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  column-gap: var(--set-gap);
+  row-gap: 4px;
+}
+.session-sets-table.has-rir .set-fields-row {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr) var(--set-rir-w);
+}
+/* 字段容器自身消失，label 和控件成为 grid 单元格 */
+.set-field,
+.set-field-wide {
+  display: contents;
+}
+
+.set-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* ===== Tablet（640 – 1023）：表格 ===== */
+@media (min-width: 640px) {
+  .session-sets-table {
+    --set-h: 38px;
+    --set-num-w: 48px;
+    --set-rir-w: 72px;
+    --set-del-w: 40px;
+  }
+
+  .session-sets-header,
+  .session-set-row {
+    display: grid;
+    grid-template-columns: var(--set-cols);
+    column-gap: var(--set-gap);
+    align-items: center;
+  }
+
+  .session-sets-header {
+    padding: 0 0 2px;
+  }
+  .session-sets-header .set-col {
+    font-size: 12px;
+    text-align: center;
+    color: var(--text-muted, #888);
+  }
+
+  .session-set-row {
+    padding: 6px 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  /* 两层容器消失，子元素直接成为行 grid 的单元格 */
+  .set-card-head,
+  .set-fields-row {
+    display: contents;
+  }
+  .set-field,
+  .set-field-wide {
+    display: block;
+    min-width: 0;
+  }
+
+  .set-num {
+    text-align: center;
+    font-weight: 500;
+  }
+  .set-num-prefix,
+  .set-field-label {
     display: none;
   }
-  .session-footer {
-    position: sticky;
-    bottom: calc(84px + env(safe-area-inset-bottom));
-    z-index: 20;
-    background: var(--bg);
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+
+  .rir-pill {
+    margin: 0 auto;
   }
-  .session-footer .primary-button {
-    width: 100%;
-    min-height: 52px;
+
+  .set-delete {
+    position: static;
+    justify-self: center;
+  }
+}
+/* 基础（Mobile < 640）*/
+.session-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 30px;
+  text-align: center;
+}
+
+.session-nav .ghost-button {
+  flex: 1 1 0;          /* 两个按钮等宽，占满剩余空间 */
+  min-width: 0;         /* 允许收缩，避免文字撑破布局 */
+  padding: var(--space-2) var(--space-3);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.session-nav-count {
+  flex: 0 0 auto;       /* 中间文字按内容宽度，不换行 */
+  margin: 0;            /* 间距交给 gap，去掉原来的 margin */
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Tablet 640 – 1023 */
+@media (min-width: 640px) {
+  .session-nav {
+    gap: 16px;
+  }
+  .session-nav .ghost-button {
+    padding: var(--space-2) var(--space-4);
+    font-size: 15px;
+  }
+  .session-nav-count {
+    font-size: 14px;
   }
 }
 
+/* Desktop 1024 – 1440 */
+@media (min-width: 1024px) {
+  .session-nav {
+    gap: 24px;
+  }
+  .session-nav .ghost-button {
+    padding: var(--space-3) var(--space-5);
+    font-size: 16px;
+  }
+  .session-nav-count {
+    font-size: 15px;
+  }
+}
 
-/* ---------- Finish validation ---------- */
-.session-set-row.is-invalid { border: 1px solid var(--danger, #e5534b); border-radius: 8px; }
+/* Wide > 1440 */
+@media (min-width: 1441px) {
+  .session-nav {
+    max-width: 1200px;  /* 超宽屏限制最大宽度，避免按钮被拉得过长 */
+    margin-inline: auto;
+    gap: 32px;
+  }
+  .session-nav .ghost-button {
+    font-size: 17px;
+  }
+  .session-nav-count {
+    font-size: 16px;
+  }
+}
 
-.set-input.is-invalid { border-color: var(--danger, #e5534b); }
+.session-footer {
+  margin-top: 25px;
+}
 
-.set-invalid-hint { color: var(--danger, #e5534b); font-size: 12px; font-weight: 600; }
+/* ===== Desktop（1024 – 1440） ===== */
+@media (min-width: 1024px) {
+  .session-sets-table {
+    --set-h: 40px;
+    --set-gap: 12px;
+    --set-num-w: 56px;
+    --set-rir-w: 80px;
+    --set-font: 16px;
+    /* max-width: 760px; */
+  }
+}
+
+/* ===== Wide（> 1440） ===== */
+@media (min-width: 1441px) {
+  .session-sets-table {
+    --set-h: 42px;
+    --set-gap: 16px;
+    --set-num-w: 64px;
+    --set-rir-w: 88px;
+    /* max-width: 1080px; */
+    margin-inline: auto;
+  }
+}
