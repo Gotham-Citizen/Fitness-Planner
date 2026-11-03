@@ -1,0 +1,45 @@
+/* DragHandle styles — co-located. Imported by DragHandle.jsx; global cascade. */
+.drag-handle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm, 6px);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: grab;
+  /* Essential: without this the browser claims the gesture for scrolling. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.drag-handle:hover {
+  background: var(--bg-hover);
+  color: var(--text-strong);
+}
+
+.drag-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.drag-handle[disabled] {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.drag-handle-grip {
+  display: grid;
+  grid-template-columns: repeat(2, 2px);
+  gap: 2px 2px;
+  width: 10px;
+  height: 16px;
+  background-image: radial-gradient(currentColor 40%, transparent 45%);
+  background-size: 4px 4px;
+  background-position: 1px 1px;
+  background-repeat: repeat;
+}

@@ -96,8 +96,35 @@ export const alphaCompare = (a, b, lang) => {
 
 export const mediaUrl = (relPath) => {
   if (!relPath) return ""
+  // Absolute URLs (custom-exercise GIF links) pass through untouched.
+  if (/^https?:\/\//i.test(relPath)) return relPath
   const base = import.meta.env.BASE_URL || "/"
   return `${base}${relPath.replace(/^\.?[/\\]/, "")}`
+}
+
+/**
+ * Ordered steps for a movement, with the language fallback chain shared by the
+ * library detail view and the active session: prefer the active language's
+ * numbered steps, then English's, and only fall back to prose when no step list
+ * exists at all (custom exercises created via the prose form).
+ * Returns { steps: string[], prose: string } so callers can render a numbered
+ * list, a paragraph, or their "no instructions" hint without repeating the
+ * chain.
+ */
+export const movementInstructions = (ex, lang) => {
+  const l = normalizeLang(lang)
+  const stepsFor = (code) => {
+    const raw = ex?.instruction_steps?.[code]
+    if (!Array.isArray(raw)) return []
+    return raw.filter((step) => typeof step === "string" && step.trim())
+  }
+  const steps = stepsFor(l).length > 0 ? stepsFor(l) : stepsFor("en")
+  const proseFor = (code) => {
+    const raw = ex?.instructions?.[code]
+    return typeof raw === "string" ? raw.trim() : ""
+  }
+  const prose = proseFor(l) || proseFor("en")
+  return { steps, prose }
 }
 
 export const buildHierarchy = (exercises, sortMode, lang = "en") => {

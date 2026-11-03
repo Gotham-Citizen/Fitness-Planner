@@ -6,7 +6,7 @@ import { exerciseName, mediaUrl } from "../../../lib/muscles.js"
 
 import "./SavePanel.css"
 
-import { Button, TextInput } from "../../atoms/index.js"
+import { Button, GifFrame,TextInput } from "../../atoms/index.js"
 import { ModalShell } from "../ModalShell/ModalShell.jsx"
 
 const RenameConfirm = ({ inline, pendingRename, busy, renaming, resolving, confirmRef, onConfirm, onDecline, t }) => {
@@ -180,8 +180,8 @@ export const SavePanel = ({ exercise, workoutLists, onAddToList, onCreateList, o
       dialogClassName="save-panel"
       title={(
         <>
-          {mediaUrl(exercise.image) ? (
-            <img src={mediaUrl(exercise.image)} alt="" />
+          {mediaUrl(exercise.gif_url || exercise.image) ? (
+            <GifFrame src={mediaUrl(exercise.gif_url || exercise.image)} alt={exerciseName(exercise, lang)} />
           ) : (
             <span className="save-panel-placeholder" aria-hidden="true">💪</span>
           )}

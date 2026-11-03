@@ -4,7 +4,7 @@ import { localizedCategory, localizedTarget } from "../../../lib/muscles.js"
 
 import { MovementCard } from "../../molecules/index.js"
 
-export const MovementList = ({ target, categoryLabel, exercises, onSelectExercise, onSaveExercise, quickAddListId, addedIds }) => {
+export const MovementList = ({ target, toolbar, categoryLabel, exercises, onSelectExercise, onSaveExercise, quickAddListId, addedIds }) => {
   const { t } = useTranslation()
   const filtered = exercises ? exercises.filter((ex) => ex.target === target.name) : target.exercises || []
   return (
@@ -17,6 +17,7 @@ export const MovementList = ({ target, categoryLabel, exercises, onSelectExercis
           </p>
         </div>
       </div>
+      {toolbar}
       <div className="movement-grid">
         {filtered.map((ex) => (
           <MovementCard key={ex.id} exercise={ex} onSelect={onSelectExercise} onSave={onSaveExercise} quickAddActive={Boolean(quickAddListId)} isAdded={addedIds?.has(ex.id)} />

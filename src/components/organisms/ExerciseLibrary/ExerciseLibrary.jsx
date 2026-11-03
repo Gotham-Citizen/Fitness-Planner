@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
-import { usePanelDrawer } from "../../../hooks/usePanelDrawer.js"
+import { usePanelDrawer } from "../../../hooks/index.js"
 
 import { alphaCompare, localizedCategory, localizedTarget, mediaUrl } from "../../../lib/muscles.js"
 import { formatLastTrained } from "../../../lib/recovery.js"
@@ -41,7 +41,7 @@ export const ExerciseLibrary = ({
   selectedTarget,
   onSelectCategory,
   onSelectTarget,
-  onSelectExercise,
+  onSelectEquipment,
   recentTouched,
   recentUnexplored,
   recentLoading,
@@ -51,11 +51,6 @@ export const ExerciseLibrary = ({
 }) => {
   const { t, i18n } = useTranslation()
   const lang = normalizeLang(i18n.language)
-  const [expanded, setExpanded] = useState(() => {
-    const initial = {}
-    for (const part of hierarchy) initial[part.name] = part.name === selectedCategory
-    return initial
-  })
   const [tab, setTab] = useState(loadTab)
   const panelRef = useRef(null)
   const requestedRef = useRef(false)
@@ -68,14 +63,9 @@ export const ExerciseLibrary = ({
     isSmall,
     open,
     close,
-    collapse,
     onTouchStart,
     onTouchEnd,
   } = usePanelDrawer()
-
-  const closeDrawerIfSmall = () => {
-    if (isSmall) collapse()
-  }
 
   const sortedExercises = useMemo(() => {
     if (!sortByDifficulty && !sortByAlpha) return exercises
@@ -93,64 +83,41 @@ export const ExerciseLibrary = ({
     return sorted
   }, [exercises, sortByDifficulty, sortByAlpha, lang])
 
-  const sortedHierarchy = useMemo(() => {
-    if (!sortByDifficulty && !sortByAlpha) return hierarchy
-    const sorted = hierarchy.map((part) => ({
-      ...part,
-      targets: part.targets.map((t) => {
-        const sortedExercises = [...t.exercises].sort((a, b) => {
-          if (sortByDifficulty) {
-            const diffA = a.difficulty ?? 1
-            const diffB = b.difficulty ?? 1
-            if (diffA !== diffB) return diffA - diffB
-            return alphaCompare(a, b, lang)
-          }
-          return alphaCompare(a, b, lang)
-        })
-        return { ...t, exercises: sortedExercises }
-      }),
+  // Part cards sorted like the equipment grid: most exercises first,
+  // ties A to Z by localized label.
+  const partCards = useMemo(() => {
+    const cards = (hierarchy || []).map((part) => ({
+      name: part.name,
+      label: localizedCategory(part.name),
+      count: part.count,
+      image: part.targets?.[0]?.exercises?.[0]?.image || null,
     }))
-    return sorted
-  }, [hierarchy, sortByDifficulty, sortByAlpha, lang])
-
-  const isExpanded = (name) => expanded[name] ?? name === selectedCategory
-
-  const handleSelectCategory = (name) => {
-    const currentlyOpen = expanded[name] ?? name === selectedCategory
-    const isActiveSelection = name === selectedCategory && !selectedTarget
-    if (currentlyOpen && isActiveSelection) {
-      setExpanded((prev) => ({ ...prev, [name]: false }))
-      onSelectCategory?.(null)
-      closeDrawerIfSmall()
-      return
-    }
-    setExpanded((prev) => ({ ...prev, [name]: true }))
-    onSelectCategory?.(name)
-    closeDrawerIfSmall()
-  }
-
-  // Caret-only toggle: expand/collapse in place without navigating,
-  // changing selection, or closing the mobile drawer.
-  const toggleExpandOnly = (name, e) => {
-    if (e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-    setExpanded((prev) => {
-      const open = prev[name] ?? name === selectedCategory
-      return { ...prev, [name]: !open }
+    cards.sort((a, b) => {
+      const byCount = b.count - a.count
+      if (byCount !== 0) return byCount
+      return a.label.localeCompare(b.label, lang === "zh" ? "zh" : "en")
     })
+    return cards
+  }, [hierarchy, lang])
+
+  // Part card: hand the scope to the main page and close the drawer;
+  // clicking the active part again clears the selection.
+  const handleSelectCategory = (name) => {
+    const isActiveSelection = name === selectedCategory && !selectedTarget
+    onSelectCategory?.(isActiveSelection ? null : name)
+    close()
   }
 
   const handleSelectTarget = (category, target) => {
-    setExpanded((prev) => (prev[category] ? prev : { ...prev, [category]: true }))
     onSelectTarget?.(category, target)
-    closeDrawerIfSmall()
+    close()
   }
 
-  const handleSelectExercise = (ex) => {
-    onSelectExercise?.(ex)
-    closeDrawerIfSmall()
+  // Equipment card: hand the scope to the main page and close the drawer
+  // on every viewport.
+  const handleSelectEquipment = (equipment) => {
+    onSelectEquipment?.(equipment)
+    close()
   }
 
   const requestRecent = (t) => {
@@ -184,7 +151,7 @@ export const ExerciseLibrary = ({
         : t("library.subParts")
 
   const drawerClass = [
-    "exercise-library",
+    "exercise-panel",
     isSmall ? "is-drawer" : "",
     (isSmall && drawerOpen) || (!isSmall && libraryOpen) ? "is-drawer-open" : "",
   ].filter(Boolean).join(" ")
@@ -194,20 +161,20 @@ export const ExerciseLibrary = ({
       {!libraryOpen && (
         <button
           type="button"
-          className="library-fab"
+          className="panel-fab"
           onClick={open}
           aria-expanded={libraryOpen}
           aria-controls="exercise-library-drawer"
           aria-label={t("library.openMenu")}
           title={t("library.title")}
         >
-          <span aria-hidden="true" className="library-fab-icon">☰</span>
-          <span className="library-fab-label">{t("library.title")}</span>
+          <span aria-hidden="true" className="panel-fab-icon">☰</span>
+          <span className="panel-fab-label">{t("library.title")}</span>
         </button>
       )}
       {libraryOpen && (
         <div
-          className="library-backdrop"
+          className="panel-backdrop"
           onClick={close}
           aria-hidden="true"
         />
@@ -227,7 +194,7 @@ export const ExerciseLibrary = ({
           <h2 className="panel-title">{t("library.title")}</h2>
           <button
             type="button"
-            className="library-drawer-close"
+            className="panel-drawer-close"
             onClick={close}
             aria-label={t("library.closeMenu")}
           >
@@ -236,14 +203,14 @@ export const ExerciseLibrary = ({
         </div>
         <p className="panel-subtitle">{subtitle}</p>
 
-        <div className="library-tabs" role="tablist" aria-label={t("library.browseBy")}>
+        <div className="panel-tabs" role="tablist" aria-label={t("library.browseBy")}>
           {TABS.map((tb) => (
             <button
               key={tb.id}
               type="button"
               role="tab"
               aria-selected={tab === tb.id}
-              className={`library-tab ${tab === tb.id ? "is-selected" : ""}`}
+              className={`panel-tab ${tab === tb.id ? "is-selected" : ""}`}
               onClick={() => selectTab(tb.id)}
             >
               {t(tb.key)}
@@ -253,65 +220,33 @@ export const ExerciseLibrary = ({
 
         {tab === "parts" && (
           <div role="tabpanel" aria-label={t("library.panelParts")} className="parts-tabpanel">
-          <div className="parts-list">
-            <ul className="muscle-tree">
-              {sortedHierarchy.map((part) => (
-                <li key={part.name} className={`muscle-part ${part.name === selectedCategory ? "is-active" : ""}`}>
-                  <div
-                    className={`muscle-part-row ${part.name === selectedCategory && !selectedTarget ? "is-selected" : ""}`}
+            <ul className="part-grid">
+              {partCards.map((part) => (
+                <li key={part.name}>
+                  <button
+                    type="button"
+                    className={`part-card ${part.name === selectedCategory ? "is-active" : ""}`}
+                    onClick={() => handleSelectCategory(part.name)}
+                    aria-label={t("library.partPickAria", { name: part.label, n: part.count })}
                   >
-                    <button
-                      type="button"
-                      className="muscle-caret-btn"
-                      onClick={(e) => toggleExpandOnly(part.name, e)}
-                      aria-expanded={isExpanded(part.name)}
-                      aria-label={isExpanded(part.name) ? t("library.collapsePart", { name: localizedCategory(part.name) }) : t("library.expandPart", { name: localizedCategory(part.name) })}
-                      title={isExpanded(part.name) ? t("library.collapsePart", { name: localizedCategory(part.name) }) : t("library.expandPart", { name: localizedCategory(part.name) })}
-                    >
-                      <span className="muscle-caret" aria-hidden="true">{isExpanded(part.name) ? "▾" : "▸"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="muscle-part-select"
-                      onClick={() => handleSelectCategory(part.name)}
-                      aria-label={localizedCategory(part.name)}
-                    >
-                      <span className="muscle-label">{localizedCategory(part.name)}</span>
-                      <span className="muscle-count">{part.count}</span>
-                    </button>
-                  </div>
-                  {isExpanded(part.name) && (
-                    <ul className="muscle-targets">
-                      {part.targets.map((t) => {
-                        const isSel = part.name === selectedCategory && t.name === selectedTarget
-                        return (
-                          <li key={t.name}>
-                            <button
-                              type="button"
-                              className={`muscle-target-row ${isSel ? "is-selected" : ""}`}
-                              onClick={() => handleSelectTarget(part.name, t.name)}
-                            >
-                              <span className="muscle-thumb">
-                                <img src={mediaUrl(t.exercises[0].image)} alt="" loading="lazy" />
-                              </span>
-                              <span className="muscle-label">{localizedTarget(t.name)}</span>
-                              <span className="muscle-count">{t.count}</span>
-                            </button>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
+                    <span className="part-card-thumb">
+                      {part.image ? (
+                        <img src={mediaUrl(part.image)} alt="" loading="lazy" />
+                      ) : (
+                        <span aria-hidden="true">💪</span>
+                      )}
+                    </span>
+                    <span className="part-card-name">{part.label}</span>
+                  </button>
                 </li>
               ))}
             </ul>
-          </div>
           </div>
         )}
 
         {tab === "equipment" && (
           <div role="tabpanel" aria-label={t("library.panelEquipment")} className="equipment-tabpanel">
-            <ExerciseBrowser exercises={sortedExercises} onSelectExercise={handleSelectExercise} />
+            <ExerciseBrowser exercises={sortedExercises} onSelectEquipment={handleSelectEquipment} />
           </div>
         )}
 
@@ -339,8 +274,8 @@ export const ExerciseLibrary = ({
                           onClick={() => handleSelectTarget(r.category, r.target)}
                         >
                           <span className="muscle-thumb">
-                            {mediaUrl(thumbFor(sortedHierarchy, r.category, r.target)) ? (
-                              <img src={mediaUrl(thumbFor(sortedHierarchy, r.category, r.target))} alt="" loading="lazy" />
+                            {mediaUrl(thumbFor(hierarchy, r.category, r.target)) ? (
+                              <img src={mediaUrl(thumbFor(hierarchy, r.category, r.target))} alt="" loading="lazy" />
                             ) : (
                               <span aria-hidden="true">💪</span>
                             )}

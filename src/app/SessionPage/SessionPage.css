@@ -1,0 +1,49 @@
+/* Leave session prompt overlay */
+.leave-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  color: var(--text-strong);
+}
+
+.leave-prompt-overlay[hidden] {
+  display: none !important;
+}
+
+.leave-prompt-content {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--space-6) var(--space-6);
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: auto;
+  text-align: center;
+}
+
+.leave-prompt-title {
+  font-size: var(--font-size-h4);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-3);
+}
+
+.leave-prompt-message {
+  font-size: var(--font-size-body);
+  color: var(--text-muted);
+  margin-bottom: var(--space-5);
+}
+
+.leave-prompt-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.leave-prompt-actions .btn {
+  min-width: 120px;
+}

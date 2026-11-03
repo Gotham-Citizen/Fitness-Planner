@@ -1,10 +1,16 @@
 // Atoms — single-purpose UI primitives. Must not import from
 // molecules, organisms, templates, or app routes.
+export { BackToTop } from "./BackToTop/BackToTop.jsx"
 export { BrandLogo } from "./BrandLogo/BrandLogo.jsx"
 export { Button } from "./Button/Button.jsx"
+export { Card } from "./Card/Card.jsx"
+export { ComparisonImage } from "./ComparisonImage/ComparisonImage.jsx"
+export { DragHandle } from "./DragHandle/DragHandle.jsx"
 export { EquipmentImage } from "./EquipmentImage/EquipmentImage.jsx"
 export { FieldError } from "./FieldError/FieldError.jsx"
+export { GifFrame } from "./GifFrame/GifFrame.jsx"
 export { LineChart } from "./LineChart/LineChart.jsx"
 export { SegmentedToggle } from "./SegmentedToggle/SegmentedToggle.jsx"
+export { Skeleton } from "./Skeleton/Skeleton.jsx"
+export { StatCard } from "./StatCard/StatCard.jsx"
 export { TextInput } from "./TextInput/TextInput.jsx"
-export { ThemeToggle } from "./ThemeToggle/ThemeToggle.jsx"

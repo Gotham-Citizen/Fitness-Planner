@@ -11,8 +11,9 @@ import { localeFromI18n, normalizeLang } from "../../../utils/locale.js"
 
 import "./WorkoutSummaryView.css"
 
-import { Button, SegmentedToggle } from "../../atoms/index.js"
-import { SetTags } from "../../molecules/index.js"
+import { Button, ComparisonImage, SegmentedToggle, StatCard } from "../../atoms/index.js"
+import { PageCarousel, SetTags } from "../../molecules/index.js"
+import { StatIcon } from "./statIcons.jsx"
 
 const formatDate = (iso, locale) => {
   if (!iso) return ""
@@ -54,7 +55,7 @@ const RankBadge = ({ rank, inLbs, prefix }) => {
 }
 
 // mode="finish" (post-workout: Done + View sessions) or
-// mode="history" (from a sessions card: single Back button).
+// mode="history" (from a sessions card: single primary Back button at the top).
 // gender: 'male' | 'female' | 'other' | null (null = unspecified -> show both).
 export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, onDone, onHistory, onBack, previousSessions, gender }) => {
   const { t, i18n } = useTranslation()
@@ -92,14 +93,14 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
   return (
     <section className="summary-view">
       {mode === "history" && (
-        <Button variant="ghost" className="summary-back" onClick={onBack}>
+        <Button className="summary-back" onClick={onBack}>
           {t("summary.backToSessions")}
         </Button>
       )}
       <div className="summary-hero">
         <h2 className="summary-title">{heroTitle || t("summary.complete")}</h2>
         <p className="summary-subtitle">
-          {list.name} &middot; {formatDate(summary.completedAt, locale)}
+          {formatDate(summary.completedAt, locale)}
         </p>
         {Number(session?.removedEmptySets) > 0 && (
           <p className="summary-removed-note" role="status">
@@ -115,31 +116,46 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
         />
       </div>
 
-      <div className="summary-stats">
-        <div className="summary-stat">
-          <span className="summary-stat-value">{formatDuration(summary.durationMs, lang)}</span>
-          <span className="summary-stat-label">{t("summary.duration")}</span>
+      <PageCarousel
+        className="summary-carousel"
+        ariaLabel={t("summary.carouselLabel")}
+        pageTitles={[list.name, t("summary.funFact")]}
+        pageLabels={[t("summary.statsPage"), t("summary.funPage")]}
+        prevLabel={t("carousel.prev")}
+        nextLabel={t("carousel.next")}
+      >
+        <div className="summary-stats">
+          <StatCard
+            icon={<StatIcon name="duration" />}
+            value={formatDuration(summary.durationMs, lang)}
+            label={t("summary.duration")}
+          />
+          <StatCard
+            icon={<StatIcon name="exercises" />}
+            value={summary.exerciseCount}
+            label={t("summary.exercises")}
+          />
+          <StatCard
+            icon={<StatIcon name="sets" />}
+            value={summary.setCount}
+            label={t("summary.sets")}
+          />
+          <StatCard
+            icon={<StatIcon name="volume" />}
+            value={`${formatNum(totalVolume, locale)} ${unit}`}
+            label={t("summary.volume")}
+          />
         </div>
-        <div className="summary-stat">
-          <span className="summary-stat-value">{summary.exerciseCount}</span>
-          <span className="summary-stat-label">{t("summary.exercises")}</span>
-        </div>
-        <div className="summary-stat">
-          <span className="summary-stat-value">{summary.setCount}</span>
-          <span className="summary-stat-label">{t("summary.sets")}</span>
-        </div>
-        <div className="summary-stat">
-          <span className="summary-stat-value">{formatNum(totalVolume, locale)} {unit}</span>
-          <span className="summary-stat-label">{t("summary.volume")}</span>
-        </div>
-      </div>
-
-      {comparison && totalVolume > 0 && (
-        <div className="summary-fun" role="status">
-          {t("summary.funLead", { v: formatNum(totalVolume, locale), u: unit })}{" "}
-          {comparison.times > 1 ? `${comparison.times}× ` : ""}{comparison.label}!
-        </div>
-      )}
+        {comparison && totalVolume > 0 && (
+          <div className="summary-fun" role="status">
+            <p className="summary-fun-text">
+              {t("summary.funLead", { v: formatNum(totalVolume, locale), u: unit })}{" "}
+              {comparison.times > 1 ? `${comparison.times}× ` : ""}{comparison.label}!
+            </p>
+            <ComparisonImage slug={comparison.slug} className="summary-fun-img" />
+          </div>
+        )}
+      </PageCarousel>
 
       {specified && (
         <div className="rank-flip-row">
@@ -248,22 +264,16 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
         })}
       </div>
 
-      <div className="summary-actions">
-        {mode === "history" ? (
-          <Button onClick={onBack}>
-            {t("summary.back")}
+      {mode !== "history" && (
+        <div className="summary-actions">
+          <Button onClick={onDone}>
+            {t("summary.done")}
           </Button>
-        ) : (
-          <>
-            <Button onClick={onDone}>
-              {t("summary.done")}
-            </Button>
-            <Button variant="ghost" onClick={onHistory}>
-              {t("summary.viewSessions")}
-            </Button>
-          </>
-        )}
-      </div>
+          <Button variant="ghost" onClick={onHistory}>
+            {t("summary.viewSessions")}
+          </Button>
+        </div>
+      )}
     </section>
   )
 }

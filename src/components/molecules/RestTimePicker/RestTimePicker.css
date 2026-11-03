@@ -1,0 +1,102 @@
+/* =========================================================
+   RestTimePicker
+   尺寸必须与 RestTimePicker.jsx 里的常量保持一致：
+   ITEM_HEIGHT = 44, VISIBLE_ITEMS = 5, POPOVER_WIDTH = 132
+   （所以这里不再按断点改尺寸）
+   Modal 宽度只在 edit-workout.css 里定义。
+   ========================================================= */
+
+/* ---------- 外框 ---------- */
+.rest-time-picker {
+  --rtd-rows: 5;
+  --rtd-item-h: 44px;
+  --rtd-item-font: 15px;
+  --rtd-width: 132px;
+
+  --rtd-list-h: calc(var(--rtd-item-h) * var(--rtd-rows));
+  --rtd-pad-h: calc((var(--rtd-list-h) - var(--rtd-item-h)) / 2);
+  --rtd-band-h: var(--rtd-item-h);
+
+  position: fixed;
+  z-index: 2147483000; /* fallback when the Popover API is unavailable */
+  inset: auto;         /* clear UA popover centering; left/top come from inline style */
+  margin: 0;
+  width: var(--rtd-width);
+  height: auto;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  background: var(--surface, #fff);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: rest-time-picker-in 120ms ease-out;
+}
+
+@keyframes rest-time-picker-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rest-time-picker { animation: none; }
+}
+
+/* ---------- 中心高亮带 ---------- */
+.rest-time-picker__band {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: var(--rtd-band-h);
+  transform: translateY(-50%);
+  border-radius: 10px;
+  background: rgba(108, 140, 255, 0.1);
+  pointer-events: none;
+}
+
+/* ---------- 滚动列表 ---------- */
+.rest-time-picker__list {
+  position: relative;
+  z-index: 1;
+  height: var(--rtd-list-h);
+  margin: 0;
+  padding: var(--rtd-pad-h) 0;
+  box-sizing: border-box;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  outline: none;
+}
+
+.rest-time-picker__list::-webkit-scrollbar { display: none; }
+
+/* ---------- 每个选项 ---------- */
+.rest-time-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--rtd-item-h);
+  scroll-snap-align: center;
+  border-radius: 10px;
+  font-size: var(--rtd-item-font);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted, #6b7280);
+  cursor: pointer;
+  user-select: none;
+  transition: color 100ms ease;
+}
+
+.rest-time-picker__item.is-active {
+  color: var(--accent-strong, #3451c9);
+  font-weight: 700;
+}
+
+.rest-time-picker__list:focus-visible {
+  outline: 2px solid var(--accent, #6c8cff);
+  outline-offset: -2px;
+  border-radius: 12px;
+}

@@ -1,3 +1,5 @@
+import { useRef } from "react"
+
 import { useTranslation } from "react-i18next"
 
 import "./MobileTabBar.css"
@@ -10,8 +12,9 @@ const TABS = [
   { id: "balance", key: "tabs.stats", icon: "stats" },
 ]
 
-// Outline stroke icons (24x24, stroke=currentColor) matching the
-// TileIcon aesthetic in WorkoutJournalView.jsx.
+// 24x24 tab icons tinted via currentColor, matching the TileIcon aesthetic
+// in WorkoutJournalView.jsx. Mostly outline strokes — the workouts tab is
+// a filled rotated dumbbell authored in 500x500 space (scaled 24/500).
 const TAB_ICONS = {
   home: (
     <>
@@ -28,11 +31,23 @@ const TAB_ICONS = {
     </>
   ),
   workouts: (
-    <>
-      <rect x="5.9" y="7.9" width="3.2" height="8.2" rx="1.3" />
-      <rect x="14.9" y="7.9" width="3.2" height="8.2" rx="1.3" />
-      <path d="M9.1 12h5.8M3.6 9.9v4.2M20.4 9.9v4.2" />
-    </>
+    <g
+      fill="currentColor"
+      stroke="none"
+      transform="scale(0.048) rotate(-45 250 250)"
+    >
+      {/* Center bar / handle */}
+      <rect x="163.0" y="235" width="174.0" height="30" rx="15" ry="15" />
+      {/* Inner plates */}
+      <rect x="163.0" y="160" width="36" height="180" rx="18" ry="18" />
+      <rect x="301.0" y="160" width="36" height="180" rx="18" ry="18" />
+      {/* Outer plates */}
+      <rect x="118.0" y="185" width="40" height="130" rx="18" ry="18" />
+      <rect x="342.0" y="185" width="40" height="130" rx="18" ry="18" />
+      {/* End caps */}
+      <rect x="93.0" y="225" width="20" height="50" rx="10" ry="10" />
+      <rect x="387.0" y="225" width="20" height="50" rx="10" ry="10" />
+    </g>
   ),
   journal: (
     <>
@@ -73,20 +88,48 @@ const TabIcon = ({ name }) => {
  */
 export const MobileTabBar = ({ active, onNavigate }) => {
   const { t } = useTranslation()
+  const tabsRef = useRef([])
+
+  const handleKeyDown = (e, index) => {
+    let newIndex
+    if (e.key === "ArrowRight") {
+      newIndex = (index + 1) % TABS.length
+    } else if (e.key === "ArrowLeft") {
+      newIndex = (index - 1 + TABS.length) % TABS.length
+    } else if (e.key === "Home") {
+      newIndex = 0
+    } else if (e.key === "End") {
+      newIndex = TABS.length - 1
+    } else {
+      return
+    }
+    e.preventDefault()
+    tabsRef.current[newIndex]?.focus()
+    onNavigate(TABS[newIndex].id)
+  }
+
   return (
-    <nav className="mobile-tabbar" aria-label={t("common.primary")}>
-      {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          className={`tabbar-button${active === tab.id ? " is-active" : ""}`}
-          aria-current={active === tab.id ? "page" : undefined}
-          onClick={() => onNavigate(tab.id)}
-        >
-          <span className="tabbar-icon" aria-hidden="true"><TabIcon name={tab.icon} /></span>
-          <span className="tabbar-label">{t(tab.key)}</span>
-        </button>
-      ))}
+    <nav className="mobile-tabbar" role="tablist" aria-label={t("common.primary")}>
+      {TABS.map((tab, index) => {
+        const isSelected = active === tab.id
+        return (
+          <button
+            ref={(el) => { tabsRef.current[index] = el }}
+            key={tab.id}
+            type="button"
+            role="tab"
+            className={`tabbar-button${isSelected ? " is-active" : ""}`}
+            aria-selected={isSelected}
+            id={`tab-${tab.id}`}
+            tabIndex={isSelected ? 0 : -1}
+            onClick={() => onNavigate(tab.id)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
+          >
+            <span className="tabbar-icon" aria-hidden="true"><TabIcon name={tab.icon} /></span>
+            <span className="tabbar-label">{t(tab.key)}</span>
+          </button>
+        )
+      })}
     </nav>
   )
 }

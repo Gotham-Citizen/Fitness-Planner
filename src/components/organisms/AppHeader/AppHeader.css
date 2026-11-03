@@ -23,10 +23,11 @@
   background: none;
   border: 0;
   color: var(--text-strong);
-  font-family: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-h4);
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: var(--letter-spacing-tight);
+  text-decoration: none;
   padding: 4px 8px 4px 0;
   flex: none;
   min-width: 0;
@@ -55,11 +56,6 @@
   min-width: 0;
 }
 
-.nav-button--account:focus,
-.nav-button--account:focus-visible { outline: none; }
-
-.nav-button--account:active { outline: none; }
-
 .nav-login {
   padding: 10px 20px;
   border-radius: 999px;
@@ -68,17 +64,48 @@
 
 /* ---------- Header user / logout ---------- */
 
+/* Account-settings pill chip: the filled, bordered shape reads as a tappable
+   button on touch devices without needing hover. Hover/focus and the active
+   (account page) state use the elevated-hover treatment. */
 .header-user {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  margin: 0;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0;
   color: var(--text-muted);
-  font-size: 15px;
-  padding: 0 6px;
   max-width: 240px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.header-user-greeting {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-user-name {
+  font-weight: 700;
+}
+
+.header-user:hover,
+.header-user:focus-visible,
+.header-user.is-active {
+  background: var(--bg-hover);
+  color: var(--text-strong);
+}
+
+.header-user:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .header-logout {
@@ -99,7 +126,7 @@
     min-width: 0;
   }
   .brand {
-    font-size: 17px;
+    font-size: var(--font-size-small);
   }
   .header-actions {
     display: flex;
@@ -107,26 +134,14 @@
     gap: 6px;
     min-width: 0;
   }
-  .header-actions .nav-button--account {
-    padding: 6px 10px;
-    font-size: 13px;
-    min-width: 0;
-    max-width: 45vw;
-    overflow: hidden;
-  }
   .header-actions .header-user {
     font-size: 13px;
-    max-width: 28vw;
+    padding: 6px 12px;
+    max-width: 32vw;
   }
   .header-actions .nav-login {
     padding: 8px 14px;
     font-size: 13px;
     white-space: nowrap;
-  }
-  .header-actions .theme-toggle {
-    width: 34px;
-    height: 34px;
-    font-size: 16px;
-    flex: none;
   }
 }

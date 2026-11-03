@@ -16,11 +16,14 @@
     "db:schema:remote": "wrangler d1 execute fitness-db --config server/wrangler.jsonc --remote --file=server/schema.sql",
     "db:data:local": "wrangler d1 execute fitness-db --config server/wrangler.jsonc --local --file=server/seed.sql",
     "db:data:remote": "wrangler d1 execute fitness-db --config server/wrangler.jsonc --remote --file=server/seed.sql",
+    "db:test:gen": "node scripts/generate-test-data.mjs",
+    "db:test:local": "wrangler d1 execute fitness-db --config server/wrangler.jsonc --local --file=server/test-data.sql",
     "deploy": "npm run build && wrangler deploy --config server/wrangler.jsonc"
   },
   "dependencies": {
     "express": "^5.2.1",
     "i18next": "^26.4.4",
+    "imagescript": "^3.13.1",
     "jose": "^6.2.10",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -28,8 +31,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
     "concurrently": "^10.0.5",
     "eslint": "^10.9.0",

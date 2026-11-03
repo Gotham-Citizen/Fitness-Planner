@@ -1,0 +1,152 @@
+/* PageCarousel styles — co-located (molecule). Imported by PageCarousel.jsx; global cascade. */
+
+/* Root — consumers hang card chrome off .page-carousel-frame. */
+.page-carousel {
+  position: relative;
+}
+
+/* Frame — chevron anchor; consumers style this as the card surface. */
+.page-carousel-frame {
+  position: relative;
+}
+
+/* Track — native scroll-snap paging; the scrollbar stays invisible. */
+.page-carousel-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none; /* Firefox */
+}
+
+.page-carousel-track::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.page-carousel-track:focus {
+  outline: none;
+}
+
+.page-carousel-track:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Pages — full-width snap targets with equal height so the frame does not
+   resize between pages; content centers vertically for the story-card feel. */
+.page-carousel-page {
+  flex: 0 0 100%;
+  min-width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Page title — pinned at the top of every page so it never jumps mid-flip. */
+.page-carousel-page-title {
+  flex: none;
+  margin: 0 0 12px;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Page body — auto block margins center it in the space left under the
+   title (and in the full page when there is no title). */
+.page-carousel-page-body {
+  width: 100%;
+  margin-block: auto;
+}
+
+/* Dots — indicator underneath; the active dot elongates into a pill. */
+.page-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.page-carousel-dot {
+  appearance: none;
+  border: none;
+  padding: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.2s ease, width 0.2s ease;
+}
+
+.page-carousel-dot:hover {
+  background: var(--text-muted);
+}
+
+.page-carousel-dot.is-active {
+  width: 22px;
+  background: var(--accent);
+}
+
+.page-carousel-dot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Chevrons — Instagram-post-style paging buttons; hover-capable pointers only
+   (touch devices swipe / edge-tap instead). Hidden at the ends. */
+.page-carousel-chevron {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text-strong);
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+}
+
+.page-carousel-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+.page-carousel-chevron.is-prev {
+  left: 8px;
+}
+
+.page-carousel-chevron.is-next {
+  right: 8px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .page-carousel-chevron {
+    display: flex;
+  }
+}
+
+.page-carousel-chevron:disabled {
+  display: none;
+}
+
+.page-carousel-chevron:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Reduced motion — dot shape changes without transition. */
+@media (prefers-reduced-motion: reduce) {
+  .page-carousel-dot {
+    transition: none;
+  }
+}

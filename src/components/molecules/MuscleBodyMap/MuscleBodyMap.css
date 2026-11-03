@@ -1,7 +1,4 @@
 /* MuscleBodyMap styles — co-located (atomic Phase 4). Imported by MuscleBodyMap.jsx; global cascade. */
-[data-theme='light'] .bm-m.sel,
-[data-theme='light'] .bodymap.tappable .bm-m:focus,
-[data-theme='light'] .bodymap.tappable .bm-m:focus-visible { stroke: var(--accent-strong); }
 
 /* --- Body map (openGym-style geometry, theme-adapted) --- */
 .bodymap {

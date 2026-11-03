@@ -1,17 +1,17 @@
 import { useEffect } from "react"
 
-/** Escape-to-close + body scroll lock shared by all bottom sheets. */
+import { useEscapeToClose } from "../../../hooks/index.js"
+
+/** Escape-to-close + body scroll lock shared by all bottom sheets.
+    Escape goes through the shared dismiss stack so a sheet stacked over a
+    modal is the only layer that closes on a single press. */
 export const useSheetDismiss = (onClose) => {
+  useEscapeToClose(onClose)
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose?.()
-    }
-    window.addEventListener("keydown", onKey)
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => {
-      window.removeEventListener("keydown", onKey)
       document.body.style.overflow = prevOverflow
     }
-  }, [onClose])
+  }, [])
 }

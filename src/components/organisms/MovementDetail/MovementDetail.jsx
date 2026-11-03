@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
-import { exerciseName, localizedCategory, localizedEquipment, localizedMuscleGroup, localizedTarget, mediaUrl } from "../../../lib/muscles.js"
+import { exerciseName, localizedCategory, localizedEquipment, localizedMuscleGroup, localizedTarget, mediaUrl, movementInstructions } from "../../../lib/muscles.js"
 
 import "./MovementDetail.css"
 
@@ -19,16 +19,15 @@ export const MovementDetail = ({ exercise, onBack, onSave, saveLabel, onUpdateEx
   const { t, i18n } = useTranslation()
   const l = lang || (String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en")
   const name = exerciseName(exercise, l)
-  const instrText = exercise.instructions?.[l] || exercise.instructions?.en || ""
-  const steps = (exercise.instruction_steps?.[l]?.length ? exercise.instruction_steps[l] : (exercise.instruction_steps?.en?.length ? exercise.instruction_steps.en : []))
+  // Same fallback chain the session's MovementDetailCard uses, so a movement
+  // reads identically in the library and mid-workout.
+  const { steps, prose } = movementInstructions(exercise, l)
   const secondary = exercise.secondary_muscles || []
   const isCustom = typeof exercise.id === "string" && exercise.id.startsWith("custom-")
   const canManage = isCustom && typeof onUpdateExercise === "function" && typeof onDeleteExercise === "function"
 
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState("")
-  const [editingInstr, setEditingInstr] = useState(false)
-  const [instrDraft, setInstrDraft] = useState("")
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState(null)
@@ -54,26 +53,6 @@ export const MovementDetail = ({ exercise, onBack, onSave, saveLabel, onUpdateEx
     }
   }
 
-  const openInstrEditor = () => {
-    setFormError(null)
-    setInstrDraft(instrText)
-    setEditingInstr(true)
-  }
-
-  const saveInstr = async () => {
-    if (busy) return
-    try {
-      setBusy(true)
-      setFormError(null)
-      await onUpdateExercise(exercise.id, { instructions: instrDraft, instructionsLang: l })
-      setEditingInstr(false)
-    } catch (err) {
-      setFormError(err?.message || t("movement.failedInstr"))
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const handleDelete = async () => {
     if (busy) return
     try {
@@ -90,9 +69,9 @@ export const MovementDetail = ({ exercise, onBack, onSave, saveLabel, onUpdateEx
 
   return (
     <section className="movement-detail">
-      <button type="button" className="back-button" onClick={onBack}>
+      <Button className="back-button" onClick={onBack}>
         {t("movement.back")}
-      </button>
+      </Button>
 
       <div className="movement-detail-hero">
         <div className="movement-detail-head">
@@ -136,34 +115,8 @@ export const MovementDetail = ({ exercise, onBack, onSave, saveLabel, onUpdateEx
       <div className="movement-detail-instructions">
         <div className="detail-section-head">
           <h3>{t("movement.howTo")}</h3>
-          {canManage && !editingInstr && (
-            <Button variant="ghost" size="detail-small" onClick={openInstrEditor}>
-              {instrText ? t("movement.editInstr") : t("movement.addInstr")}
-            </Button>
-          )}
         </div>
-        {editingInstr ? (
-          <div className="detail-edit-col">
-            <TextInput
-              multiline
-              className="detail-textarea"
-              autoFocus
-              rows={4}
-              value={instrDraft}
-              onChange={(e) => setInstrDraft(e.target.value)}
-              placeholder={t("movement.instrPh")}
-              aria-label={t("movement.instrAria")}
-            />
-            <div className="detail-edit-row">
-              <Button onClick={saveInstr} disabled={busy}>
-                {busy ? t("movement.saving") : t("movement.saveInstr")}
-              </Button>
-              <Button variant="ghost" onClick={() => setEditingInstr(false)} disabled={busy}>
-                {t("movement.cancel")}
-              </Button>
-            </div>
-          </div>
-        ) : steps.length > 0 ? (
+        {steps.length > 0 ? (
           <ol className="instruction-steps">
             {steps.map((step, i) => (
               <li key={i} className="instruction-step">
@@ -172,8 +125,8 @@ export const MovementDetail = ({ exercise, onBack, onSave, saveLabel, onUpdateEx
               </li>
             ))}
           </ol>
-        ) : instrText ? (
-          <p>{instrText}</p>
+        ) : prose ? (
+          <p>{prose}</p>
         ) : (
           <p className="movement-detail-empty">{isCustom ? t("movement.noInstrCustom") : t("movement.noInstr")}</p>
         )}

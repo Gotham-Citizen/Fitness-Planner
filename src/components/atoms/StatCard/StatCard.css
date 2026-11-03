@@ -1,0 +1,74 @@
+/* StatCard styles — co-located (atom). Imported by StatCard.jsx; global cascade. */
+
+.stat-card {
+  aspect-ratio: 1;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--padding-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  text-align: center;
+}
+
+/* Icon badge — soft accent circle, accent-tinted glyph. */
+.stat-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--stat-icon-size, 44px);
+  height: var(--stat-icon-size, 44px);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: var(--space-1);
+}
+
+.stat-card-icon svg {
+  width: calc(var(--stat-icon-size, 44px) * 0.55);
+  height: calc(var(--stat-icon-size, 44px) * 0.55);
+}
+
+.stat-card-value {
+  color: var(--text-strong);
+  font-size: var(--stat-value-size, 18px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.stat-card-label {
+  color: var(--text-muted);
+  font-size: var(--stat-label-size, 11px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+/* Responsive scale-up — mobile-first min-width ladder (same breakpoints as
+   SearchBar.css). One custom property set drives badge, glyph, and text. */
+@media (min-width: 640px) {   /* Tablet */
+  :root {
+    --stat-icon-size: 52px;
+    --stat-value-size: 20px;
+    --stat-label-size: 12px;
+  }
+}
+
+@media (min-width: 1024px) {  /* Desktop */
+  :root {
+    --stat-icon-size: 60px;
+    --stat-value-size: 22px;
+    --stat-label-size: 13px;
+  }
+}
+
+@media (min-width: 1440px) {  /* Wide */
+  :root {
+    --stat-icon-size: 68px;
+    --stat-value-size: 24px;
+    --stat-label-size: 14px;
+  }
+}

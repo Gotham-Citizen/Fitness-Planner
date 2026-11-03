@@ -1,0 +1,8 @@
+/* Card styles — co-located (atomic Phase 4). Imported by Card.jsx; global cascade. */
+
+.card-shell {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--padding-md);
+}

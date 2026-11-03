@@ -3,12 +3,10 @@ import { PlannerTemplate } from "../../components/templates/index.js"
 
 /**
  * Summary page: covers both `summary` and `history-summary` modes.
- * Thin composition. `sidebar` preserves the legacy library rail
- * (hidden for journal-originated history summaries).
+ * Thin composition.
  */
 export const SummaryPage = ({
   banner,
-  sidebar,
   list,
   session,
   mode = "finish",
@@ -35,7 +33,6 @@ export const SummaryPage = ({
           gender={gender}
         />
       )}
-      sidebar={sidebar}
     />
   )
 }

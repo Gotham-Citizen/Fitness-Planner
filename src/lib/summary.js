@@ -1,30 +1,37 @@
 import { KG_TO_LBS, LBS_TO_KG } from "./units.js"
 
-// Real-world objects for the fun volume comparison, ascending.
 const COMPARISONS_KG = [
-  { amount: 20, label: "an Olympic barbell (20 kg)" },
-  { amount: 30, label: "a golden retriever (30 kg)" },
-  { amount: 100, label: "a giant panda (100 kg)" },
-  { amount: 250, label: "an upright piano (250 kg)" },
-  { amount: 500, label: "a concert grand piano (500 kg)" },
-  { amount: 1000, label: "a small car (1,000 kg)" },
-  { amount: 1211, label: "a great white shark (1,211 kg)" },
-  { amount: 2000, label: "a rhinoceros (2,000 kg)" },
-  { amount: 4000, label: "an African elephant (4,000 kg)" },
-  { amount: 8000, label: "a school bus (8,000 kg)" },
+  { amount: 30, slug: "toilet", label: "a toilet (30 kg)" },
+  { amount: 50, slug: "washing-machine", label: "a washing machine (50 kg)" },
+  { amount: 80, slug: "kangaroo", label: "a kangaroo (80 kg)" },
+  { amount: 120, slug: "giant-panda", label: "a giant panda (120 kg)" },
+  { amount: 150, slug: "small-motorcycle", label: "a small motorcycle (150 kg)" },
+  { amount: 250, slug: "upright-piano", label: "an upright piano (250 kg)" },
+  { amount: 400, slug: "horse", label: "a horse (400 kg)" },
+  { amount: 500, slug: "grand-piano", label: "a concert grand piano (500 kg)" },
+  { amount: 700, slug: "dairy-cow", label: "a dairy cow (700 kg)" },
+  { amount: 1000, slug: "small-car", label: "a small car (1,000 kg)" },
+  { amount: 1211, slug: "great-white-shark", label: "a great white shark (1,211 kg)" },
+  { amount: 2000, slug: "rhinoceros", label: "a rhinoceros (2,000 kg)" },
+  { amount: 4000, slug: "african-elephant", label: "an African elephant (4,000 kg)" },
+  { amount: 8000, slug: "school-bus", label: "a school bus (8,000 kg)" },
 ]
 
 const COMPARISONS_LBS = [
-  { amount: 44, label: "an Olympic barbell (44 lbs)" },
-  { amount: 66, label: "a golden retriever (66 lbs)" },
-  { amount: 220, label: "a giant panda (220 lbs)" },
-  { amount: 550, label: "an upright piano (550 lbs)" },
-  { amount: 1100, label: "a concert grand piano (1,100 lbs)" },
-  { amount: 2200, label: "a small car (2,200 lbs)" },
-  { amount: 2670, label: "a great white shark (2,670 lbs)" },
-  { amount: 4400, label: "a rhinoceros (4,400 lbs)" },
-  { amount: 8800, label: "an African elephant (8,800 lbs)" },
-  { amount: 17600, label: "a school bus (17,600 lbs)" },
+  { amount: 66, slug: "toilet", label: "a toilet (66 lbs)" },
+  { amount: 110, slug: "washing-machine", label: "a washing machine (110 lbs)" },
+  { amount: 176, slug: "kangaroo", label: "a kangaroo (176 lbs)" },
+  { amount: 265, slug: "giant-panda", label: "a giant panda (265 lbs)" },
+  { amount: 330, slug: "small-motorcycle", label: "a small motorcycle (330 lbs)" },
+  { amount: 550, slug: "upright-piano", label: "an upright piano (550 lbs)" },
+  { amount: 880, slug: "horse", label: "a horse (880 lbs)" },
+  { amount: 1100, slug: "grand-piano", label: "a concert grand piano (1,100 lbs)" },
+  { amount: 1540, slug: "dairy-cow", label: "a dairy cow (1,540 lbs)" },
+  { amount: 2200, slug: "small-car", label: "a small car (2,200 lbs)" },
+  { amount: 2670, slug: "great-white-shark", label: "a great white shark (2,670 lbs)" },
+  { amount: 4400, slug: "rhinoceros", label: "a rhinoceros (4,400 lbs)" },
+  { amount: 8800, slug: "african-elephant", label: "an African elephant (8,800 lbs)" },
+  { amount: 17600, slug: "school-bus", label: "a school bus (17,600 lbs)" },
 ]
 
 const weightAs = (weight, unit, target) => {
@@ -48,9 +55,20 @@ export const formatDuration = (ms, lang) => {
 }
 
 export const comparisonFor = (volume, unit = "kg", labelList = null) => {
-  const ladder = labelList
-    ? labelList.map((label, i) => ({ amount: (unit === "lbs" ? COMPARISONS_LBS : COMPARISONS_KG)[i].amount, label }))
-    : (unit === "lbs" ? COMPARISONS_LBS : COMPARISONS_KG)
+  const isLbs = String(unit).toLowerCase() === "lbs"
+  const base = isLbs ? COMPARISONS_LBS : COMPARISONS_KG
+
+  let ladder = base
+  if (Array.isArray(labelList)) {
+    if (labelList.length === base.length) {
+      ladder = base.map((entry, i) => ({ ...entry, label: labelList[i] }))
+    } else {
+      console.error(
+        `comparisonFor: label list length ${labelList.length} !== ladder length ${base.length} (unit=${unit}); falling back to built-in labels`,
+      )
+    }
+  }
+
   if (!Number.isFinite(volume) || volume <= 0) return null
   let best = null
   for (const entry of ladder) {

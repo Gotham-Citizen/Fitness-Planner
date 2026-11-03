@@ -16,7 +16,7 @@
 .app-main {
   flex: 1;
   min-width: 0;
-  padding: 28px 32px;
+  padding: var(--container-padding-desktop) var(--container-padding-desktop);
   overflow-y: auto;
 }
 
@@ -24,22 +24,28 @@
 
 .error-toast {
   position: fixed;
-  bottom: 24px;
+  bottom: var(--space-6);
   left: 50%;
   transform: translateX(-50%);
   background: var(--danger, #e5534b);
   color: #fff;
-  padding: 12px 20px;
+  padding: var(--space-3) var(--space-5);
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap-xs);
   z-index: 100;
   cursor: pointer;
+  border: none;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   animation: toast-in 0.3s ease;
+}
+
+.error-toast:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .error-toast-icon {
@@ -51,7 +57,7 @@
     flex-direction: column;
   }
   .app-main {
-    padding: 20px 16px;
+    padding: var(--container-padding-tablet) var(--container-padding-mobile);
   }
 }
 

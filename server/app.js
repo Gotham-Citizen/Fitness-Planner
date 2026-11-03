@@ -1,10 +1,13 @@
 import express from 'express'
-import db from './db.js'
+import { Image } from 'imagescript'
+import db, { normalizeQuestionnaire } from './db.js'
 import { hashPassword, verifyPassword, createToken } from './auth.js'
 import { requireAuth, optionalAuth } from './authMiddleware.js'
 import { GENDERS, isPositiveNumber, isValidEmail } from './validate.js'
 
 const CORS_ORIGIN = process.env.CORS_ORIGIN ?? '*'
+const GOALS = ['strength', 'muscle', 'fat_loss', 'general'] // 按你的问卷选项改
+const EXPERIENCE = ['beginner', 'intermediate', 'advanced']
 
 export function createApp() {
   const app = express()
@@ -44,10 +47,22 @@ export function createApp() {
       if (language !== null && language !== 'en' && language !== 'zh') {
         return res.status(400).json({ error: 'language must be en or zh' })
       }
+      // Survey answers collected in the signup wizard. Validated with the
+      // same rules as the retake endpoint; absent = signup without answers
+      // (older clients), which the account questionnaire can fill later.
+      const questionnaireRaw = req.body?.questionnaire ?? null
+      let questionnaire = null
+      if (questionnaireRaw != null) {
+        try {
+          questionnaire = normalizeQuestionnaire(questionnaireRaw)
+        } catch (err) {
+          return res.status(400).json({ error: err.message })
+        }
+      }
       const existing = await db.getUserByEmail(email)
       if (existing) return res.status(409).json({ error: 'Email already registered' })
       const passwordHash = await hashPassword(password)
-      const user = await db.createUser(email, passwordHash, gender, displayName, language)
+      const user = await db.createUser(email, passwordHash, gender, displayName, language, questionnaire)
       const token = await createToken(user.id)
       res.status(201).json({ token, user })
     } catch (err) {
@@ -67,7 +82,7 @@ export function createApp() {
         return res.status(401).json({ error: 'Invalid email or password' })
       }
       const token = await createToken(user.id)
-      const safeUser = { id: user.id, email: user.email, name: user.name ?? null, createdAt: user.createdAt, gender: user.gender ?? null, bodyweight: user.bodyweight ?? null, bodyweightUnit: user.bodyweightUnit || 'kg', targetWeight: user.targetWeight ?? null, effortScale: user.effortScale || 'rir', timerSound: user.timerSound || 'beep', timerPlaySound: user.timerPlaySound ?? 1, timerVibrate: user.timerVibrate ?? 1, timerFlash: user.timerFlash ?? 0, language: user.language || 'en' }
+      const safeUser = { id: user.id, email: user.email, name: user.name ?? null, createdAt: user.createdAt, gender: user.gender ?? null, bodyweight: user.bodyweight ?? null, bodyweightUnit: user.bodyweightUnit || 'kg', targetWeight: user.targetWeight ?? null, effortScale: user.effortScale || 'rir', timerSound: user.timerSound || 'beep', timerPlaySound: user.timerPlaySound ?? 1, timerVibrate: user.timerVibrate ?? 1, timerFlash: user.timerFlash ?? 0, language: user.language || 'en', questionnaire: user.questionnaire ?? null, questionnaireUpdatedAt: user.questionnaireUpdatedAt ?? null }
       res.json({ token, user: safeUser })
     } catch (err) {
       next(err)
@@ -87,18 +102,27 @@ export function createApp() {
   app.put('/api/auth/profile', requireAuth, async (req, res, next) => {
     try {
       const body = req.body || {}
-      const hasGender = Object.prototype.hasOwnProperty.call(body, 'gender')
-      const hasEmail = Object.prototype.hasOwnProperty.call(body, 'email')
-      const hasName = Object.prototype.hasOwnProperty.call(body, 'name')
-      const hasBw = Object.prototype.hasOwnProperty.call(body, 'bodyweight')
-      const hasBwUnit = Object.prototype.hasOwnProperty.call(body, 'bodyweightUnit')
-      const hasEffort = Object.prototype.hasOwnProperty.call(body, 'effortScale')
-      const hasTimerSound = Object.prototype.hasOwnProperty.call(body, 'timerSound')
-      const hasTimerPlaySound = Object.prototype.hasOwnProperty.call(body, 'timerPlaySound')
-      const hasTimerVibrate = Object.prototype.hasOwnProperty.call(body, 'timerVibrate')
-      const hasTimerFlash = Object.prototype.hasOwnProperty.call(body, 'timerFlash')
-      const hasLanguage = Object.prototype.hasOwnProperty.call(body, 'language')
-      if (!hasGender && !hasEmail && !hasName && !hasBw && !hasBwUnit && !hasEffort && !hasTimerSound && !hasTimerPlaySound && !hasTimerVibrate && !hasTimerFlash && !hasLanguage) return res.status(400).json({ error: 'Nothing to update' })
+      const has = (key) => Object.prototype.hasOwnProperty.call(body, key)
+      const hasGender = has('gender')
+      const hasEmail = has('email')
+      const hasName = has('name')
+      const hasBw = has('bodyweight')
+      const hasBwUnit = has('bodyweightUnit')
+      const hasEffort = has('effortScale')
+      const hasTimerSound = has('timerSound')
+      const hasTimerPlaySound = has('timerPlaySound')
+      const hasTimerVibrate = has('timerVibrate')
+      const hasTimerFlash = has('timerFlash')
+      const hasLanguage = has('language')
+      const hasSchedule = has('schedule')
+      const hasPlan = has('plan')
+      if (
+        !hasGender && !hasEmail && !hasName && !hasBw && !hasBwUnit &&
+        !hasEffort && !hasTimerSound && !hasTimerPlaySound && !hasTimerVibrate &&
+        !hasTimerFlash && !hasLanguage && !hasSchedule && !hasPlan
+      ) {
+        return res.status(400).json({ error: 'Nothing to update' })
+      }
       const updates = {}
       if (hasName) {
         const cleanName = typeof body.name === 'string' ? body.name.trim().slice(0, 30) : ''
@@ -106,7 +130,8 @@ export function createApp() {
           return res.status(400).json({ error: 'Please enter your name (2-30 characters)' })
         }
         updates.name = cleanName
-      }      if (hasEmail) {
+      }
+      if (hasEmail) {
         const cleanEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
         if (!isValidEmail(cleanEmail)) {
           return res.status(400).json({ error: 'Valid email is required' })
@@ -165,12 +190,57 @@ export function createApp() {
         }
         updates.language = lang
       }
+      if (hasSchedule) {
+        // Shape validation lives in normalizeSchedule (db.js) — bad plans fail
+        // loudly with a 400 so the editor can show what's wrong.
+        updates.schedule = body.schedule
+      }
+      if (hasPlan) {
+        // Questionnaire answers (goal / experience / days / equipment ...).
+        const p = body.plan
+        if (p === null) {
+          updates.plan = null
+        } else {
+          if (typeof p !== 'object' || Array.isArray(p)) {
+            return res.status(400).json({ error: 'plan must be an object' })
+          }
+          const days = Number(p.daysPerWeek)
+          if (!Number.isInteger(days) || days < 1 || days > 7) {
+            return res.status(400).json({ error: 'daysPerWeek must be an integer from 1 to 7' })
+          }
+          if (!p.goal || !p.experience || !p.equipment) {
+            return res.status(400).json({ error: 'goal, experience and equipment are required' })
+          }
+          if (!GOALS.includes(p.goal)) {
+            return res.status(400).json({ error: `goal must be one of: ${GOALS.join(", ")}` })
+          }
+          if (!EXPERIENCE.includes(p.experience)) {
+            return res.status(400).json({ error: `experience must be one of: ${EXPERIENCE.join(", ")}` })
+          }
+          const minutes = p.sessionMinutes == null || p.sessionMinutes === '' ? null : Number(p.sessionMinutes)
+          if (minutes !== null && !isPositiveNumber(minutes)) {
+            return res.status(400).json({ error: 'sessionMinutes must be a positive number' })
+          }
+          updates.plan = {
+            goal: String(p.goal),
+            experience: String(p.experience),
+            daysPerWeek: days,
+            equipment: String(p.equipment),
+            sessionMinutes: minutes,
+            generatePlan: !!p.generatePlan,
+          }
+        }
+      }
       const user = await db.updateUserProfile(req.userId, updates)
       if (!user) return res.status(404).json({ error: 'User not found' })
       res.json({ user })
     } catch (err) {
       if (err?.code === 'EMAIL_TAKEN') {
         return res.status(409).json({ error: 'Email already in use' })
+      }
+      // normalizeSchedule validation errors surface as 400s.
+      if (String(err?.message || '').startsWith('schedule')) {
+        return res.status(400).json({ error: err.message })
       }
       next(err)
     }
@@ -182,6 +252,23 @@ export function createApp() {
       if (!ok) return res.status(404).json({ error: 'User not found' })
       res.json({ ok: true })
     } catch (err) {
+      next(err)
+    }
+  })
+
+  // Registration questionnaire (goals) — saved once at onboarding and
+  // refillable from the account page. The client reads the answers back via
+  // GET /api/auth/me (user.questionnaire).
+  app.put('/api/auth/questionnaire', requireAuth, async (req, res, next) => {
+    try {
+      const answers = req.body?.answers
+      const user = await db.saveQuestionnaire(req.userId, answers)
+      if (!user) return res.status(404).json({ error: 'User not found' })
+      res.json({ user })
+    } catch (err) {
+      if (String(err?.message || '').includes('required')) {
+        return res.status(400).json({ error: err.message })
+      }
       next(err)
     }
   })
@@ -202,10 +289,39 @@ export function createApp() {
       const category = typeof req.body?.category === 'string' ? req.body.category.trim() : ''
       const target = typeof req.body?.target === 'string' ? req.body.target.trim() : ''
       const equipment = typeof req.body?.equipment === 'string' ? req.body.equipment.trim() : ''
+      const gifUrl = typeof req.body?.gifUrl === 'string' ? req.body.gifUrl.trim() : ''
+      const instructions = typeof req.body?.instructions === 'string' ? req.body.instructions.trim() : ''
+      const instructionsLang = req.body?.instructionsLang === 'zh' ? 'zh' : 'en'
+      const instructionSteps = Array.isArray(req.body?.instructionSteps)
+        ? req.body.instructionSteps
+        : []
       if (!name || !category || !target) {
         return res.status(400).json({ error: 'name, category, and target are required' })
       }
-      res.status(201).json(await db.createExercise(req.userId, { name, category, target, equipment }))
+      if (gifUrl && !/^https?:\/\/\S+$/i.test(gifUrl)) {
+        return res.status(400).json({ error: 'gifUrl must be an http(s) URL' })
+      }
+      if (gifUrl.length > 1000) {
+        return res.status(400).json({ error: 'gifUrl is too long' })
+      }
+      if (instructions.length > 4000) {
+        return res.status(400).json({ error: 'instructions are too long (max 4000 characters)' })
+      }
+      if (instructionSteps.length > 20) {
+        return res.status(400).json({ error: 'instructionSteps must contain at most 20 entries' })
+      }
+      const cleanSteps = []
+      for (const step of instructionSteps) {
+        if (typeof step !== 'string') {
+          return res.status(400).json({ error: 'each instruction step must be a string' })
+        }
+        const trimmed = step.trim()
+        if (trimmed.length > 500) {
+          return res.status(400).json({ error: 'each instruction step is too long (max 500 characters)' })
+        }
+        if (trimmed) cleanSteps.push(trimmed)
+      }
+      res.status(201).json(await db.createExercise(req.userId, { name, category, target, equipment, gifUrl: gifUrl || null, instructionSteps: cleanSteps, instructions, instructionsLang }))
     } catch (err) {
       next(err)
     }
@@ -255,6 +371,124 @@ export function createApp() {
     }
   })
 
+  // --- Exercise media (uploaded custom-exercise GIFs) ---
+  // GIF bytes are stored base64 in D1 (exercise_media) and served back through
+  // the public GET /api/media/:id so <img> tags can load them without auth
+  // headers. Ids are unguessable UUIDs — same trust model as pasted URLs.
+
+  // Raw bytes must fit a D1 row after base64 inflation (~x4/3); D1 caps rows
+  // at 2,000,000 bytes, so uploads are capped well below that.
+  const MAX_GIF_BYTES = 1400000
+
+  app.post('/api/media', requireAuth, express.raw({ type: 'image/*', limit: '4mb' }), async (req, res, next) => {
+    try {
+      const buf = Buffer.isBuffer(req.body) ? req.body : null
+      if (!buf || buf.length === 0) {
+        return res.status(400).json({ error: 'GIF file body is required (Content-Type image/gif)' })
+      }
+      if (buf.length > MAX_GIF_BYTES) {
+        return res.status(413).json({ error: 'GIF is too large (max 1.4 MB)' })
+      }
+      // Magic bytes gate: renamed non-GIF uploads are rejected.
+      const magic = buf.subarray(0, 6).toString('latin1')
+      if (magic !== 'GIF87a' && magic !== 'GIF89a') {
+        return res.status(400).json({ error: 'Only GIF files are supported' })
+      }
+      const media = await db.createMedia(req.userId, 'image/gif', buf.toString('base64'))
+      // Absolute http(s) URL keeps exercises.gif_url validation/display untouched.
+      const proto = String(req.get('x-forwarded-proto') || req.protocol).split(',')[0].trim()
+      res.status(201).json({ id: media.id, url: `${proto}://${req.get('host')}/api/media/${media.id}` })
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  app.get('/api/media/:id', async (req, res, next) => {
+    try {
+      const media = await db.getMedia(req.params.id)
+      if (!media) return res.status(404).json({ error: 'Media not found' })
+      const buf = Buffer.from(media.data, 'base64')
+      res.setHeader('Content-Type', media.content_type || 'image/gif')
+      res.setHeader('Content-Length', String(buf.length))
+      res.setHeader('Cache-Control', 'public, max-age=86400')
+      res.send(buf)
+    } catch (err) {
+      next(err)
+    }
+  })
+
+    // --- GIF cover (first frame → PNG) ---
+  // User-pasted GIF URLs are decoded server-side (no CORS in Workers) and
+  // returned as a static PNG so <img> tags can show a cover without playing
+  // the animation. Cached in the Cache API; upstream cached at the edge via
+  // cf.cacheEverything so repeated requests don't re-decode.
+
+  const MAX_GIF_FETCH_BYTES = 8 * 1024 * 1024 // raw GIF cap; RGBA decode inflates ~10x
+
+  app.get('/api/gif-cover', async (req, res, next) => {
+    try {
+      const url = String(req.query.url || '').trim()
+      if (!/^https?:\/\/\S+$/i.test(url)) {
+        return res.status(400).json({ error: 'url must be an http(s) URL' })
+      }
+      if (url.length > 1000) {
+        return res.status(400).json({ error: 'url is too long' })
+      }
+
+      // Cache API: one decode per unique URL, then pure cache hits.
+      const cacheKey = new Request(`https://gif-cover.internal/${encodeURIComponent(url)}`)
+      const cache = typeof caches !== 'undefined' ? caches.default : null
+
+      if (cache) {
+        const hit = await cache.match(cacheKey)
+        if (hit) {
+          const buf = Buffer.from(await hit.arrayBuffer())
+          res.setHeader('Content-Type', 'image/png')
+          res.setHeader('Cache-Control', 'public, max-age=86400')
+          res.setHeader('Content-Length', String(buf.length))
+          return res.send(buf)
+        }
+      }
+
+      // Server-side fetch — no browser CORS here.
+      const upstream = await fetch(url, {
+        headers: { 'User-Agent': 'FitnessApp/1.0 (+gif-cover)' },
+        cf: { cacheTtl: 86400, cacheEverything: true },
+      })
+      if (!upstream.ok) {
+        return res.status(502).json({ error: `upstream ${upstream.status}` })
+      }
+
+      const buf = await upstream.arrayBuffer()
+      if (buf.byteLength > MAX_GIF_FETCH_BYTES) {
+        return res.status(413).json({ error: 'gif is too large' })
+      }
+
+      // Magic bytes: reject anti-hotlink HTML responses before decoding.
+      const sig = String.fromCharCode(...new Uint8Array(buf.slice(0, 6)))
+      if (sig !== 'GIF87a' && sig !== 'GIF89a') {
+        return res.status(415).json({ error: 'not a gif' })
+      }
+
+      // onlyExtractFirstFrame = true → decode just frame 0, minimal CPU.
+      const frame = await Image.decode(new Uint8Array(buf), true)
+      const png = await frame.encode()
+
+      if (cache) {
+        await cache.put(cacheKey, new Response(png, {
+          headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
+        }))
+      }
+
+      res.setHeader('Content-Type', 'image/png')
+      res.setHeader('Cache-Control', 'public, max-age=86400')
+      res.setHeader('Content-Length', String(png.byteLength))
+      res.send(Buffer.from(png))
+    } catch (err) {
+      next(err)   // hits your existing error handler → 500 JSON
+    }
+  })
+
   // --- Workout lists (protected) ---
 
   app.get('/api/workoutlists', requireAuth, async (req, res, next) => {
@@ -270,7 +504,23 @@ export function createApp() {
       const name = typeof req.body?.name === 'string' ? req.body.name.trim() : ''
       if (!name) return res.status(400).json({ error: 'name is required' })
       const exerciseId = typeof req.body?.exerciseId === 'string' ? req.body.exerciseId : undefined
-      res.status(201).json(await db.createWorkoutList(req.userId, name, exerciseId))
+      // Preset/plan creation sends the whole exercise sequence (with
+      // prescribed sets/reps + rest settings) in one call.
+      let exercises = null
+      if (Array.isArray(req.body?.exercises)) {
+        if (req.body.exercises.length > 30) {
+          return res.status(400).json({ error: 'exercises must contain at most 30 entries' })
+        }
+        exercises = req.body.exercises
+          .filter((entry) => entry && typeof entry.exerciseId === 'string' && entry.exerciseId)
+          .map((entry) => ({
+            exerciseId: entry.exerciseId,
+            restSecs: entry.restSecs,
+            prescribedSets: entry.prescribedSets,
+            prescribedReps: entry.prescribedReps,
+          }))
+      }
+      res.status(201).json(await db.createWorkoutList(req.userId, name, exerciseId, exercises))
     } catch (err) {
       if (err?.code === 'WORKOUT_NAME_CONFLICT') {
         return res.status(409).json({
@@ -314,7 +564,17 @@ export function createApp() {
     try {
       const exerciseId = typeof req.body?.exerciseId === 'string' ? req.body.exerciseId : ''
       if (!exerciseId) return res.status(400).json({ error: 'exerciseId is required' })
-      const list = await db.addExerciseToList(req.userId, req.params.id, exerciseId)
+      // Optional preset prescription carried with a single-exercise add.
+      const prescription = {}
+      if ('restSecs' in (req.body || {})) prescription.restSecs = req.body.restSecs
+      if ('prescribedSets' in (req.body || {})) prescription.prescribedSets = req.body.prescribedSets
+      if ('prescribedReps' in (req.body || {})) prescription.prescribedReps = req.body.prescribedReps
+      const list = await db.addExerciseToList(
+        req.userId,
+        req.params.id,
+        exerciseId,
+        Object.keys(prescription).length > 0 ? prescription : null,
+      )
       if (!list) return res.status(404).json({ error: 'Workout list or exercise not found' })
       res.json(list)
     } catch (err) {
@@ -332,6 +592,29 @@ export function createApp() {
     }
   })
 
+  // Manual ordering (drag-to-reorder). Registered before the ":exerciseId"
+  // route so the literal "reorder" segment is not swallowed as an id.
+  // The payload must list every exercise in the target list exactly once —
+  // see db.reorderListExercises.
+  app.put('/api/workoutlists/:id/exercises/reorder', requireAuth, async (req, res, next) => {
+    try {
+      const order = Array.isArray(req.body?.order) ? req.body.order : null
+      if (!order || order.length === 0) {
+        return res.status(400).json({ error: 'order must be a non-empty array of exercise ids' })
+      }
+      if (order.some((id) => typeof id !== 'string' || !id)) {
+        return res.status(400).json({ error: 'order must contain exercise ids' })
+      }
+      const list = await db.reorderListExercises(req.userId, req.params.id, order)
+      if (!list) {
+        return res.status(400).json({ error: 'order must match the workouts exercises exactly' })
+      }
+      res.json(list)
+    } catch (err) {
+      next(err)
+    }
+  })
+
   app.put('/api/workoutlists/:id/exercises/:exerciseId', requireAuth, async (req, res, next) => {
     try {
       const body = req.body ?? {}
@@ -339,6 +622,8 @@ export function createApp() {
       if ('restSecs' in body) settings.restSecs = body.restSecs
       if ('restEnabled' in body) settings.restEnabled = body.restEnabled
       if ('rirEnabled' in body) settings.rirEnabled = body.rirEnabled
+      if ('prescribedSets' in body) settings.prescribedSets = body.prescribedSets
+      if ('prescribedReps' in body) settings.prescribedReps = body.prescribedReps
       if (Object.keys(settings).length === 0) {
         return res.status(400).json({ error: 'Nothing to update' })
       }

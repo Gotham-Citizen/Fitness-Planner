@@ -1,3 +1,5 @@
+import { useScrollMemory } from "../../hooks/index.js"
+
 import { RecoveryPanel, WorkoutListsView } from "../../components/organisms/index.js"
 import { WorkoutsTemplate } from "../../components/templates/index.js"
 
@@ -18,7 +20,14 @@ export const WorkoutsPage = ({
   onStartSession,
   onHistory,
   onSelectMuscle,
+  showGoalsPrompt,
+  onOpenQuestionnaire,
+  onOpenPresets,
 }) => {
+  // Opening a movement detail from a workout card unmounts this page;
+  // restore the ".app-main" scroll offset on return (see useScrollMemory).
+  useScrollMemory("workouts")
+
   return (
     <WorkoutsTemplate
       banner={banner}
@@ -33,6 +42,9 @@ export const WorkoutsPage = ({
           onStartSession={onStartSession}
           onHistory={onHistory}
           startingSession={startingSession}
+          showGoalsPrompt={showGoalsPrompt}
+          onOpenQuestionnaire={onOpenQuestionnaire}
+          onOpenPresets={onOpenPresets}
         />
       )}
       sidebar={(

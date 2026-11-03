@@ -11,3 +11,77 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* Picker field buttons — mirror the TextInput pill, plus a chevron affordance.
+   Empty fields show their placeholder in the muted color until picked. */
+.custom-exercise-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-strong);
+  padding: 11px 18px;
+  cursor: pointer;
+}
+
+.custom-exercise-field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.custom-exercise-field:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.custom-exercise-field-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.custom-exercise-field:not(.has-value) .custom-exercise-field-value {
+  color: var(--text-muted);
+}
+
+.custom-exercise-field-chevron {
+  flex: none;
+  color: var(--text-muted);
+}
+
+/* Instructions — one input row per step, plus Add step / remove affordances. */
+.custom-exercise-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-exercise-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-exercise-step .text-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.custom-exercise-add-step {
+  align-self: flex-start;
+}
+
+.custom-exercise-add-step:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

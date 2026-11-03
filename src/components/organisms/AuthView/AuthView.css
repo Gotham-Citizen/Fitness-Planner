@@ -18,12 +18,12 @@
   gap: 40px;
 }
 
+/* Brand and actions stay on one line at every screen size. */
 .auth-page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
 .auth-page-brand {
@@ -33,13 +33,13 @@
   color: var(--text-strong);
   font-size: 20px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .auth-page-header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
   margin-left: auto;
 }
 
@@ -68,57 +68,26 @@
   margin: 0;
 }
 
-.auth-tracker {
-  list-style: none;
-  margin: 0 auto;
-  padding: 0;
-  width: 100%;
-  max-width: 520px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
+/* ---------- Signup progress (single-line, top of page) ---------- */
 
-.auth-tracker-step {
+.auth-progress {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  color: var(--text-muted);
+  gap: 6px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
 }
 
-.auth-tracker-num {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 800;
+.auth-progress-segment {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
   background: var(--bg-hover);
-  border: 1px solid var(--border);
+  transition: background-color 0.25s ease;
 }
 
-.auth-tracker-label {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.auth-tracker-step.is-active {
-  border-color: var(--accent);
-  color: var(--text-strong);
-}
-
-.auth-tracker-step.is-active .auth-tracker-num {
+.auth-progress-segment.is-reached {
   background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-}
-
-.auth-tracker-step.is-done {
-  color: var(--text-muted);
 }
 
 .auth-form-panel {
@@ -146,6 +115,13 @@
   font-size: 16px;
 }
 
+/* ---------- Focus-visible ---------- */
+.auth-submit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
 .auth-step-row {
   display: flex;
   gap: 8px;
@@ -158,6 +134,14 @@
   min-height: 48px;
 }
 
+/* ---------- Focus-visible ---------- */
+.auth-step-back:focus-visible,
+.auth-step-next:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
 .auth-step-next {
   margin-top: 6px;
   flex: 1;
@@ -166,7 +150,7 @@
 .auth-page-footer {
   width: 100%;
   max-width: 520px;
-  margin: 28px auto 0;
+  margin: 0 auto 0;
   text-align: center;
 }
 
@@ -180,6 +164,113 @@
   color: var(--text-muted);
 }
 
+/* ---------- Option pickers (tap-to-select cards, no dropdowns) ---------- */
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-field-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Short choices (gender, days, session length) wrap as a centered row. */
+.auth-options-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+/* ---------- Focus-visible for row options ---------- */
+.auth-options-row .auth-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.auth-options-row .auth-option {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.auth-option {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+
+/* ---------- Focus-visible & active states ---------- */
+.auth-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.auth-option:hover {
+  border-color: var(--accent);
+  color: var(--text-strong);
+}
+
+.auth-option.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+
+.auth-option-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.auth-option-inner strong {
+  display: block;
+  font-size: 15px;
+  color: inherit;
+}
+
+.auth-option-inner small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.auth-option-icon {
+  font-size: 22px;
+}
+
+/* Compact single-line cards (gender / days / session length). */
+.auth-option-plain {
+  justify-content: center;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* ---------- Focus-visible ---------- */
+.auth-option-plain:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 @media (max-width: 640px) {
   .auth-page {
     padding: 32px 16px 48px;
@@ -190,8 +281,8 @@
   .auth-hero-title {
     font-size: 26px;
   }
-  .auth-tracker {
-    grid-template-columns: 1fr;
+  .auth-page-brand {
+    font-size: 17px;
   }
   .auth-page-back {
     width: auto;

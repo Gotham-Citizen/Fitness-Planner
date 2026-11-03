@@ -13,6 +13,7 @@ export const JournalPage = ({
   selectedDateKey,
   onSelectDate,
   onOpenSession,
+  onOpenHistory,
   loading,
   weighIns,
   weightUnit,
@@ -37,6 +38,7 @@ export const JournalPage = ({
           selectedDateKey={selectedDateKey}
           onSelectDate={onSelectDate}
           onOpenSession={onOpenSession}
+          onOpenHistory={onOpenHistory}
           loading={loading}
           weighIns={weighIns}
           weightUnit={weightUnit}

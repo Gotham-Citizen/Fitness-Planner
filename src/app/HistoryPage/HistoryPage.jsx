@@ -3,11 +3,9 @@ import { PlannerTemplate } from "../../components/templates/index.js"
 
 /**
  * Per-workout session history page. Thin composition.
- * `sidebar` preserves the legacy library rail.
  */
 export const HistoryPage = ({
   banner,
-  sidebar,
   list,
   sessions,
   onBack,
@@ -28,7 +26,6 @@ export const HistoryPage = ({
           onClearAll={onClearAll}
         />
       )}
-      sidebar={sidebar}
     />
   )
 }

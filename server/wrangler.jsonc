@@ -18,5 +18,9 @@
 			"database_id": "f0f31aaf-8b9a-40f8-b2db-cd432b152f1a",
 			"remote": false
 		}
-	]
+	],
+	// Weekly demo reset: delete all registered users, Mondays 03:00 UTC.
+	"triggers": {
+		"crons": ["0 3 * * 1"]
+	}
 }
