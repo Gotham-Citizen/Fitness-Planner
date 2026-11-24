@@ -6,12 +6,13 @@ import { resolveShowEffort } from "../../../lib/effort.js"
 import { exerciseName } from "../../../lib/muscles.js"
 import { isMaleGender, previousBestsByExercise, rankForWeight } from "../../../lib/ranks.js"
 import { formatDuration, summarizeSession } from "../../../lib/summary.js"
+import { fromKg, toKg } from "../../../lib/units.js"
 import { formatDateTime } from "../../../utils/format.js"
 import { localeFromI18n, normalizeLang } from "../../../utils/locale.js"
 
 import "./WorkoutSummaryView.css"
 
-import { Button, ComparisonImage, SegmentedToggle, StatCard } from "../../atoms/index.js"
+import { Button, ComparisonImage, StatCard } from "../../atoms/index.js"
 import { PageCarousel, SetTags } from "../../molecules/index.js"
 import { StatIcon } from "./statIcons.jsx"
 
@@ -57,11 +58,11 @@ const RankBadge = ({ rank, inLbs, prefix }) => {
 // mode="finish" (post-workout: Done + View sessions) or
 // mode="history" (from a sessions card: single primary Back button at the top).
 // gender: 'male' | 'female' | 'other' | null (null = unspecified -> show both).
-export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, onDone, onHistory, onBack, previousSessions, gender }) => {
+export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, onDone, onHistory, onBack, previousSessions, gender, weightUnit = "kg" }) => {
   const { t, i18n } = useTranslation()
   const locale = localeFromI18n(i18n)
   const lang = normalizeLang(i18n.language)
-  const [unit, setUnit] = useState("kg")
+  const unit = weightUnit === "lbs" ? "lbs" : "kg"
   const [previewGender, setPreviewGender] = useState(null)
   const summary = summarizeSession(session, list, {
     kg: t("summary.cmpKg", { returnObjects: true }),
@@ -77,6 +78,15 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
   // (see resolveShowEffort for the flag-unknown fallback).
   const showEffortFor = (exerciseId, exSets) => {
     return resolveShowEffort(exerciseMeta.get(exerciseId), exSets)
+  }
+
+  const displaySetWeight = (s) => {
+    const raw = typeof s?.weight === "number" ? s.weight : parseFloat(s?.weight)
+    if (!Number.isFinite(raw)) return { weight: "?", unit }
+    if (raw === 0) return { weight: 0, unit }
+    const converted = fromKg(toKg(raw, s.weight_unit), unit)
+    if (converted == null) return { weight: raw, unit: s.weight_unit || unit }
+    return { weight: converted, unit }
   }
 
   const prevBests = useMemo(
@@ -107,13 +117,6 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
             {t("summary.removed", { count: session.removedEmptySets })}
           </p>
         )}
-        <SegmentedToggle
-          options={["kg", "lbs"]}
-          value={unit}
-          disableSelected={false}
-          onPick={setUnit}
-          ariaLabel={t("summary.volumeUnit")}
-        />
       </div>
 
       <PageCarousel
@@ -213,7 +216,10 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
                   <SetTags
                     sets={ex.sets}
                     showEffort={showEffortFor(ex.exerciseId, ex.sets)}
-                    formatSet={(s, i) => t("summary.setTag", { i: i + 1, reps: s.reps ?? "?", weight: s.weight ?? "?", unit: s.weight_unit })}
+                    formatSet={(s, i) => {
+                      const dw = displaySetWeight(s)
+                      return t("summary.setTag", { i: i + 1, reps: s.reps ?? "?", weight: dw.weight, unit: dw.unit })
+                    }}
                   />
                 </div>
               </div>
@@ -256,7 +262,10 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
                 <SetTags
                   sets={ex.sets}
                   showEffort={showEffortFor(ex.exerciseId, ex.sets)}
-                  formatSet={(s, i) => t("summary.setTag", { i: i + 1, reps: s.reps ?? "?", weight: s.weight ?? "?", unit: s.weight_unit })}
+                  formatSet={(s, i) => {
+                    const dw = displaySetWeight(s)
+                    return t("summary.setTag", { i: i + 1, reps: s.reps ?? "?", weight: dw.weight, unit: dw.unit })
+                  }}
                 />
               </div>
             </div>

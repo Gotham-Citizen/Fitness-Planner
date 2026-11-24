@@ -11,8 +11,22 @@ import { isValidEmail } from "../../../utils/validation.js"
 
 import "./AccountView.css"
 
-import { Button, FieldError, SegmentedToggle, TextInput } from "../../atoms/index.js"
-import { SaveCancelRow  } from "../../molecules/index.js"
+import { Button, FieldError, TextInput } from "../../atoms/index.js"
+import { OptionPickerSheet, SaveCancelRow } from "../../molecules/index.js"
+
+
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "zh", label: "中文" },
+  { value: "es", label: "Español" },
+]
+
+const normalizeLanguageCode = (raw) => {
+  const v = String(raw || "").toLowerCase()
+  if (v.startsWith("zh")) return "zh"
+  if (v.startsWith("es")) return "es"
+  return "en"
+}
 
 
 export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogout, onDeleteAccount, onOpenTimerAlerts, onOpenQuestionnaire, onOpenPlanSchedule }) => {
@@ -26,7 +40,9 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
   const [savingField, setSavingField] = useState(null)
   const [fieldError, setFieldError] = useState(null)
   const [effortError, setEffortError] = useState(null)
+  const [generalUnitError, setGeneralUnitError] = useState(null)
   const [languageError, setLanguageError] = useState(null)
+  const [picker, setPicker] = useState(null) // "generalUnit" | "effort" | "theme" | "language" | null
   const [deleting, setDeleting] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleteDraft, setDeleteDraft] = useState("")
@@ -52,6 +68,14 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
   const displayName = user.name?.trim() || "user"
   const initial = displayName.charAt(0).toUpperCase() || "?"
 
+  const currentGeneralUnit = user?.unit === "lbs" ? "lbs" : "kg"
+  const currentEffort = user?.effortScale === "rpe" ? "rpe" : "rir"
+  const currentThemeId = normalizeTheme(theme)
+  const currentThemeLabel = (() => {
+    const th = THEMES.find((x) => x.id === currentThemeId)
+    return th ? t(`account.${th.nameKey}`) : currentThemeId
+  })()
+
   const startEdit = (field) => {
     setFieldError(null)
     if (field === "email") setEmailDraft(user.email ?? "")
@@ -67,6 +91,7 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
     setEditing(null)
     setFieldError(null)
     setEffortError(null)
+    setGeneralUnitError(null)
     setLanguageError(null)
     setSavingField(null)
   }
@@ -145,10 +170,23 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
     }
   }
 
+  const pickGeneralUnit = async (next) => {
+    const normalized = next === "lbs" ? "lbs" : "kg"
+    if (normalized === currentGeneralUnit || savingField !== null) return
+    try {
+      setSavingField("generalUnit")
+      setGeneralUnitError(null)
+      await onUpdateProfile({ unit: normalized })
+    } catch (err) {
+      setGeneralUnitError(err?.message || t("account.failedWeightUnit"))
+    } finally {
+      setSavingField(null)
+    }
+  }
+
   const pickEffort = async (picked) => {
     const next = picked === "rpe" ? "rpe" : "rir"
-    const current = user?.effortScale === "rpe" ? "rpe" : "rir"
-    if (next === current || savingField !== null) return
+    if (next === currentEffort || savingField !== null) return
     try {
       setSavingField("effort")
       setEffortError(null)
@@ -161,9 +199,12 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
     }
   }
 
-  const currentLanguage = String(user?.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const currentLanguage = normalizeLanguageCode(i18n.language || user?.language)
+  const currentLanguageLabel =
+    LANGUAGE_OPTIONS.find((o) => o.value === currentLanguage)?.label || "English"
+
   const pickLanguage = async (picked) => {
-    const next = picked === "zh" ? "zh" : "en"
+    const next = normalizeLanguageCode(picked)
     if (next === currentLanguage || savingField !== null) return
     try {
       setSavingField("language")
@@ -205,6 +246,20 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
     return t("account.planFixedSummary", { count: days })
   })()
 
+  // Theme picker options — each row is painted in the theme's own colors.
+  // We try explicit colors on the THEMES entry first, then fall back to
+  // `data-theme` (CSS-variable based theming).
+  const themePickerOptions = THEMES.map((th) => {
+    const bg = th.bg || th.preview?.bg || th.colors?.bg || th.previewBg
+    const fg = th.fg || th.text || th.preview?.text || th.colors?.text || th.previewText
+    return {
+      value: th.id,
+      label: t(`account.${th.nameKey}`),
+      dataTheme: th.id,
+      style: bg && fg ? { background: bg, color: fg, borderColor: fg } : undefined,
+    }
+  })
+
   const startDelete = () => {
     setDeleteDraft("")
     setDeleteError(null)
@@ -234,6 +289,8 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
       setDeleting(false)
     }
   }
+
+  const rowDisabled = editing !== null || savingField !== null
 
   return (
     <section className="account-view">
@@ -423,42 +480,77 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
 
       <div className="account-card">
         <h3 className="account-section-title">{t("account.prefs")}</h3>
+
+        {/* General weight unit — default for exercise/set weights */}
         <div className="account-row">
-          <span className="account-label">{t("account.effortPerSet")}</span>
-          <SegmentedToggle
-            options={["rir", "rpe"]}
-            value={user?.effortScale === "rpe" ? "rpe" : "rir"}
-            disabled={savingField !== null || editing !== null}
-            onPick={pickEffort}
-            ariaLabel={t("account.effortPerSet")}
-            uppercase
-          />
+          <button
+            type="button"
+            className="account-row-expand"
+            onClick={() => setPicker("generalUnit")}
+            disabled={rowDisabled}
+            aria-label={t("account.weightUnit")}
+          >
+            <span className="account-label">{t("account.weightUnit")}</span>
+            <span className="account-value">{currentGeneralUnit}</span>
+            <span className="history-expand-icon" aria-hidden="true">&rsaquo;</span>
+          </button>
+        </div>
+        <p className="account-hint" role="status" aria-live="polite">
+          {savingField === "generalUnit" ? t("account.saving") : t("account.weightUnitHint")}
+        </p>
+        {generalUnitError && <p className="account-inline-error">{generalUnitError}</p>}
+
+        {/* Effort — opens a RIR/RPE bottom picker */}
+        <div className="account-row">
+          <button
+            type="button"
+            className="account-row-expand"
+            onClick={() => setPicker("effort")}
+            disabled={rowDisabled}
+            aria-label={t("account.effortPerSet")}
+          >
+            <span className="account-label">{t("account.effortPerSet")}</span>
+            <span className="account-value">{currentEffort.toUpperCase()}</span>
+            <span className="history-expand-icon" aria-hidden="true">&rsaquo;</span>
+          </button>
         </div>
         <p className="account-hint" role="status" aria-live="polite">
           {savingField === "effort" ? t("account.saving") : t("account.effortHint")}
         </p>
         {effortError && <p className="account-inline-error">{effortError}</p>}
 
+        {/* Language — expand row + bottom picker, matching Theme/Unit/Effort */}
         <div className="account-row">
-          <span className="account-label">{t("account.language")}</span>
-          <SegmentedToggle
-            options={[{ value: "en", label: "English" }, { value: "zh", label: "中文" }]}
-            value={currentLanguage}
-            disabled={savingField !== null || editing !== null}
-            onPick={pickLanguage}
-            ariaLabel={t("account.language")}
-          />
+          <button
+            type="button"
+            className="account-row-expand"
+            onClick={() => setPicker("language")}
+            disabled={rowDisabled}
+            aria-label={t("account.language")}
+          >
+            <span className="account-label">{t("account.language")}</span>
+            <span className="account-value">{currentLanguageLabel}</span>
+            <span className="history-expand-icon" aria-hidden="true">&rsaquo;</span>
+          </button>
         </div>
+        {savingField === "language" && (
+          <p className="account-hint" role="status" aria-live="polite">{t("account.saving")}</p>
+        )}
         {languageError && <p className="account-inline-error">{languageError}</p>}
 
+        {/* Theme — opens a bottom picker where each row is painted in that theme's colors */}
         <div className="account-row account-row--theme">
-          <span className="account-label">{t("account.theme")}</span>
-          <SegmentedToggle
-            options={THEMES.map(({ id, nameKey }) => ({ value: id, label: t(`account.${nameKey}`) }))}
-            value={normalizeTheme(theme)}
-            onPick={(v) => {onPickTheme?.(normalizeTheme(v))}}
-            ariaLabel={t("account.theme")}
-          />
+          <button
+            type="button"
+            className="account-row-expand"
+            onClick={() => setPicker("theme")}
+            disabled={rowDisabled}
+            aria-label={t("account.theme")}
+          >
+            <span className="account-label">{t("account.theme")}</span>
+            <span className="account-value">{currentThemeLabel}</span>
+            <span className="history-expand-icon" aria-hidden="true">&rsaquo;</span>
+          </button>
         </div>
 
         <div className="account-row">
@@ -495,11 +587,7 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
             {t("account.logout")}
           </Button>
           {!confirmingDelete && (
-            <Button
-              variant="ghost"
-              tone="danger"
-              onClick={startDelete}
-            >
+            <Button variant="ghost" tone="danger" onClick={startDelete}>
               {t("account.deleteAccount")}
             </Button>
           )}
@@ -520,27 +608,63 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
             </label>
             {deleteError && <p className="account-inline-error">{deleteError}</p>}
             <div className="account-edit-row">
-              <Button
-                variant="ghost"
-                tone="danger"
-                size="detail-small"
-                onClick={confirmDelete}
-                disabled={deleting}
-              >
+              <Button variant="ghost" tone="danger" size="detail-small" onClick={confirmDelete} disabled={deleting}>
                 {deleting ? t("account.deleting") : t("account.confirmDelete")}
               </Button>
-              <Button
-                variant="ghost"
-                size="detail-small"
-                onClick={cancelDelete}
-                disabled={deleting}
-              >
+              <Button variant="ghost" size="detail-small" onClick={cancelDelete} disabled={deleting}>
                 {t("account.cancel")}
               </Button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Bottom pickers */}
+      {picker === "generalUnit" && (
+        <OptionPickerSheet
+          title={t("account.weightUnit")}
+          options={[
+            { value: "kg", label: "kg" },
+            { value: "lbs", label: "lbs" },
+          ]}
+          value={currentGeneralUnit}
+          onPick={pickGeneralUnit}
+          onClose={() => setPicker(null)}
+        />
+      )}
+
+      {picker === "effort" && (
+        <OptionPickerSheet
+          title={t("account.effortPerSet")}
+          options={[
+            { value: "rir", label: "RIR" },
+            { value: "rpe", label: "RPE" },
+          ]}
+          value={currentEffort}
+          onPick={pickEffort}
+          onClose={() => setPicker(null)}
+        />
+      )}
+
+      {picker === "theme" && (
+        <OptionPickerSheet
+          title={t("account.theme")}
+          options={themePickerOptions}
+          value={currentThemeId}
+          onPick={(v) => onPickTheme?.(normalizeTheme(v))}
+          onClose={() => setPicker(null)}
+        />
+      )}
+
+      {picker === "language" && (
+        <OptionPickerSheet
+          title={t("account.language")}
+          options={LANGUAGE_OPTIONS}
+          value={currentLanguage}
+          onPick={pickLanguage}
+          onClose={() => setPicker(null)}
+        />
+      )}
     </section>
   )
 }

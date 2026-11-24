@@ -3,7 +3,7 @@ import { PlannerTemplate } from "../../components/templates/index.js"
 
 import "./SessionPage.css"
 
-export const SessionPage = ({ banner, list, session, effortScale, timerSound, timerVibrate, timerFlash, invalidSetIds, onLogSet, onUpdateSet, onDeleteSet, onFinish, onBack }) => (
+export const SessionPage = ({ banner, list, session, effortScale, timerSound, timerVibrate, timerFlash, defaultWeightUnit, invalidSetIds, onLogSet, onUpdateSet, onDeleteSet, onFinish, onBack }) => (
   <PlannerTemplate
     banner={banner}
     main={
@@ -14,6 +14,7 @@ export const SessionPage = ({ banner, list, session, effortScale, timerSound, ti
         timerSound={timerSound}
         timerVibrate={timerVibrate}
         timerFlash={timerFlash}
+        defaultWeightUnit={defaultWeightUnit}
         invalidSetIds={invalidSetIds}
         onLogSet={onLogSet}
         onUpdateSet={onUpdateSet}

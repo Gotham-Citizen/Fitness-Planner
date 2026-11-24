@@ -1,7 +1,5 @@
 /* RecoveryPanel styles — co-located (atomic Phase 4). Imported by RecoveryPanel.jsx; global cascade. */
 
-
-
 /* ---------- Right muscle tree panel ---------- */
 
 /* Inline sidebar variant is gone: the recovery panel is a fixed overlay
@@ -40,6 +38,36 @@
   }
 }
 
+/* ---------- FAB 定位覆盖（RecoveryPanel 专用） ----------
+   优先级 0,4,0 高于 root.css 里 `.app-body.has-panel .panel-fab` 的 0,3,0，
+   无论两份 CSS 加载顺序如何，这套规则都会赢。
+   right 引用 --page-gutter，与 .app-main 的左右 padding 同源，
+   保证 FAB 右边缘与 .workout-list-card 右边缘严格对齐。 */
+
+.app-body.has-panel .panel-fab.panel-fab--recovery {
+  top: 17px;
+  right: var(--page-gutter);
+}
+
+@media (min-width: 640px) {
+  .app-body.has-panel .panel-fab.panel-fab--recovery {
+    top: 18px;
+    right: 30px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-body.has-panel .panel-fab.panel-fab--recovery {
+    top: 22px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .app-body.has-panel .panel-fab.panel-fab--recovery {
+    top: 24px;
+  }
+}
+
 .recovery-list {
   list-style: none;
   margin: 0;
@@ -56,7 +84,6 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
-
 
 .recovery-row-head {
   display: flex;

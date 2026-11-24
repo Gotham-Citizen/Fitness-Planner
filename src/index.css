@@ -567,14 +567,14 @@ img {
    (Mobile < 640 · Tablet 640–1024 · Desktop 1024–1440 · Wide > 1440). */
 /* Mobile (< 640px) */
 .app-body.has-panel .panel-fab {
-  top: 21px;
+  top: 79px;
   right: 17px;
 }
 
 /* Tablet (640–1024px) */
 @media (min-width: 640px) {
   .app-body.has-panel .panel-fab {
-    top: 15px;
+    top: 88px;
     right: 31px;
   }
 }
@@ -582,7 +582,7 @@ img {
 /* Desktop (1024–1440px) */
 @media (min-width: 1024px) {
   .app-body.has-panel .panel-fab {
-    top: 27px;
+    top: 88px;
     right: 31px;
   }
 }
@@ -590,33 +590,8 @@ img {
 /* Wide (> 1440px) */
 @media (min-width: 1440px) {
   .app-body.has-panel .panel-fab {
-    top: 28px;
+    top: 90px;
     right: 32px;
-  }
-}
-
-/* Planner pages replace the global app header with the local Exercises /
-   Programs tab bar (≈68px tall + 12px margin + .app-main's top padding), so
-   the sidebar FAB drops below that row instead of covering it. */
-.app-body.is-planner .panel-fab {
-  top: 72px;
-}
-
-@media (min-width: 640px) {
-  .app-body.is-planner .panel-fab {
-    top: 74px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .app-body.is-planner .panel-fab {
-    top: 84px;
-  }
-}
-
-@media (min-width: 1440px) {
-  .app-body.is-planner .panel-fab {
-    top: 85px;
   }
 }
 

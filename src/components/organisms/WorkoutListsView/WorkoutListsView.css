@@ -185,3 +185,17 @@
   .workout-list-actions { gap: 4px; }
   .workout-list-actions .ghost-button, .workout-list-actions .primary-button { font-size: 11px; padding: 5px 8px; }
 }
+
+/* ---------- Centered content column (mirrors AccountView) ----------
+   On phones this is a no-op (`max-width` > viewport width, so the
+   section stays full-width). On tablets/desktop it caps the column
+   at --workouts-view-max and centers it with equal left/right
+   gutters — exactly how AccountView's content is laid out. */
+.workouts-view {
+  --workouts-view-max: 720px; /* match AccountView's column width */
+  width: 100%;
+  max-width: var(--workouts-view-max);
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}

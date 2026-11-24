@@ -1,8 +1,63 @@
 :root {
   --app-header-h: 56px;
   --library-drawer-w: min(86vw, 360px);
-  /* FAB 宽度 + 右侧间距 + 间隙：搜索框右侧留出的安全区 */
-  --panel-fab-reserve: 170px;
+
+  /* 页面左右 gutter —— .app-main 的 padding 和 FAB 的 right 都引用它，
+     保证 FAB 右边缘与 .workout-list-card 右边缘严格对齐。 */
+  --page-gutter: 16px;
+
+  /* FAB 位置变量 —— 全部断点只在这一处集中定义。
+     --panel-fab-top: FAB 距离 .app-body 顶部的距离。
+     --panel-fab-right: FAB 距离视口右侧的距离（= --page-gutter）。 */
+  --panel-fab-top: 21px;
+  --panel-fab-right: var(--page-gutter);
+
+  /* FAB 占位（供搜索框预留右侧空间）。 */
+  --panel-fab-width: 120px;
+  --panel-fab-gap: 27px;
+  --panel-fab-reserve: calc(var(--panel-fab-width) + var(--panel-fab-right) + var(--panel-fab-gap));
+}
+
+/* 640–1023（含 iPad mini 768px）：
+   - top 从 15 收到 12，视觉更贴近 header；
+   - right 通过 --page-gutter 保持 16，与卡片右边缘对齐。 */
+@media (min-width: 640px) {
+  :root {
+    --panel-fab-top: 24px;
+    --page-gutter: 16px;
+  }
+}
+
+/* ---------- iPad mini FAB 位置修正（768–1023px） ----------
+   该区间原规则来自 .app-body.has-panel .panel-fab（top:15 right:31）。
+   这里用 body 前缀提升优先级，单独收紧位置，不影响其它断点。 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  body .app-body.has-panel .panel-fab {
+    top: 82px;
+    right: 16px;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1023px) {
+  body .app-body.has-panel .panel-fab {
+    top: 89px;
+    right: 30px;
+  }
+}
+
+/* 1024–1439（桌面）：top 从 27 收到 22。 */
+@media (min-width: 1024px) {
+  :root {
+    --panel-fab-top: 22px;
+    --page-gutter: 32px;
+  }
+}
+
+/* ≥1440（宽屏）：top 从 28 收到 24。 */
+@media (min-width: 1440px) {
+  :root {
+    --panel-fab-top: 24px;
+  }
 }
 
 /* FAB 以 .app-body 为定位祖先，永远落在 app-header 下方（header 高度不固定）。 */
@@ -22,19 +77,42 @@
   padding-right: var(--panel-fab-reserve);
 }
 
-/* 搜索框本体：宽度随屏幕变化，且不铺满 */
-.planner-toolbar .search-results-bar {
+/* 搜索框本体：宽度同时受"内容上限"和"可用宽度上限"两个约束。
+   可用宽度 = 100% − FAB 预留区，保证窄屏不会撞到 FAB。 */
+.app-main .search-results-bar {
   flex: 0 1 auto;
   width: 100%;
-  max-width: clamp(180px, 40vw, 420px);
-  margin-right: auto; /* 左对齐；改 right/auto 可切换对齐 */
+  max-width: min(240px, calc(100% - var(--panel-fab-reserve)));
+  margin-right: auto;
 }
 
-/* 手机版：为右上角的动作库 FAB 预留空间，搜索框不再被它盖住。
-   仅作用于带侧栏（FAB 存在）的规划页；HomePage 的搜索框不受影响。 */
-@media (max-width: 900px) {
-  .app-body.has-panel .app-main > .search-results-bar {
-    max-width: calc(100% - var(--panel-fab-reserve));
+@media (min-width: 640px) {
+  .app-main .search-results-bar {
+    max-width: min(260px, calc(100% - var(--panel-fab-reserve)));
+  }
+}
+
+@media (min-width: 768px) {
+  .app-main .search-results-bar {
+    max-width: min(700px, calc(100% - var(--panel-fab-reserve)));
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-main .search-results-bar {
+    max-width: min(800px, calc(100% - var(--panel-fab-reserve)));
+  }
+}
+
+@media (min-width: 1280px) {
+  .app-main .search-results-bar {
+    max-width: min(1000px, calc(100% - var(--panel-fab-reserve)));
+  }
+}
+
+@media (min-width: 1536px) {
+  .app-main .search-results-bar {
+    max-width: min(1200px, calc(100% - var(--panel-fab-reserve)));
   }
 }
 
@@ -44,99 +122,11 @@
   font-weight: 700;
 }
 
-
-
 .panel-subtitle {
   color: var(--text-muted);
   font-size: 13px;
   margin: var(--space-1) 0 var(--space-3);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 .loading {
   display: flex;
@@ -147,8 +137,6 @@
   color: var(--text-muted);
 }
 
-
-
 .spinner {
   width: 22px;
   height: 22px;
@@ -158,21 +146,15 @@
   animation: spin 0.8s linear infinite;
 }
 
-
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-
-
 .movement-list-header {
   margin-bottom: 22px;
 }
-
-
 
 .movement-list-title {
   color: var(--text-strong);
@@ -180,15 +162,11 @@
   font-weight: 700;
 }
 
-
-
 .movement-list-subtitle {
   color: var(--text-muted);
   font-size: 14px;
   margin-top: 2px;
 }
-
-
 
 .movement-grid {
   display: grid;
@@ -196,16 +174,9 @@
   gap: var(--grid-gutter);
 }
 
-
-
-
-
 .session-exercise-placeholder,
-
 .history-exercise-placeholder,
-
 .save-panel-placeholder,
-
 .workout-exercise-placeholder {
   flex: none;
   display: inline-flex;
@@ -214,8 +185,6 @@
   background: var(--bg-hover);
   border-radius: 8px;
 }
-
-
 
 .workout-exercise-placeholder {
   width: 40px;
@@ -232,15 +201,11 @@
   border-radius: inherit;
 }
 
-
-
 .modal-title {
   color: var(--text-strong);
   font-weight: 700;
   font-size: 16px;
 }
-
-
 
 .tag {
   background: var(--bg-hover);
@@ -257,13 +222,7 @@
   outline-offset: 2px;
 }
 
-
-
-
-
 /* ---------- Modal / Save panel ---------- */
-
-
 
 .modal-overlay {
   align-items: center;
@@ -271,12 +230,7 @@
   padding: var(--padding-lg);
 }
 
-/* Custom-exercise form opens from inside the edit-workout modal, so it must
-   stack above it (both use the shared overlay) — but below bottom sheets
-   (z-index 60) used by its picker sheets. */
 .modal-overlay:has(.custom-exercise-modal) { z-index: 55; }
-
-
 
 .modal {
   width: 460px;
@@ -291,8 +245,6 @@
   overflow: hidden;
 }
 
-
-
 .modal-header {
   display: flex;
   align-items: center;
@@ -302,14 +254,10 @@
   border-bottom: 1px solid var(--border);
 }
 
-
-
 .modal-body {
   padding: var(--padding-md);
   overflow-y: auto;
 }
-
-
 
 .create-list-form {
   display: flex;
@@ -317,13 +265,9 @@
   flex-wrap: wrap;
 }
 
-
-
 .create-list-form .text-input {
   flex-basis: 100%;
 }
-
-
 
 .rename-confirm {
   margin-top: var(--gap-sm);
@@ -333,8 +277,6 @@
   padding: var(--padding-sm);
 }
 
-
-
 .rename-confirm p {
   color: var(--text-strong);
   font-size: 14px;
@@ -342,15 +284,11 @@
   margin: 0 0 10px;
 }
 
-
-
 .rename-confirm-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
-
-
 
 .modal-footer {
   padding: 12px 16px;
@@ -359,13 +297,7 @@
   justify-content: flex-end;
 }
 
-
-
-
-
 /* ---------- My Workouts ---------- */
-
-
 
 .workouts-title {
   color: var(--text-strong);
@@ -373,8 +305,6 @@
   font-weight: 700;
   margin-bottom: 18px;
 }
-
-
 
 .workouts-empty,
 .history-empty {
@@ -385,17 +315,6 @@
   padding: 32px;
   text-align: center;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 .set-rir-group {
   flex: 1;
@@ -408,19 +327,11 @@
   padding: 3px;
 }
 
-
-
-
-
-/* Tint by proximity to failure via --rir-tint (unset = unrated, neutral). */
-
 .set-rir-group[style],
 .rir-pill[style] {
   border-color: var(--rir-tint);
   background: color-mix(in srgb, var(--rir-tint) 14%, var(--bg-hover));
 }
-
-
 
 .rir-step {
   flex: 0 0 26px;
@@ -435,15 +346,9 @@
   border-radius: 6px;
 }
 
-
-
 .rir-step:hover { color: var(--text-strong); background: var(--bg-elev); }
 
-
-
 /* ---------- RIR effort bottom-sheet (openGym-style) ---------- */
-
-
 
 .sheet-overlay.rir-sheet-overlay {
   z-index: 60;
@@ -451,8 +356,6 @@
   padding: 0;
   animation: rir-sheet-fade 0.18s ease;
 }
-
-
 
 .sheet.rir-sheet {
   width: min(520px, 100%);
@@ -467,11 +370,6 @@
   animation: rir-sheet-up 0.22s ease;
 }
 
-
-
-/* Desktop: centered dialog — no visible scroller. The cap matches the overlay
-   padding so content almost always fits; the bar is hidden, not disabled, so
-   wheel/touch still scrolls when content is taller than the window. */
 @media (min-width: 640px) {
   .sheet-overlay.rir-sheet-overlay { align-items: center; padding: var(--padding-lg); }
   .sheet.rir-sheet {
@@ -549,8 +447,6 @@
   background: color-mix(in srgb, var(--bc, var(--accent)) 14%, var(--bg-elev));
 }
 
-/* Sound-picker badges carry full names (e.g. "风铃声", "Chime") that exceed
-   the 36px circle at 14px — shrink the font so text stays inside the outline. */
 .rir-sheet .effpick-n-sm {
   font-size: 10px;
   white-space: nowrap;
@@ -689,13 +585,9 @@
   transition: transform 0.2s, background 0.15s;
 }
 
-.history-expand-icon:hover {
-  background: var(--bg-hover);
-}
+.history-expand-icon:hover { background: var(--bg-hover); }
 
-.history-expand-icon.is-open {
-  transform: rotate(180deg);
-}
+.history-expand-icon.is-open { transform: rotate(180deg); }
 
 .unit-toggle {
   display: inline-flex;
@@ -715,12 +607,10 @@
   cursor: pointer;
 }
 
-/* ---------- Focus-visible ---------- */
 .unit-toggle-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-
 
 .auth-label {
   display: flex;
@@ -789,7 +679,6 @@
 
 .balance-tab { border: 1px solid var(--border); background: transparent; color: var(--text-muted); border-radius: 999px; padding: var(--space-1) var(--space-3); font-size: 13px; cursor: pointer; }
 
-/* ---------- Focus-visible ---------- */
 .balance-tab:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -797,17 +686,11 @@
 
 .balance-tab.is-active { font-weight: 700; }
 
-/* ---------- Shared selected-state trio (consolidated) ----------
-   One declaration block for every selected/on control; members used to
-   repeat it under 10 different names. NOTE: .rest-preset:hover sets
-   color:text-strong, so a hovered selected preset now tints on hover
-   (previously the later in-file rule won). */
 .rir-toggle.is-on,
 .unit-toggle-button.is-selected,
 .balance-tab.is-active,
 .rest-toggle.is-on,
 .rest-preset.is-selected,
-.set-unit-button.is-kg,
 .recent-tag.is-trained,
 .add-button {
   background: var(--accent-soft);
@@ -815,8 +698,6 @@
   color: var(--accent);
 }
 
-/* ---------- Shared inset row card (consolidated) ----------
-   Column cards on the bg-hover surface; members keep only extras. */
 .balance-ratio,
 .edit-workout-row,
 .recovery-row,
@@ -831,7 +712,6 @@
   gap: var(--gap-xs);
 }
 
-/* ---------- Shared ghost toggle buttons (consolidated) ---------- */
 .rir-toggle,
 .rest-toggle {
   background: none;
@@ -844,15 +724,12 @@
   cursor: pointer;
 }
 
-/* ---------- Focus-visible ---------- */
 .rir-toggle:focus-visible,
 .rest-toggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* ---------- Shared progress track/fill halves (consolidated) ----------
-   Members keep their own height/background/flex/width behavior. */
 .rest-bar,
 .recovery-bar,
 .effort-hist-track,
@@ -861,8 +738,6 @@
   overflow: hidden;
 }
 
-/* ---------- Shared accent CTA core (consolidated) ----------
-   Members keep their own radius/padding/shadow/sizing. */
 .primary-button,
 .save-button {
   background: var(--accent);
@@ -881,19 +756,6 @@
   border-radius: 999px;
 }
 
-/* ---------- Shared accent CTA core (consolidated) ----------
-   Members keep their own radius/padding/shadow/sizing. */
-.primary-button,
-.save-button {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: 0;
-  font-weight: 800;
-  transition: transform 0.15s ease, background 0.15s ease;
-}
-
-/* ---------- Shared overlay base (consolidated) ----------
-   Members keep their own alignment/padding/z-index/animation. */
 .modal-overlay,
 .sheet-overlay.rir-sheet-overlay {
   position: fixed;
@@ -903,8 +765,6 @@
   justify-content: center;
 }
 
-/* ---------- Shared exercise thumbnails (consolidated) ----------
-   Members keep their own size/radius. */
 .session-exercise-header img,
 .history-exercise-header img,
 .workout-exercise-main img {
@@ -912,8 +772,6 @@
   flex: none;
 }
 
-/* ---------- Shared section-title + hint text (consolidated) ----------
-   Members keep their own margins. */
 .save-section-title,
 .recent-section-title {
   font-size: var(--font-size-overline);
@@ -930,7 +788,6 @@
   margin: 0;
 }
 
-/* Inset-marker variant (library tabs): same trio + left marker. */
 .panel-tab.is-selected {
   background: var(--accent-soft);
   border-color: var(--accent);
@@ -938,9 +795,6 @@
   box-shadow: inset var(--space-1) 0 0 var(--accent);
 }
 
-/* ---------- Shared card shell (consolidated) ----------
-   Elevated surface used by every card; members keep only their own
-   layout extras (padding, flex, shadows, markers). */
 .account-card,
 .movement-card,
 .summary-exercise-card,

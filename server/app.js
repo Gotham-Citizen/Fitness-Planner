@@ -44,7 +44,7 @@ export function createApp() {
       }
       const languageRaw = req.body?.language
       const language = languageRaw == null ? null : String(languageRaw).trim().toLowerCase()
-      if (language !== null && language !== 'en' && language !== 'zh') {
+      if (language !== null && language !== 'en' && language !== 'zh' && language !== 'es') {
         return res.status(400).json({ error: 'language must be en or zh' })
       }
       // Survey answers collected in the signup wizard. Validated with the
@@ -82,7 +82,7 @@ export function createApp() {
         return res.status(401).json({ error: 'Invalid email or password' })
       }
       const token = await createToken(user.id)
-      const safeUser = { id: user.id, email: user.email, name: user.name ?? null, createdAt: user.createdAt, gender: user.gender ?? null, bodyweight: user.bodyweight ?? null, bodyweightUnit: user.bodyweightUnit || 'kg', targetWeight: user.targetWeight ?? null, effortScale: user.effortScale || 'rir', timerSound: user.timerSound || 'beep', timerPlaySound: user.timerPlaySound ?? 1, timerVibrate: user.timerVibrate ?? 1, timerFlash: user.timerFlash ?? 0, language: user.language || 'en', questionnaire: user.questionnaire ?? null, questionnaireUpdatedAt: user.questionnaireUpdatedAt ?? null }
+      const safeUser = { id: user.id, email: user.email, name: user.name ?? null, createdAt: user.createdAt, gender: user.gender ?? null, bodyweight: user.bodyweight ?? null, bodyweightUnit: user.bodyweightUnit || 'kg', unit: user.unit || 'kg', targetWeight: user.targetWeight ?? null, effortScale: user.effortScale || 'rir', timerSound: user.timerSound || 'beep', timerPlaySound: user.timerPlaySound ?? 1, timerVibrate: user.timerVibrate ?? 1, timerFlash: user.timerFlash ?? 0, language: user.language || 'en', questionnaire: user.questionnaire ?? null, questionnaireUpdatedAt: user.questionnaireUpdatedAt ?? null }
       res.json({ token, user: safeUser })
     } catch (err) {
       next(err)
@@ -108,6 +108,7 @@ export function createApp() {
       const hasName = has('name')
       const hasBw = has('bodyweight')
       const hasBwUnit = has('bodyweightUnit')
+      const hasUnit = has('unit')
       const hasEffort = has('effortScale')
       const hasTimerSound = has('timerSound')
       const hasTimerPlaySound = has('timerPlaySound')
@@ -117,7 +118,7 @@ export function createApp() {
       const hasSchedule = has('schedule')
       const hasPlan = has('plan')
       if (
-        !hasGender && !hasEmail && !hasName && !hasBw && !hasBwUnit &&
+        !hasGender && !hasEmail && !hasName && !hasBw && !hasBwUnit && !hasUnit &&
         !hasEffort && !hasTimerSound && !hasTimerPlaySound && !hasTimerVibrate &&
         !hasTimerFlash && !hasLanguage && !hasSchedule && !hasPlan
       ) {
@@ -154,11 +155,18 @@ export function createApp() {
         updates.bodyweight = bw
       }
       if (hasBwUnit) {
-        const unit = String(body.bodyweightUnit || '').toLowerCase()
-        if (unit !== 'kg' && unit !== 'lbs') {
+        const bwUnit = String(body.bodyweightUnit || '').toLowerCase()
+        if (bwUnit !== 'kg' && bwUnit !== 'lbs') {
           return res.status(400).json({ error: 'bodyweightUnit must be kg or lbs' })
         }
-        updates.bodyweightUnit = unit
+        updates.bodyweightUnit = bwUnit
+      }
+      if (hasUnit) {
+        const unit = String(body.unit || '').toLowerCase()
+        if (unit !== 'kg' && unit !== 'lbs') {
+          return res.status(400).json({ error: 'unit must be kg or lbs' })
+        }
+        updates.unit = unit
       }
       if (hasEffort) {
         const scale = String(body.effortScale || '').toLowerCase()
@@ -185,8 +193,8 @@ export function createApp() {
       }
       if (hasLanguage) {
         const lang = String(body.language || '').toLowerCase()
-        if (lang !== 'en' && lang !== 'zh') {
-          return res.status(400).json({ error: 'language must be en or zh' })
+        if (lang !== 'en' && lang !== 'zh' && lang !== 'es') {
+          return res.status(400).json({ error: 'language must be en, zh, or es' })
         }
         updates.language = lang
       }

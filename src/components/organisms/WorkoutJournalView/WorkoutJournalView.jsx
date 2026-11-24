@@ -10,6 +10,7 @@ import { localeFromI18n } from "../../../utils/locale.js"
 import "./WorkoutJournalView.css"
 
 import { Button } from "../../atoms/index.js"
+import { PersonalRecordsCard } from "../PersonalRecordsCard/PersonalRecordsCard.jsx"
 
 const WEEKDAY_SEED_SUNDAY = new Date(2024, 0, 7, 12, 0, 0)
 
@@ -91,12 +92,15 @@ const formatLong = (key, locale) => {
 export const WorkoutJournalView = ({
   sessions,
   workoutLists,
+  exercises,
   filterListId,
   onFilterChange,
   selectedDateKey,
   onSelectDate,
   onOpenSession,
   onOpenHistory,
+  // 👇 new: navigate to the full personal-records page
+  onOpenPersonalRecords,
   loading,
   weighIns,
   weightUnit = "kg",
@@ -296,6 +300,12 @@ export const WorkoutJournalView = ({
           </>
         )}
       </div>
+
+      <PersonalRecordsCard
+        sessions={sessions}
+        exercises={exercises}
+        onViewMore={onOpenPersonalRecords}
+      />
 
       <div className="balance-card balance-open-card journal-history-card">
         <div className="balance-open-text">

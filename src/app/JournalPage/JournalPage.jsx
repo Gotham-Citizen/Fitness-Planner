@@ -8,18 +8,20 @@ export const JournalPage = ({
   banner,
   sessions,
   workoutLists,
+  exercises,
   filterListId,
   onFilterChange,
   selectedDateKey,
   onSelectDate,
   onOpenSession,
   onOpenHistory,
+  // 👇 new: opens the full personal-records page
+  onOpenPersonalRecords,
   loading,
   weighIns,
   weightUnit,
   user,
   weighInsLoading,
-  showEffort,
   savingWeighIn,
   effortScale,
   onLogWeighIn,
@@ -33,19 +35,22 @@ export const JournalPage = ({
         <WorkoutJournalView
           sessions={sessions}
           workoutLists={workoutLists}
+          exercises={exercises}
+          gender={user?.gender}
           filterListId={filterListId}
           onFilterChange={onFilterChange}
           selectedDateKey={selectedDateKey}
           onSelectDate={onSelectDate}
           onOpenSession={onOpenSession}
           onOpenHistory={onOpenHistory}
+          onOpenPersonalRecords={onOpenPersonalRecords}   // 👈 pass through
           loading={loading}
           weighIns={weighIns}
           weightUnit={weightUnit}
         />
       )}
       cards={(
-        <div className={`journal-cards${showEffort ? "" : " is-single"}`}>
+        <div className="journal-cards">
           <BodyweightCard
             user={user}
             weighIns={weighIns}

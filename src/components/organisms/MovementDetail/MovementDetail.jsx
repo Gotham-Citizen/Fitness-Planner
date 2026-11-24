@@ -70,7 +70,7 @@ export const MovementDetail = ({ exercise, onBack, onSave, saveLabel, onUpdateEx
   return (
     <section className="movement-detail">
       <Button className="back-button" onClick={onBack}>
-        {t("movement.back")}
+        {t("common.back")}
       </Button>
 
       <div className="movement-detail-hero">

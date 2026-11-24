@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
@@ -16,6 +16,7 @@ import { BalancePage } from "./BalancePage/BalancePage.jsx"
 import { HistoryPage } from "./HistoryPage/HistoryPage.jsx"
 import { HomePage } from "./HomePage/HomePage.jsx"
 import { JournalPage } from "./JournalPage/JournalPage.jsx"
+import { PersonalRecordsPage } from "./PersonalRecordsPage/PersonalRecordsPage.jsx"
 import { PlannerPage } from "./PlannerPage/PlannerPage.jsx"
 import { SessionPage } from "./SessionPage/SessionPage.jsx"
 import { SummaryPage } from "./SummaryPage/SummaryPage.jsx"
@@ -55,7 +56,6 @@ reorderWorkoutListExercises,
   updateSet,
   updateWorkoutExerciseSettings } from "../lib/api.js"
 import { profileBodyweightKg } from "../lib/bodyweight.js"
-import { hasEffort } from "../lib/effort.js"
 import { todayKeyLocal } from "../lib/journal.js"
 import { buildHierarchy, findExercise, searchExercises, titleCase } from "../lib/muscles.js"
 import { generatePlan } from "../lib/planGenerator.js"
@@ -117,6 +117,10 @@ export const App = () => {
   const [questionnaireReturnView, setQuestionnaireReturnView] = useState("account")
   const bwBackfillFor = useRef({})
   const errorTimerRef = useRef(null)
+  // 从 Journal 跳出到 personal-records / workout-history / 单条 session
+  // 详情之前，记下滚动位置；回到 journal 且内容就绪后再滚回去。
+  const journalScrollRef = useRef({ window: 0, main: 0 })
+  const shouldRestoreJournalScrollRef = useRef(false)
 
   const showError = useCallback((msg) => {
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
@@ -281,7 +285,7 @@ export const App = () => {
   const recoveryCacheKey = `${workoutLists.map((l) => l.id).join(",")}#${sessionTick}`
 
   useEffect(() => {
-    if ((view !== "workouts" && view !== "journal" && view !== "balance" && view !== "structural-balance") || recoveryKey === recoveryCacheKey) return
+    if ((view !== "workouts" && view !== "journal" && view !== "balance" && view !== "structural-balance" && view !== "personal-records") || recoveryKey === recoveryCacheKey) return
     let cancelled = false
     fetchAllSessions()
       .then((flat) => {
@@ -356,6 +360,41 @@ export const App = () => {
   const recoveryLoading = authenticated && view === "workouts" && workoutLists.length > 0 && recoveryKey !== recoveryCacheKey
   const journalLoading = authenticated && view === "journal" && workoutLists.length > 0 && recoveryKey !== recoveryCacheKey
 
+  // 从 Journal 跳出前记录滚动位置（window 与可能独立滚动的 #main-content 都覆盖）。
+  const saveJournalScroll = () => {
+    if (typeof window === "undefined") return
+    const main = document.getElementById("main-content")
+    journalScrollRef.current = {
+      window: window.scrollY || window.pageYOffset || 0,
+      main: main?.scrollTop || 0,
+    }
+    shouldRestoreJournalScrollRef.current = true
+  }
+
+  // 回到 journal 后，等 sessions / weigh-ins 就绪、JournalPage 渲染完成
+  // （双 rAF 等一帧布局）再把滚动位置恢复回去，避免被截断到顶部附近。
+  useLayoutEffect(() => {
+    if (view !== "journal") return
+    if (!shouldRestoreJournalScrollRef.current) return
+    if (journalLoading) return
+    if (weighIns === null) return
+    const { window: wy, main: my } = journalScrollRef.current
+    shouldRestoreJournalScrollRef.current = false
+    if (wy === 0 && my === 0) return
+    let raf1, raf2
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        if (wy > 0) window.scrollTo(0, wy)
+        const main = document.getElementById("main-content")
+        if (main && my > 0) main.scrollTop = my
+      })
+    })
+    return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+    }
+  }, [view, journalLoading, weighIns])
+
   const liveSessions = useMemo(() => {
     if (!exercises || workoutLists.length === 0) return []
     const liveIds = new Set(workoutLists.map((l) => l.id))
@@ -367,8 +406,6 @@ export const App = () => {
     if (journalFilterListId === "all") return allSessions
     return allSessions.filter((s) => s.listId === journalFilterListId)
   }, [allSessions, journalFilterListId])
-
-  const showEffort = useMemo(() => hasEffort(journalSessions), [journalSessions])
 
   // Set ids with weight-but-no-reps, highlighted after a blocked Finish attempt.
   // Recomputed live so rows un-highlight as soon as reps are entered.
@@ -870,6 +907,7 @@ export const App = () => {
   // M4 — all-sessions history. Uses a synthetic list so the shared
   // "history-summary" branch (which requires `historyList`) can render.
   const handleShowAllHistory = async () => {
+    saveJournalScroll()
     try {
       const all = await fetchAllUserSessions()
       const sorted = [...all].sort((a, b) =>
@@ -890,6 +928,7 @@ export const App = () => {
   }
 
   const handleOpenJournalSession = (session) => {
+    saveJournalScroll()
     const list = workoutLists.find((l) => l.id === session.listId) || {
       id: session.listId,
       name: session.listName || t("common.deletedWorkout"),
@@ -899,6 +938,29 @@ export const App = () => {
     setHistorySessions(allSessions.filter((s) => s.listId === session.listId))
     setHistorySummarySession(session)
     setHistoryReturnView("journal")
+    setView("history-summary")
+  }
+
+  // Opens the full personal-records page from the journal view.
+  const handleOpenPersonalRecords = () => {
+    saveJournalScroll()
+    setSelectedExercise(null)
+    setView("personal-records")
+  }
+
+  // Opens the summary of the session a PR was set in. Returns to the
+  // personal-records page (not the journal) so the user keeps their context.
+  const handleOpenPersonalRecordsSession = (session) => {
+    saveJournalScroll()
+    const list = workoutLists.find((l) => l.id === session.listId) || {
+      id: session.listId,
+      name: session.listName || t("common.deletedWorkout"),
+      exercises: [],
+    }
+    setHistoryList(list)
+    setHistorySessions(allSessions.filter((s) => s.listId === session.listId))
+    setHistorySummarySession(session)
+    setHistoryReturnView("personal-records")
     setView("history-summary")
   }
 
@@ -925,6 +987,7 @@ export const App = () => {
   const handleBackFromHistorySummary = () => {
     setHistorySummarySession(null)
     if (historyReturnView === "journal") setView("journal")
+    else if (historyReturnView === "personal-records") setView("personal-records")
     else if (historyReturnView === "workout-history") setView("workout-history")
     else setView("history")
   }
@@ -938,6 +1001,7 @@ export const App = () => {
       if (historySummarySession?.id === sessionId) {
         setHistorySummarySession(null)
         if (historyReturnView === "journal") setView("journal")
+        else if (historyReturnView === "personal-records") setView("personal-records")
         else if (historyReturnView === "workout-history") setView("workout-history")
         else setView("history")
       }
@@ -1056,9 +1120,9 @@ export const App = () => {
     setSearchQuery("")
   }
 
-  const handleUpdateProfile = async ({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule }) => {
+  const handleUpdateProfile = async ({ email, gender, name, bodyweight, bodyweightUnit, unit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule }) => {
     try {
-      const { user: updated } = await updateProfile({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule })
+      const { user: updated } = await updateProfile({ email, gender, name, bodyweight, bodyweightUnit, unit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule })
       if (updated) setUser(updated)
       return updated
     } catch (err) {
@@ -1172,7 +1236,7 @@ export const App = () => {
   const protectedViews = [
     "workouts", "journal", "balance", "structural-balance", "session", "summary",
     "history", "history-summary", "workout-history", "account", "timer-alerts",
-    "questionnaire", "plan-schedule",
+    "questionnaire", "plan-schedule", "personal-records",
   ]
   const showAuthGate = !authenticated && (view === "auth" || protectedViews.includes(view))
 
@@ -1209,8 +1273,8 @@ export const App = () => {
 
   const tabId = view === "home" ? "home"
     : view === "planner" ? "planner"
-      : view === "journal" || view === "workout-history"
-        || (view === "history-summary" && (historyReturnView === "journal" || historyReturnView === "workout-history")) ? "journal"
+      : view === "journal" || view === "personal-records" || view === "workout-history"
+        || (view === "history-summary" && (historyReturnView === "journal" || historyReturnView === "personal-records" || historyReturnView === "workout-history")) ? "journal"
         : view === "balance" || view === "structural-balance" ? "balance"
           : view === "workouts" || view === "session" || view === "summary" || view === "history" || view === "history-summary" ? "workouts"
             : "home"
@@ -1269,6 +1333,7 @@ export const App = () => {
         timerSound={resolveAlertSound(user?.timerPlaySound ?? 1, user?.timerSound || "beep")}
         timerVibrate={user?.timerVibrate ?? 1}
         timerFlash={user?.timerFlash ?? 0}
+        defaultWeightUnit={user?.unit || "kg"}
         invalidSetIds={invalidFinishIds}
         onLogSet={handleLogSet}
         onUpdateSet={handleUpdateSet}
@@ -1283,9 +1348,11 @@ export const App = () => {
         banner={banner}
         sidebar={librarySidebar}
         list={summaryList}
+        exercises={exercises} 
         session={summarySession}
         previousSessions={allSessions}
         gender={user?.gender ?? null}
+        weightUnit={user?.unit || "kg"}
         onDone={handleDoneSummary}
         onHistory={handleSummaryHistory}
       />
@@ -1310,6 +1377,7 @@ export const App = () => {
         list={historyList}
         title={t("journal.workoutHistory")}
         sessions={historySessions}
+        exercises={exercises || []}
         onBack={() => {
           setHistorySessions([])
           setHistoryList(null)
@@ -1323,13 +1391,14 @@ export const App = () => {
     body = (
       <SummaryPage
         banner={banner}
-        sidebar={historyReturnView === "journal" || historyReturnView === "workout-history" ? null : librarySidebar}
+        sidebar={historyReturnView === "journal" || historyReturnView === "personal-records" || historyReturnView === "workout-history" ? null : librarySidebar}
         list={historyList}
         session={historySummarySession}
         mode="history"
         heroTitle={historyList.name}
         previousSessions={historySessions}
         gender={user?.gender ?? null}
+        weightUnit={user?.unit || "kg"}
         onBack={handleBackFromHistorySummary}
       />
     )
@@ -1364,18 +1433,19 @@ export const App = () => {
         banner={banner}
         sessions={journalSessions}
         workoutLists={workoutLists}
+        exercises={exercises || []}
         filterListId={journalFilterListId}
         onFilterChange={setJournalFilterListId}
         selectedDateKey={journalDateKey}
         onSelectDate={setJournalDateKey}
         onOpenSession={handleOpenJournalSession}
         onOpenHistory={handleShowAllHistory}
+        onOpenPersonalRecords={handleOpenPersonalRecords}
         loading={journalLoading}
         weighIns={weighIns}
         weightUnit={user?.bodyweightUnit || "kg"}
         user={user}
         weighInsLoading={weighIns === null}
-        showEffort={showEffort}
         savingWeighIn={savingWeighIn}
         effortScale={user?.effortScale || "rir"}
         onLogWeighIn={handleLogWeighIn}
@@ -1383,10 +1453,23 @@ export const App = () => {
         onSetGoal={handleSetTargetWeight}
       />
     )
+  } else if (view === "personal-records") {
+    body = (
+      <AuthTemplate banner={banner}>
+        <PersonalRecordsPage
+          sessions={allSessions}
+          exercises={exercises || []}
+          gender={user?.gender ?? null}
+          weightUnit={user?.bodyweightUnit || "kg"}
+          onOpenSession={handleOpenPersonalRecordsSession}
+          onBack={() => setView("journal")}
+        />
+      </AuthTemplate>
+    )
   } else if (view === "account") {
     body = (
       <AccountPage
-        key={`${user?.id ?? "account"}-${user?.name ?? ""}-${user?.email ?? ""}-${user?.gender ?? ""}-${user?.bodyweight ?? ""}-${user?.bodyweightUnit ?? ""}-${user?.effortScale ?? ""}-${user?.timerSound ?? ""}-${user?.timerPlaySound ?? ""}-${user?.timerVibrate ?? ""}-${user?.timerFlash ?? ""}`}
+        key={`${user?.id ?? "account"}-${user?.name ?? ""}-${user?.email ?? ""}-${user?.gender ?? ""}-${user?.bodyweight ?? ""}-${user?.bodyweightUnit ?? ""}-${user?.unit ?? ""}-${user?.effortScale ?? ""}-${user?.timerSound ?? ""}-${user?.timerPlaySound ?? ""}-${user?.timerVibrate ?? ""}-${user?.timerFlash ?? ""}`}
         banner={banner}
         user={user}
         theme={theme}
@@ -1499,7 +1582,6 @@ export const App = () => {
         sortAlpha={sortAlpha}
         sortByDifficulty={sortByDifficulty}
         onToggleSortAlpha={() => setSortAlpha((p) => !p)}
-        onToggleSortByDifficulty={() => setSortByDifficulty((p) => !p)}
       />
     )
   }

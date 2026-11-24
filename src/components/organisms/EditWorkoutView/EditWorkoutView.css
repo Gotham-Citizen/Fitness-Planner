@@ -265,3 +265,194 @@
   padding: 24px 0;
   text-align: center;
 }
+
+/* =========================================================
+   ⬇️⬇️⬇️ 以下全部为新增内容，原文件其它地方未改动 ⬇️⬇️⬇️
+   ========================================================= */
+
+/* ---------- Page 外壳（JSX 从 <ModalShell> 换成 <div> 后需要的最小布局） ---------- */
+.edit-workout-page {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--bg, #fff);
+  color: inherit;
+  z-index: 50;
+}
+
+.edit-workout-page-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+  background: inherit;
+}
+
+.edit-workout-back {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 6px 10px;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.edit-workout-back:hover {
+  background: rgba(128, 128, 128, 0.1);
+}
+.edit-workout-back:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.edit-workout-page-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edit-workout-page-body {
+  overflow-y: auto;
+  padding: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.edit-workout-page-footer {
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+  background: inherit;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ---------- Rest time 数值（放在按钮内的 span） ---------- */
+.rest-time-display .rest-time-value,
+.rest-time-display-wrap .rest-time-value {
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ---------- Timer picker → 底部弹出 sheet ---------- */
+.rest-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.45);
+  animation: rest-backdrop-in 160ms ease-out;
+}
+
+.rest-sheet {
+  width: 100%;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--bg, #fff);
+  color: inherit;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+  padding: 8px 16px max(16px, env(safe-area-inset-bottom));
+  animation: rest-sheet-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+.rest-sheet-grabber {
+  width: 40px;
+  height: 4px;
+  margin: 4px auto 12px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.25;
+}
+
+@keyframes rest-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes rest-sheet-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* 桌面端也保持从底部弹出的视觉，但限制宽度并居中 */
+@media (min-width: 1024px) {
+  .rest-sheet {
+    width: min(480px, 100%);
+    margin: 0 auto;
+  }
+}
+
+/* =========================================================
+   Large screens: bordered centered column (AccountView-style)
+
+   - Page stays fixed/inset:0 so the backdrop covers the viewport.
+   - Each section (header / body / footer) becomes a max-width
+     centered block with left + right borders. The existing
+     border-bottom on the header and border-top on the footer
+     now stop at those side walls instead of running edge to edge.
+   - A top cap on the header and a bottom cap on the footer
+     "close the box" so the column reads as a proper panel.
+   - Below the breakpoint nothing changes: no side borders,
+     full-bleed layout on phones.
+   ========================================================= */
+
+.edit-workout-page {
+  /* Match AccountView's column width. 720px fits the row layout
+     (grip + thumb + name + settings) comfortably; bump to 800px
+     if long exercise names feel cramped. */
+  --edit-workout-content-max: 720px;
+}
+
+@media (min-width: 720px) {
+  .edit-workout-page-header,
+  .edit-workout-page-body,
+  .edit-workout-page-footer {
+    width: 100%;
+    max-width: var(--edit-workout-content-max);
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+    border-left: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+    border-right: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+  }
+
+  /* Cap the top of the header and the bottom of the footer so the
+     column has a closed top and bottom. */
+  .edit-workout-page-header {
+    border-top: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+  }
+
+  .edit-workout-page-footer {
+    border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+  }
+}
+
+/* ---------- ✕ button → top-right corner of the row ----------
+   Row (li) already has `position: relative`, so absolute
+   positioning anchors to the row's border-box. The button's
+   `onPointerDown={stopPropagation}` still prevents the drag
+   handler from firing, so drag-reorder keeps working. */
+.edit-workout-list .edit-workout-row-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+}
+
+/* Reserve space on the main line so the name truncates before
+   sliding under the absolutely-positioned ✕. 32px ≈ button
+   width + a little breathing room. */
+.edit-workout-list .edit-workout-row-main {
+  padding-right: 32px;
+}

@@ -1,6 +1,16 @@
 // Canonical equipment grouping for the library's Equipment tab.
 // Pure logic — no i18n, no React — so it stays verifiable in plain Node.
 
+// Dedicated group key for user-created exercises. Not part of the canonical
+// equipment taxonomy; used only by the Equipment picker and the scoped pool.
+export const CUSTOM_EQUIPMENT_KEY = "custom"
+
+// A user-created exercise is one whose owning user is set. The API returns
+// the column as `user_id` (snake_case) on some payloads and `userId` on
+// others; `isCustom` is accepted as a hint for callers that add it.
+export const isCustomExercise = (ex) =>
+  ex != null && (ex.user_id != null || ex.userId != null || ex.isCustom === true)
+
 // Exact merge map: raw equipment values → group key.
 // - "olympic barbell" → "barbell" (same lift, one card)
 // - "assisted" → "body weight" (assistance adds no equipment)
@@ -53,14 +63,14 @@ export const canonicalEquipment = (raw) => {
 }
 
 /**
- * Groups exercises by canonical equipment key. Returns [{ key, exercises }],
- * unsorted. Every canonical key gets its own group; "other" collects the
- * leftovers and is pinned last by the browser UI.
+ * Groups exercises by canonical equipment key. Custom (user-created)
+ * exercises go to a dedicated "custom" group, independent of their
+ * equipment field. Returns [{ key, exercises }], unsorted.
  */
 export const groupExercisesByEquipment = (exercises) => {
   const map = new Map()
   for (const ex of exercises || []) {
-    const key = canonicalEquipment(ex?.equipment)
+    const key = isCustomExercise(ex) ? CUSTOM_EQUIPMENT_KEY : canonicalEquipment(ex?.equipment)
     if (!map.has(key)) map.set(key, [])
     map.get(key).push(ex)
   }

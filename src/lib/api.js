@@ -59,13 +59,14 @@ export const login = (email, password) =>
 
 export const fetchMe = () => request("/auth/me")
 
-export const updateProfile = ({ email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule } = {}) => {
+export const updateProfile = ({ email, gender, name, bodyweight, bodyweightUnit, unit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule } = {}) => {
   const body = {}
   if (email !== undefined) body.email = email
   if (gender !== undefined) body.gender = gender
   if (name !== undefined) body.name = name
   if (bodyweight !== undefined) body.bodyweight = bodyweight
   if (bodyweightUnit !== undefined) body.bodyweightUnit = bodyweightUnit
+  if (unit !== undefined) body.unit = unit
   if (effortScale !== undefined) body.effortScale = effortScale
   if (timerSound !== undefined) body.timerSound = timerSound
   if (timerPlaySound !== undefined) body.timerPlaySound = timerPlaySound

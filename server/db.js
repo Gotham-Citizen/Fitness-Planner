@@ -13,25 +13,26 @@ function parseJson(text, fallback) {
   }
 }
 
-function toExercise(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    nameZh: row.name_zh ?? null,
-    namePinyin: row.name_pinyin ?? null,
-    nameInitials: row.name_initials ?? null,
-    category: row.category,
-    target: row.target,
-    equipment: row.equipment,
-    muscle_group: row.muscle_group,
-    secondary_muscles: parseJson(row.secondary_muscles, []),
-    image: row.image,
-    gif_url: row.gif_url,
-    instructions: parseJson(row.instructions, {}),
-    instruction_steps: parseJson(row.instruction_steps, {}),
-    difficulty: row.difficulty ?? 1,
-  }
-}
+  function toExercise(row) {
+   return {
+     id: row.id,
+     name: row.name,
+     nameZh: row.name_zh ?? null,
+     namePinyin: row.name_pinyin ?? null,
+     nameInitials: row.name_initials ?? null,
+     category: row.category,
+     target: row.target,
+     equipment: row.equipment,
+     muscle_group: row.muscle_group,
+     secondary_muscles: parseJson(row.secondary_muscles, []),
+     image: row.image,
+     gif_url: row.gif_url,
+     instructions: parseJson(row.instructions, {}),
+     instruction_steps: parseJson(row.instruction_steps, {}),
+     difficulty: row.difficulty ?? 1,
+     user_id: row.user_id ?? null,
+   }
+ }
 
 function toListExercise(row) {
   const rawSecs = Number(row.rest_secs)
@@ -193,6 +194,7 @@ function toUser(row) {
     gender: row.gender ? normalizeGender(row.gender) : null,
     bodyweight: row.bodyweight ?? null,
     bodyweightUnit: row.bodyweight_unit || 'kg',
+    unit: row.unit === 'lbs' ? 'lbs' : 'kg',
     targetWeight: row.target_weight ?? null,
     effortScale: normalizeEffortScale(row.effort_scale),
     language: normalizeLanguage(row.language),
@@ -880,6 +882,15 @@ const db = {
       .catch(() => {})
   },
 
+  // General (non-bodyweight) weight unit preference. Keeps bodyweight_unit
+  // independent for bodyweight/target/weigh-ins.
+  async ensureUnitColumn() {
+    await env.DB
+      .prepare("ALTER TABLE users ADD COLUMN unit TEXT NOT NULL DEFAULT 'kg'")
+      .run()
+      .catch(() => {})
+  },
+
   async ensurePlanColumn() {
     if (this._planColumnReady) return
     const { results } = await env.DB.prepare('PRAGMA table_info(users)').all()
@@ -1108,26 +1119,34 @@ const db = {
     return this.updateUserProfile(userId, { gender })
   },
 
-  async updateUserProfile(userId, { email, gender, name, bodyweight, bodyweightUnit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule, plan }) {
+  async updateUserProfile(userId, { email, gender, name, bodyweight, bodyweightUnit, unit, effortScale, timerSound, timerPlaySound, timerVibrate, timerFlash, language, schedule, plan }) {
     if (schedule !== undefined) {
       // The schedule column postdates the original schema — older local D1
       // files need the ALTER before the first write (reads default to null).
       await this.ensureScheduleColumn()
     }
+    if (unit !== undefined) {
+      await this.ensureUnitColumn()
+    }
     if (bodyweight !== undefined || bodyweightUnit !== undefined) {
       let bw = bodyweight === null ? null : bodyweight !== undefined ? Number(bodyweight) : undefined
       if (bw !== undefined && bw !== null && !isPositiveNumber(bw)) throw new Error('bodyweight must be positive')
-      const unit = bodyweightUnit === 'lbs' ? 'lbs' : bodyweightUnit === 'kg' ? 'kg' : undefined
+      const bwUnit = bodyweightUnit === 'lbs' ? 'lbs' : bodyweightUnit === 'kg' ? 'kg' : undefined
       const updateBodyweight = async () => {
-        if (bw !== undefined && unit !== undefined) {
-          await env.DB.prepare('UPDATE users SET bodyweight = ?, bodyweight_unit = ? WHERE id = ?').bind(bw, unit, userId).run()
+        if (bw !== undefined && bwUnit !== undefined) {
+          await env.DB.prepare('UPDATE users SET bodyweight = ?, bodyweight_unit = ? WHERE id = ?').bind(bw, bwUnit, userId).run()
         } else if (bw !== undefined) {
           await env.DB.prepare('UPDATE users SET bodyweight = ? WHERE id = ?').bind(bw, userId).run()
-        } else if (unit !== undefined) {
-          await env.DB.prepare('UPDATE users SET bodyweight_unit = ? WHERE id = ?').bind(unit, userId).run()
+        } else if (bwUnit !== undefined) {
+          await env.DB.prepare('UPDATE users SET bodyweight_unit = ? WHERE id = ?').bind(bwUnit, userId).run()
         }
       }
       await updateBodyweight()
+    }
+    if (unit !== undefined) {
+      const cleanUnit = unit === 'lbs' ? 'lbs' : unit === 'kg' ? 'kg' : null
+      if (!cleanUnit) throw new Error('unit must be kg or lbs')
+      await env.DB.prepare('UPDATE users SET unit = ? WHERE id = ?').bind(cleanUnit, userId).run()
     }
     if (name !== undefined) {
       const cleanName = name === null ? null : normalizeDisplayName(name)

@@ -1,0 +1,40 @@
+/* Personal records full page. Header rules mirror WorkoutHistoryView.css
+   (.history-header / .history-title) so the back affordance is consistent
+   across both history-style pages. */
+
+.journal-pr-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px 16px 32px;
+}
+
+.journal-pr-page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.journal-pr-page-title {
+  color: var(--text-strong);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.journal-pr-page .panel-subtitle {
+  margin: 0 0 12px;
+}
+
+/* Row-level styles (.journal-pr-list / .journal-pr-row / .journal-pr-name /
+   .rank-badge / .journal-pr-meta / .journal-pr-progress) come from
+   PersonalRecordsCard.css, imported by the page component. */
+
+@media (max-width: 480px) {
+  .journal-pr-page .journal-pr-row {
+    flex-wrap: wrap;
+  }
+  .journal-pr-page .journal-pr-row .journal-pr-main {
+    flex: 1 1 100%;
+  }
+}

@@ -1,7 +1,9 @@
 /**
- * Segmented option toggle (`.unit-toggle` group). `options` are either plain
- * values (label defaults to the value, uppercased with `uppercase`) or
- * `{ value, label }` objects.
+ * Segmented option toggle. `options` are either plain values (label defaults
+ * to the value, uppercased when `uppercase`) or `{ value, label }` objects.
+ *
+ * Purely structural — the consumer supplies the visual class names via
+ * `className` / `buttonClassName`.
  */
 export const SegmentedToggle = ({
   options,
@@ -11,18 +13,31 @@ export const SegmentedToggle = ({
   onPick,
   ariaLabel,
   uppercase = false,
+  className = "",          // e.g. "unit-toggle"
+  buttonClassName = "",    // e.g. "unit-toggle-button"
 }) => {
   return (
-    <div className="unit-toggle" role="group" aria-label={ariaLabel}>
+    <div
+      className={`segmented-toggle ${className}`.trim()}
+      role="group"
+      aria-label={ariaLabel}
+    >
       {(options || []).map((opt) => {
         const v = typeof opt === "string" ? opt : opt.value
-        const label = typeof opt === "string" ? (uppercase ? opt.toUpperCase() : opt) : opt.label
+        const label =
+          typeof opt === "string"
+            ? uppercase
+              ? opt.toUpperCase()
+              : opt
+            : opt.label
         const selected = value === v
         return (
           <button
             key={v}
             type="button"
-            className={`unit-toggle-button ${selected ? "is-selected" : ""}`}
+            className={`segmented-toggle-button ${buttonClassName} ${
+              selected ? "is-selected" : ""
+            }`.trim()}
             onClick={() => onPick?.(v)}
             disabled={disabled || (disableSelected && selected)}
             aria-pressed={selected}

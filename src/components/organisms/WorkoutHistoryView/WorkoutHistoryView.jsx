@@ -12,21 +12,89 @@ import "./WorkoutHistoryView.css"
 import { Button } from "../../atoms/index.js"
 import { SetTags } from "../../molecules/index.js"
 
-export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDeleteSession, onClearAll, showListNames, title }) => {
+// Session 里 exercise_id 有时是补零字符串（"0585"），list/动作库里是
+// 数字（585）或 "585"。两边都建多键索引，查找时按同一组变体回退。
+const keyVariants = (id) => {
+  if (id == null) return [String(id)]
+  const s = String(id)
+  const stripped = s.replace(/^0+(?=\d)/, "")
+  const out = new Set([id, s, stripped])
+  const n = Number(stripped)
+  if (Number.isFinite(n)) out.add(n)
+  return [...out]
+}
+
+const lookupMeta = (map, id) => {
+  for (const k of keyVariants(id)) {
+    if (map.has(k)) return map.get(k)
+  }
+  return undefined
+}
+
+// 只输出时分，避免与标题区的日期重复。
+const formatTime = (iso, locale) => {
+  if (!iso) return ""
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return formatDate(iso, locale)
+  return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
+}
+
+export const WorkoutHistoryView = ({
+  list,
+  sessions,
+  onBack,
+  onOpenSummary,
+  onDeleteSession,
+  onClearAll,
+  showListNames,
+  title,
+  exercises: exercises,
+}) => {
   const { t, i18n } = useTranslation()
   const locale = localeFromI18n(i18n)
+  const lang = normalizeLang(i18n.language)
   const [expanded, setExpanded] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [clearing, setClearing] = useState(false)
 
   const toggle = (id) => setExpanded(expanded === id ? null : id)
 
-  // Current list config by exercise id (see resolveShowEffort for the
-  // flag-unknown fallback to the logged data itself).
-  const exerciseMetaById = useMemo(
-    () => new Map((list?.exercises || []).map((ex) => [ex.id, ex])),
-    [list],
-  )
+  const enrichedList = useMemo(() => {
+    const library = exercises || []
+    const baseList = list || null
+    if (!baseList && library.length === 0) return baseList
+    const byId = new Map()
+    for (const ex of library) byId.set(ex.id, ex)
+    for (const ex of baseList?.exercises || []) byId.set(ex.id, ex)
+    return { ...(baseList || {}), exercises: Array.from(byId.values()) }
+  }, [list, exercises])
+
+  const exerciseMetaById = useMemo(() => {
+    const m = new Map()
+    for (const ex of enrichedList?.exercises || []) {
+      for (const k of keyVariants(ex.id)) {
+        if (!m.has(k)) m.set(k, ex)
+      }
+    }
+    return m
+  }, [enrichedList])
+
+  const listOrder = useMemo(() => {
+    const m = new Map()
+    ;(list?.exercises || []).forEach((ex, i) => {
+      for (const k of keyVariants(ex.id)) {
+        if (!m.has(k)) m.set(k, i)
+      }
+    })
+    return m
+  }, [list])
+
+  const lookupOrder = (id) => {
+    for (const k of keyVariants(id)) {
+      if (listOrder.has(k)) return listOrder.get(k)
+    }
+    return Infinity
+  }
 
   const handleDelete = async (id) => {
     if (!onDeleteSession) return
@@ -56,7 +124,7 @@ export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDe
     <section className="history-view">
       <div className="history-header">
         <Button onClick={onBack}>
-          {t("history.back")}
+          {t("common.back")}
         </Button>
         <h2 className="history-title">{title || t("history.title", { name: list.name })}</h2>
         {sessions.length > 0 && onClearAll && (
@@ -85,7 +153,12 @@ export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDe
               setsByExercise[s.exercise_id].push(s)
             }
             const totalSets = session.sets.length
-            const exercisesLogged = Object.keys(setsByExercise).length
+            const exerciseIds = Object.keys(setsByExercise)
+            const exercisesLogged = exerciseIds.length
+
+            const orderedExerciseIds = [...exerciseIds].sort(
+              (a, b) => lookupOrder(a) - lookupOrder(b),
+            )
 
             return (
               <div key={session.id} className="history-card">
@@ -97,15 +170,18 @@ export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDe
                     aria-label={t("history.openSummary", { date: formatDate(session.startedAt, locale) })}
                   >
                     <div className="history-card-info">
-                      <span className="history-card-date">
-                        {showListNames && session.listName && (
-                          <span className="history-card-list-name">{session.listName}</span>
-                        )}
-                        {formatDate(session.startedAt, locale)}
-                      </span>
+                      {showListNames && session.listName && (
+                        <span className="history-card-title">{session.listName}</span>
+                      )}
                       <span className="history-card-summary">
-                        {t("history.exerciseCount", { count: exercisesLogged })} · {t("history.setCount", { count: totalSets })}
-                        {session.completedAt ? ` · ${t("history.doneAt", { date: formatDate(session.completedAt, locale) })}` : ` ${t("history.incomplete")}`}
+                        {formatDate(session.startedAt, locale)}
+                        {" · "}
+                        {t("history.exerciseCount", { count: exercisesLogged })}
+                        {" · "}
+                        {t("history.setCount", { count: totalSets })}
+                        {session.completedAt
+                          ? ` · ${t("history.doneAt", { date: formatTime(session.completedAt, locale) })}`
+                          : ` ${t("history.incomplete")}`}
                       </span>
                     </div>
                   </button>
@@ -133,19 +209,26 @@ export const WorkoutHistoryView = ({ list, sessions, onBack, onOpenSummary, onDe
                 </div>
                 {isExpanded && (
                   <div className="history-card-detail">
-                    {list.exercises.map((ex) => {
-                      const exSets = setsByExercise[ex.id]
-                      if (!exSets || exSets.length === 0) return null
-                      const showEffort = resolveShowEffort(exerciseMetaById.get(ex.id), exSets)
+                    {orderedExerciseIds.map((exerciseId) => {
+                      const exSets = setsByExercise[exerciseId]
+                      const snapshot = exSets[0]
+                      const meta = lookupMeta(exerciseMetaById, exerciseId)
+
+                      const displayName = meta
+                        ? exerciseName(meta, lang)
+                        : (snapshot?.exercise_name || snapshot?.name || String(exerciseId))
+
+                      const img =
+                        (meta ? mediaUrl(meta.image) : null) ||
+                        (snapshot?.image ? mediaUrl(snapshot.image) : null)
+
+                      const showEffort = resolveShowEffort(meta, exSets)
+
                       return (
-                        <div key={ex.id} className="history-exercise">
+                        <div key={exerciseId} className="history-exercise">
                           <div className="history-exercise-header">
-                            {mediaUrl(ex.image) ? (
-                              <img src={mediaUrl(ex.image)} alt="" loading="lazy" />
-                            ) : (
-                              <span className="history-exercise-placeholder" aria-hidden="true">💪</span>
-                            )}
-                            <span className="history-exercise-name">{exerciseName(ex, normalizeLang(i18n.language))}</span>
+                            {img && <img src={img} alt="" loading="lazy" />}
+                            <span className="history-exercise-name">{displayName}</span>
                           </div>
                           <div className="history-sets">
                             <SetTags

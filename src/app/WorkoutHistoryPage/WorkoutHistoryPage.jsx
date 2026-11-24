@@ -11,6 +11,7 @@ export const WorkoutHistoryPage = ({
   list,
   title,
   sessions,
+  exercises,
   onBack,
   onOpenSummary,
   onDeleteSession,
@@ -23,6 +24,7 @@ export const WorkoutHistoryPage = ({
           list={list}
           title={title}
           sessions={sessions}
+          exercises={exercises}
           showListNames
           onBack={onBack}
           onOpenSummary={onOpenSummary}

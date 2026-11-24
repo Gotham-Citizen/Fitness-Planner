@@ -1,12 +1,12 @@
-/* MovementDetailCard styles — co-located. Imported by MovementDetailCard.jsx; global cascade.
+/* MovementDetailCard styles ?co-located. Imported by MovementDetailCard.jsx; global cascade.
 
-   The movement-detail-title / -gif-wrap / -instructions / .instruction-steps*
-   rules below are the SHARED presentation block for a movement, identical to
-   the ones organisms/MovementDetail/MovementDetail.css also declares. They are
-   duplicated on purpose: each co-located sheet stays self-contained, and a
-   session that forgot to load MovementDetail's sheet would silently render an
-   unstyled movement. Keep the two blocks in sync — if you change one, change
-   both (see MovementDetail.css for the other copy). */
+ The movement-detail-title / -gif-wrap / -instructions / .instruction-steps*
+ rules below are the SHARED presentation block for a movement, identical to
+ the ones organisms/MovementDetail/MovementDetail.css also declares. They are
+ duplicated on purpose: each co-located sheet stays self-contained, and a
+ session that forgot to load MovementDetail's sheet would silently render an
+ unstyled movement. Keep the two blocks in sync ?if you change one, change
+ both (see MovementDetail.css for the other copy). */
 
 .movement-detail-card {
   display: flex;
@@ -63,6 +63,12 @@
   line-height: var(--line-height-tight);
 }
 
+.movement-detail-instructions {
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+}
+
 .movement-detail-instructions h3 {
   color: var(--text-strong);
   font-size: var(--font-size-h4);
@@ -103,7 +109,7 @@
 }
 
 /* The target-prescription pill. Sits under the title and above the GIF, so the
-   first thing you read after the movement name is what you are aiming for. */
+ first thing you read after the movement name is what you are aiming for. */
 .session-exercise-rx {
   align-self: flex-start;
   font-size: 12px;

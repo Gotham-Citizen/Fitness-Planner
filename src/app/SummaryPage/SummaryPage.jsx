@@ -1,6 +1,7 @@
 import { WorkoutSummaryView } from "../../components/organisms/index.js"
 import { PlannerTemplate } from "../../components/templates/index.js"
 
+
 /**
  * Summary page: covers both `summary` and `history-summary` modes.
  * Thin composition.
@@ -13,6 +14,7 @@ export const SummaryPage = ({
   heroTitle,
   previousSessions,
   gender,
+  weightUnit,
   onDone,
   onHistory,
   onBack,
@@ -26,6 +28,7 @@ export const SummaryPage = ({
           session={session}
           mode={mode}
           heroTitle={heroTitle}
+          weightUnit={weightUnit}
           onDone={onDone}
           onHistory={onHistory}
           onBack={onBack}

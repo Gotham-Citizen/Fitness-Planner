@@ -121,7 +121,7 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
 
   return (
     <section className="plan-schedule">
-      <Button className="back-button" onClick={onBack}>{t("schedule.back")}</Button>
+      <Button className="back-button" onClick={onBack}>{t("common.back")}</Button>
 
       <header className="plan-schedule-header">
         <h2 className="workouts-title">{t("schedule.title")}</h2>

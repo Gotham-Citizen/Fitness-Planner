@@ -190,10 +190,9 @@
 
 /* --- Step CTA (mirrors AuthView's .auth-submit / .auth-step-next) ---
    Scoped to .questionnaire so these win over AuthView.css regardless of
-   stylesheet load order, and keep the nav row buttons vertically aligned. */
+   stylesheet load order. */
 
 .questionnaire .auth-submit {
-  width: 100%;
   min-height: 48px;
   margin-top: 0;
   font-size: 16px;
@@ -206,7 +205,8 @@
 }
 
 .questionnaire .auth-step-back {
-  flex: none;
+  flex: 0 0 auto;
+  width: auto;
   min-height: 48px;
   margin-top: 0;
 }
@@ -218,7 +218,8 @@
 }
 
 .questionnaire .auth-step-next {
-  flex: 1;
+  flex: 1 1 auto;
+  width: auto;
   margin-top: 0;
 }
 
@@ -232,15 +233,43 @@
 
 .questionnaire-nav {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
   gap: 12px;
+  width: 100%;
 }
 
-.questionnaire-step-of {
-  margin-left: auto;
-  font-size: 13px;
-  color: var(--text-muted);
+/* Mobile (default): Back hugs its content, Next absorbs the remaining
+   width so the primary CTA is always the largest tap target. */
+
+/* Tablet and up (≥640px): shrink both to content width and right-align
+   within the capped panel. Consistent min-width so the row reads as a
+   unit rather than two isolated pills. */
+@media (min-width: 640px) {
+  .questionnaire-nav {
+    justify-content: flex-end;
+  }
+
+  .questionnaire .auth-submit,
+  .questionnaire .auth-step-back {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 140px;
+  }
+}
+
+/* Wider desktop viewports: give the CTA a bit more breathing room. */
+@media (min-width: 1024px) {
+  .questionnaire .auth-submit,
+  .questionnaire .auth-step-back {
+    min-width: 168px;
+  }
+}
+
+/* Very narrow phones: stack the two buttons so labels never clip. */
+@media (max-width: 360px) {
+  .questionnaire-nav {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 640px) {

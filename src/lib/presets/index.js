@@ -60,7 +60,7 @@ export const EQUIPMENT_FALLBACK = {
 // Questionnaire answer ranges shared by the signup wizard (AuthView) and the
 // retake questionnaire (QuestionnaireView) so both always offer the same
 // choices. Keep in sync with the server's normalizeQuestionnaire validation.
-export const QUESTIONNAIRE_DAYS = [2, 3, 4, 5, 6]
+export const QUESTIONNAIRE_DAYS = [1, 2, 3, 4, 5, 6]
 export const QUESTIONNAIRE_SESSION_MINUTES = [30, 45, 60, 90, 120, 150, 180]
 
 // Curated "Popular" picks for the Home showcase — the classic routines.

@@ -13,6 +13,7 @@ import { mediaUrl } from "../../../lib/muscles.js"
 // Filename aliases where the photo's name deviates from the slug convention.
 const SLUG_ALIASES = {
   "body weight": "bodyweight",
+  custom: "custom",
 }
 
 const slugify = (equipment) => {

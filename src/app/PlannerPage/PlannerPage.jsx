@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next"
 
 import { useScrollMemory } from "../../hooks/index.js"
 
-import { SearchBar } from "../../components/molecules/index.js"
+import { OptionPickerSheet, SearchBar } from "../../components/molecules/index.js"
 import { AllExercisesView, CategoryMovementList, EquipmentMovementList, ExerciseLibrary, MovementList, ProgramsView, SearchResults } from "../../components/organisms/index.js"
 import { PlannerTemplate } from "../../components/templates/index.js"
 
-import { canonicalEquipment } from "../../lib/equipmentGroups.js"
+import { canonicalEquipment, CUSTOM_EQUIPMENT_KEY, isCustomExercise } from "../../lib/equipmentGroups.js"
 import { alphaCompare, localizedCategory, localizedEquipment, localizedTarget, searchExercises, titleCase } from "../../lib/muscles.js"
 
 import "./PlannerPage.css"
@@ -58,7 +58,6 @@ export const PlannerPage = ({
   sortAlpha,
   sortByDifficulty,
   onToggleSortAlpha,
-  onToggleSortByDifficulty,
   questionnaire,
   onAddPreset,
   autoFocusSearch = false,             
@@ -72,18 +71,23 @@ export const PlannerPage = ({
   // Planner tabs: "exercises" (browser) / "programs" (preset workouts).
   const [activeTab, setActiveTab] = useState("exercises")
 
-const scopeKey =
-  selectedTarget?.name || selectedCategory?.name || selected?.equipment || ""
+  // NEW — difficulty filter (null = show all)
+  const [difficultyFilter, setDifficultyFilter] = useState(null)
+  const [difficultyPickerOpen, setDifficultyPickerOpen] = useState(false)
 
-// 跟踪上一次的 scope，避免首次挂载 / 重挂载时误清空搜索。
-// 只有用户主动切换范围（点分类、点器械）才清空。
-const prevScopeKeyRef = useRef(scopeKey)
-useEffect(() => {
-  if (prevScopeKeyRef.current === scopeKey) return
-  prevScopeKeyRef.current = scopeKey
-  if (searchQuery?.trim()) onQueryChange("")
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [scopeKey])
+  const scopeKey =
+    selectedTarget?.name || selectedCategory?.name || selected?.equipment || ""
+
+  // 跟踪上一次的 scope，避免首次挂载 / 重挂载时误清空搜索。
+  // 只有用户主动切换范围（点分类、点器械）才清空。
+  const prevScopeKeyRef = useRef(scopeKey)
+  useEffect(() => {
+    if (prevScopeKeyRef.current === scopeKey) return
+    prevScopeKeyRef.current = scopeKey
+    if (searchQuery?.trim()) onQueryChange("")
+    setDifficultyFilter(null)  
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeKey])
 
   // Sub-muscle chip filter, keyed to the current scope: switching scope
   // (part/target/equipment) derives the filter back to null.
@@ -132,15 +136,36 @@ useEffect(() => {
     if (!exercises) return []
     if (selectedTarget?.name) return exercises.filter((ex) => ex.target === selectedTarget.name)
     if (selectedCategory?.name) return exercises.filter((ex) => ex.category === selectedCategory.name)
+    if (selected?.equipment === CUSTOM_EQUIPMENT_KEY) return exercises.filter(isCustomExercise)
     if (selected?.equipment) return exercises.filter((ex) => canonicalEquipment(ex.equipment) === selected.equipment)
     return exercises
   }, [exercises, selectedTarget, selectedCategory, selected])
 
+  // Distinct difficulty levels present in the current scope, sorted ascending.
+  const availableDifficulties = useMemo(() => {
+    if (!scopedPool) return []
+    const set = new Set()
+    for (const ex of scopedPool) set.add(ex.difficulty ?? 1)
+    return Array.from(set).sort((a, b) => a - b)
+  }, [scopedPool])
+
+  // Localized difficulty label; falls back to the raw number if the
+  // translation key isn't defined yet.
+  const difficultyLabel = useCallback(
+    (n) => t(`library.difficulty.${n}`, { defaultValue: String(n) }),
+    [t],
+  )
+
   // 子肌肉筛选：chip 选中时只保留该 target 的动作
   const filteredPool = useMemo(() => {
-    if (!targetFilter) return scopedPool
-    return scopedPool.filter((ex) => ex.target === targetFilter)
-  }, [scopedPool, targetFilter])
+    let pool = targetFilter
+      ? scopedPool.filter((ex) => ex.target === targetFilter)
+      : scopedPool
+    if (difficultyFilter != null) {
+      pool = pool.filter((ex) => (ex.difficulty ?? 1) === difficultyFilter)
+    }
+    return pool
+  }, [scopedPool, targetFilter, difficultyFilter])
 
   // Sub-muscle chips: distinct targets in the current scope, A to Z by label.
   const poolTargets = useMemo(() => {
@@ -159,21 +184,27 @@ useEffect(() => {
 
   // 在当前范围里搜索
   const scopedResults = useMemo(() => {
-    const q = searchQuery?.trim()
-    if (!q) return []
-    let results = searchExercises(scopedPool, q, lang)
-    if (sortAlpha && !sortByDifficulty) {
-      results = results.slice().sort((a, b) => alphaCompare(a, b, lang))
-    } else if (sortByDifficulty) {
-      results = results.slice().sort((a, b) => {
-        const diffA = a.difficulty ?? 1
-        const diffB = b.difficulty ?? 1
-        if (diffA !== diffB) return diffA - diffB
-        return alphaCompare(a, b, lang)
-      })
-    }
-    return results
-  }, [scopedPool, searchQuery, lang, sortAlpha, sortByDifficulty])
+  const q = searchQuery?.trim()
+  if (!q) return []
+  let results = searchExercises(scopedPool, q, lang)
+
+  // NEW — filter by difficulty before sorting
+  if (difficultyFilter != null) {
+    results = results.filter((ex) => (ex.difficulty ?? 1) === difficultyFilter)
+  }
+
+  if (sortAlpha && !sortByDifficulty) {
+    results = results.slice().sort((a, b) => alphaCompare(a, b, lang))
+  } else if (sortByDifficulty) {
+    results = results.slice().sort((a, b) => {
+      const diffA = a.difficulty ?? 1
+      const diffB = b.difficulty ?? 1
+      if (diffA !== diffB) return diffA - diffB
+      return alphaCompare(a, b, lang)
+    })
+  }
+  return results
+}, [scopedPool, searchQuery, lang, sortAlpha, sortByDifficulty, difficultyFilter])
 
   // Alphabetical or difficulty sort helper
   const sortedPool = useMemo(() => {
@@ -196,6 +227,7 @@ useEffect(() => {
   const scopeLabel = useMemo(() => {
     if (selectedTarget?.name) return localizedTarget(selectedTarget.name)
     if (selectedCategory?.name) return localizedCategory(selectedCategory.name)
+    if (selected?.equipment === CUSTOM_EQUIPMENT_KEY) return t("library.customExercises")
     if (selected?.equipment) return titleCase(localizedEquipment(selected.equipment))
     return t("movement.scopeAll")
   }, [selectedTarget, selectedCategory, selected, t])
@@ -229,12 +261,28 @@ useEffect(() => {
           {sortAlpha ? t("library.sortAlphaOff") : t("library.sortAlphaOn")}
         </button>
         <button
-          className="sort-difficulty-toggle"
-          onClick={onToggleSortByDifficulty}
-          aria-pressed={sortByDifficulty}
-          title={sortByDifficulty ? t("library.sortDifficultyOff") : t("library.sortDifficultyOn")}
+          type="button"
+          className={`sort-difficulty-toggle${difficultyFilter != null ? " is-active" : ""}`}
+          onClick={() => {
+            if (difficultyFilter != null) {
+              // Active → clicking turns the filter off; list shows all levels again.
+              setDifficultyFilter(null)
+            } else {
+              // Inactive → open the picker.
+              setDifficultyPickerOpen(true)
+            }
+          }}
+          aria-pressed={difficultyFilter != null}
+          aria-haspopup={difficultyFilter != null ? undefined : "dialog"}
+          title={
+            difficultyFilter != null
+              ? t("library.clearDifficultyFilter")   // "Clear difficulty" / "清除难度"
+              : t("library.filterDifficulty")
+          }
         >
-          {sortByDifficulty ? t("library.sortDifficultyOff") : t("library.sortDifficultyOn")}
+          {difficultyFilter != null
+            ? difficultyLabel(difficultyFilter)
+            : t("library.filterDifficulty")}
         </button>
         {chipScope &&
           poolTargets.map((tg) => (
@@ -257,9 +305,9 @@ useEffect(() => {
     selected,
     handleClearScope,
     onToggleSortAlpha,
-    onToggleSortByDifficulty,
+    difficultyFilter,             // ← NEW
+    difficultyLabel,
     sortAlpha,
-    sortByDifficulty,
     chipScope,
     poolTargets,
     targetFilter,
@@ -420,5 +468,22 @@ useEffect(() => {
     />
   ) : null
 
-  return <PlannerTemplate banner={banner} main={content} sidebar={sidebar} />
+  return (
+    <>
+      <PlannerTemplate banner={banner} main={content} sidebar={sidebar} />
+
+      {difficultyPickerOpen && (
+        <OptionPickerSheet
+          title={t("library.filterDifficulty")}
+          options={availableDifficulties.map((d) => ({
+            value: d,
+            label: difficultyLabel(d),
+          }))}
+          value={difficultyFilter}
+          onPick={(v) => setDifficultyFilter(v)}
+          onClose={() => setDifficultyPickerOpen(false)}
+        />
+      )}
+    </>
+  )
 }

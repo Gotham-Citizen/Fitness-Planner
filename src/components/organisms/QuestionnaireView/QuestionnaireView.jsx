@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
@@ -48,6 +48,26 @@ export const QuestionnaireView = ({
   }))
 
   const stepLabels = useMemo(() => t("questionnaire.steps", { returnObjects: true }), [t])
+
+  // Esc：第 1 步退出问卷；后续步骤回到上一步。
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const onKeyDown = (event) => {
+      if (event.key !== "Escape" && event.key !== "Esc") return
+      // 忽略输入法组合、带修饰键的组合，以及正在保存时。
+      if (event.isComposing) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (saving) return
+      event.preventDefault()
+      if (step > 1) {
+        setStep((s) => Math.max(1, s - 1))
+      } else if (onBack) {
+        onBack()
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [onBack, saving, step])
 
   const select = (field, value) => {
     setAnswers((prev) => ({ ...prev, [field]: value }))

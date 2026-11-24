@@ -2,7 +2,7 @@
 
 # Fitness Planner
 
-A full-stack workout planner built around a 1,324-exercise library. Browse movements by body part → target muscle, watch animated demos, build named workout lists, log live sessions with a rest timer, and track recovery, bodyweight, and strength-balance analytics. English and Chinese UI.
+A full-stack workout planner built around a 1,324-exercise library. Browse movements by body part → target muscle, watch animated demos, build named workout lists, log live sessions with a rest timer, and track recovery, bodyweight, and strength-balance analytics. English, Chinese, and Spanish UI.
 [![Demo](./media/demo.gif)](./media/demo.mp4)
 
 ## ▶️ Live Demo
@@ -94,7 +94,7 @@ npm run preview
 - **Weekly plan scheduling** — two modes in Account → Schedule: **Fixed** (pick a specific list for each weekday) or **Rotation** (ordered list of workouts + rest days that cycles automatically); the active day's list is surfaced on Home and in the session starter
 - **Equipment browser** — 23 photo cards (one PNG per equipment type in `public/equipment/`, "Other" pinned last) that drill down into that equipment's movements; sort by count, A→Z, or difficulty
 - **Custom exercises** — create, edit, and delete your own movements (name, category, target muscle, equipment); they merge into the library and are scoped to your account; upload custom GIFs (base64-encoded, capped at 1.4 MB raw to fit D1's 2 MB row limit)
-- **Accounts** — email + password signup/login with JWT sessions; profile with display name, gender, bodyweight + unit (kg/lb), effort scale, timer alert settings, and UI language
+- **Accounts** — email + password signup/login with JWT sessions; profile with display name, gender, bodyweight + bodyweight unit (kg/lb), general weight unit for exercise/set weights (kg/lb), effort scale, timer alert settings, and UI language
 - **Workout lists** — named lists with add/remove exercises, per-exercise rest-timer settings, rename, and delete; duplicate names are caught case-insensitively; drag-to-reorder exercises in the list editor
 - **Live sessions** — start a workout from any list; log sets with reps, weight, kg/lb, and effort; edit or delete sets; **Finish** blocks sets that have weight but no reps
 - **RIR / RPE effort tracking** — rate sets as RIR (0–4, 0 = failure) or RPE (6–10, 10 = failure); averages, hard-set classification, and weekly effort stats require a minimum of rated sets; per-set scale is stored so legacy rows render correctly
@@ -103,7 +103,7 @@ npm run preview
 - **Comparison pictures** — one image per volume rung (`<slug>.<ext>` in `public/comparisons/`, any of `.png`/`.jpg`/`.jpeg`/`.webp`/`.gif`); the summary shows the picture for the highest rung reached, or text only if missing
 - **Volume comparison fun** — total session volume (Σ reps × kg) mapped to whimsical objects (a toilet → 2× a school bus) shown in the summary and journal
 - **Per-list history** — revisit any past session's summary; delete single sessions or clear a list's history
-- **Training journal** — day-by-day session log with list filters, plus bodyweight weigh-ins, a trend chart, and a target-weight goal
+- **Training journal** — day-by-day session log with list filters, personal records (card + full page), plus bodyweight weigh-ins, a trend chart, and a target-weight goal
 - **Muscle balance** — trained-vs-untrained muscle map, and **structural balance**: your estimated 1RMs (Epley-style formulas) against bodyweight-relative strength standards, gender-aware
 - **Recovery tracking** — per-target-muscle recovery state computed from your recent sessions, shown on the Workouts page
 - **Recent muscles** — recently viewed/trained targets resurface in the library's Recent tab, with "not explored yet" markers
@@ -128,7 +128,7 @@ npm run preview
 | POST | `/api/auth/login` | Log in `{ email, password }` |
 | GET | `/api/auth/me` | Current user (includes `questionnaire` answers) |
 | PUT | `/api/auth/questionnaire` | Save goal questionnaire answers `{ answers: { goal, experience, daysPerWeek, equipment, sessionMinutes? } }` |
-| PUT | `/api/auth/profile` | Update `{ email?, name?, gender?, bodyweight?, bodyweightUnit?, effortScale?, timerSound?, timerPlaySound?, timerVibrate?, timerFlash?, language?, schedule? }` |
+| PUT | `/api/auth/profile` | Update `{ email?, name?, gender?, bodyweight?, bodyweightUnit?, unit?, effortScale?, timerSound?, timerPlaySound?, timerVibrate?, timerFlash?, language?, schedule? }` |
 | DELETE | `/api/auth/me` | Delete account |
 | GET | `/api/exercises` | All exercises (guests get the seed library; authed users also get their custom ones) |
 | POST | `/api/exercises` | Create a custom exercise |

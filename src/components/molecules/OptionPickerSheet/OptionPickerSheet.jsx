@@ -1,11 +1,5 @@
 import { BottomSheet } from "../BottomSheet/BottomSheet.jsx"
 
-/**
- * Generic bottom-sheet option picker: one tappable row per `{ value, label }`
- * option, checkmark on the active row. Rows reuse the shared RIR/sound sheet
- * styles. Title/subtitle/labels arrive pre-localized from the caller (see
- * CustomExerciseForm for body part / muscle / equipment picks).
- */
 export const OptionPickerSheet = ({ title, subtitle, options, value, onPick, onClose }) => {
   const pick = (v) => {
     if (v !== value) onPick?.(v)
@@ -24,7 +18,9 @@ export const OptionPickerSheet = ({ title, subtitle, options, value, onPick, onC
           return (
             <div
               key={opt.value}
-              className={`item menu-item${active ? " is-active" : ""}`}
+              className={`item menu-item${active ? " is-active" : ""}${opt.className ? ` ${opt.className}` : ""}`}
+              style={opt.style}
+              data-theme={opt.dataTheme}
               role="button"
               tabIndex={0}
               aria-pressed={active}

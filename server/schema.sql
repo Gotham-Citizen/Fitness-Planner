@@ -37,6 +37,7 @@ CREATE TABLE users (
   language TEXT NOT NULL DEFAULT 'en' CHECK (language IN ('en', 'zh')),
   bodyweight REAL CHECK (bodyweight IS NULL OR bodyweight >= 0),
   bodyweight_unit TEXT NOT NULL DEFAULT 'kg' CHECK (bodyweight_unit IN ('kg', 'lbs')),
+  unit TEXT NOT NULL DEFAULT 'kg' CHECK (unit IN ('kg', 'lbs')),
   target_weight REAL CHECK (target_weight IS NULL OR target_weight >= 0),
   effort_scale TEXT NOT NULL DEFAULT 'rir' CHECK (effort_scale IN ('rir', 'rpe')),
   timer_sound TEXT NOT NULL DEFAULT 'beep' CHECK (timer_sound IN ('off', 'beep', 'chime', 'bell')),

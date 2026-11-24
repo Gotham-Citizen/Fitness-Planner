@@ -94,7 +94,7 @@ npm run preview
 - **每周计划排程** — 账号 → 排程 提供两种模式：**固定**（为每周几指定具体列表）或 **轮换**（有序的训练/休息列表自动循环）；当天激活的列表会在首页和开始训练入口自动浮现
 - **器械浏览** —— 23 张实拍卡片（每种器械一张 PNG，位于 `public/equipment/`，"其他"固定在末尾），点击进入该器械的动作列表；可按数量、A→Z 或难度排序
 - **自定义动作** —— 创建、编辑、删除自己的动作（名称、分类、目标肌肉、器械）；自动并入动作库，仅对你的账号可见；上传自定义 GIF（base64 编码，原始文件上限 1.4 MB 以适配 D1 2 MB 行限制）
-- **账号体系** —— 邮箱 + 密码注册/登录（JWT 会话）；个人资料含昵称、性别、体重 + 单位（kg/lb）、力度量表、计时器提醒设置和界面语言
+- **账号体系** —— 邮箱 + 密码注册/登录（JWT 会话）；个人资料含昵称、性别、体重+体重单位（kg/lb）、训练/组重量通用单位（kg/lb）、力度量表、计时器提醒设置和界面语言
 - **训练列表** —— 命名列表，支持添加/移除动作、逐动作休息计时配置、重命名和删除；大小写不敏感的重复名检测；编辑列表时可拖拽调整动作顺序
 - **实时训练** —— 从任意列表开始训练；逐组记录次数、重量、kg/lb 和力度；可编辑或删除某组；**结束训练** 时拦截"有重量但没填次数"的组
 - **RIR / RPE 力度记录** —— 组可按 RIR（0–4，0 = 力竭）或 RPE（6–10，10 = 力竭）评分；平均值、正式组划分和每周力度统计设有最低评分数门槛；逐组保存所用量表，旧数据也能正确渲染
@@ -103,7 +103,7 @@ npm run preview
 - **体积对比图片** —— 每个体积档位一张图片（`<slug>.<ext>` 放入 `public/comparisons/`，支持 `.png`/`.jpg`/`.jpeg`/`.webp`/`.gif`）；总结页显示达到的最高档位对应图片，缺图时仅显示文字
 - **训练量趣味对比** —— 单次训练总量（Σ 次数 × 公斤）映射为趣味物体（一台马桶 → 2×一辆校车），显示在总结与日志中
 - **单列表历史** —— 回看任意一次历史训练的总结；可删除单次记录或清空整个列表的历史
-- **训练日志** —— 按天记录、按列表筛选，另有体重打卡、趋势曲线和目标体重
+- **训练日志** —— 按天记录、按列表筛选，含个人记录（卡片 + 完整页面），另有体重打卡、趋势曲线和目标体重
 - **肌肉均衡** —— 已练/未练肌肉地图，以及 **结构均衡**：你的估算 1RM（Epley 类公式）对照按体重折算的力量标准，区分性别
 - **恢复追踪** —— 根据近期训练计算每个目标肌肉的恢复状态，展示在训练页
 - **最近肌肉** —— 最近浏览/训练过的目标会重新出现在动作库的"最近"标签里，并标注"尚未探索"
@@ -128,7 +128,7 @@ npm run preview
 | POST | `/api/auth/login` | 登录 `{ email, password }` |
 | GET | `/api/auth/me` | 当前用户（含问卷答案 `questionnaire`） |
 | PUT | `/api/auth/questionnaire` | 保存目标问卷答案 `{ answers: { goal, experience, daysPerWeek, equipment, sessionMinutes? } }` |
-| PUT | `/api/auth/profile` | 更新 `{ email?, name?, gender?, bodyweight?, bodyweightUnit?, effortScale?, timerSound?, timerPlaySound?, timerVibrate?, timerFlash?, language?, schedule? }` |
+| PUT | `/api/auth/profile` | 更新 `{ email?, name?, gender?, bodyweight?, bodyweightUnit?, unit?, effortScale?, timerSound?, timerPlaySound?, timerVibrate?, timerFlash?, language?, schedule? }` |
 | DELETE | `/api/auth/me` | 注销账号 |
 | GET | `/api/exercises` | 全部动作（游客获得种子动作库；登录用户额外包含其自定义动作） |
 | POST | `/api/exercises` | 创建自定义动作 |

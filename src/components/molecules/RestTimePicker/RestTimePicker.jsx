@@ -7,13 +7,19 @@ import { formatRestSecs } from "./formatRest.js"
 
 /* Must stay in sync with RestTimePicker.css (--rtd-item-h / --rtd-width). */
 const ITEM_HEIGHT = 44
-const VISIBLE_ITEMS = 5
-const LIST_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS
+const DEFAULT_VISIBLE_ITEMS = 5
+const LIST_HEIGHT = ITEM_HEIGHT * DEFAULT_VISIBLE_ITEMS
+
 /* picker chrome: 4px padding top/bottom + 1px border top/bottom */
 const PICKER_CHROME = 10
 const POPOVER_GAP = 8
 const POPOVER_WIDTH = 132
 const EDGE_MARGIN = 8
+
+/* Sheet mode reserves roughly this much vertical space for the grabber,
+   top/bottom padding, and the safe area. Used to derive a matching wheel
+   row count from 50vh. */
+const SHEET_CHROME = 40
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 
@@ -34,14 +40,18 @@ const nearestIndex = (values, raw) => {
 
 /**
  * Android-style wheel picker for rest time.
+ *
+ * presentation="popover" (default)
+ *   Anchored bubble next to `anchorEl`. Requires a real DOM element for
+ *   `anchorEl`, otherwise it renders nothing.
+ *
+ * presentation="sheet"
+ *   Bottom sheet that spans the full viewport width and is half the viewport
+ *   tall. `anchorEl` is ignored. The wheel row count is derived from the sheet
+ *   height so the band stays centered as the screen changes.
+ *
  * Scroll to highlight, tap the highlighted row or press Enter to confirm.
  * Backdrop / Esc / Tab cancels.
- *
- * Rendered through a portal into document.body so that ancestors with
- * transform / will-change (e.g. a dragged row, an animated modal) can't
- * turn `position: fixed` into something relative to themselves.
- *
- * `anchorEl` must be a DOM element (not a ref object).
  */
 export const RestTimePicker = ({
   value,
@@ -53,7 +63,10 @@ export const RestTimePicker = ({
   anchorEl,
   formatValue = formatRestSecs,
   ariaLabel,
+  presentation = "popover",
 }) => {
+  const isSheet = presentation === "sheet"
+
   const values = useMemo(() => {
     const safeStep = Math.max(1, Math.round(step))
     const out = []
@@ -64,13 +77,40 @@ export const RestTimePicker = ({
 
   const [index, setIndex] = useState(() => nearestIndex(values, value))
   const [pos, setPos] = useState(null)
-  const ready = pos !== null
+  // Wheel row count in sheet mode. Must be odd so the centre row is always
+  // selectable and the scroll-snap centre lands on an item boundary.
+  const [sheetRows, setSheetRows] = useState(DEFAULT_VISIBLE_ITEMS)
+
+  // Sheet mode never waits on popover measurement, so it is ready immediately.
+  const ready = isSheet || pos !== null
 
   const popoverRef = useRef(null)
   const listRef = useRef(null)
 
-  /* ---- position under the anchor, flipping above when there is no room ---- */
+  /* ---- derive wheel row count from the sheet height (sheet mode only) ---- */
   useLayoutEffect(() => {
+    if (!isSheet) return undefined
+    if (typeof window === "undefined") return undefined
+
+    const compute = () => {
+      const sheetHeight = window.innerHeight * 0.5
+      const usable = Math.max(ITEM_HEIGHT * 3, sheetHeight - SHEET_CHROME)
+      const raw = Math.floor(usable / ITEM_HEIGHT)
+      // Keep it odd: centre row == selected row.
+      let rows = raw % 2 === 1 ? raw : raw - 1
+      rows = clamp(rows, 3, 15)
+      setSheetRows(rows)
+    }
+
+    compute()
+    window.addEventListener("resize", compute)
+    return () => window.removeEventListener("resize", compute)
+  }, [isSheet])
+
+  /* ---- position under the anchor, flipping above when there is no room ----
+     Skipped entirely in sheet mode. */
+  useLayoutEffect(() => {
+    if (isSheet) return undefined
     if (!anchorEl || typeof anchorEl.getBoundingClientRect !== "function") return undefined
 
     const measure = () => {
@@ -89,7 +129,6 @@ export const RestTimePicker = ({
       setPos({ left, top })
     }
 
-    // The picker's own list scrolling must not trigger a re-measure.
     const onWindowScroll = (event) => {
       if (popoverRef.current?.contains(event.target)) return
       measure()
@@ -102,27 +141,29 @@ export const RestTimePicker = ({
       window.removeEventListener("resize", measure)
       window.removeEventListener("scroll", onWindowScroll, true)
     }
-  }, [anchorEl])
+  }, [anchorEl, isSheet])
 
-  /* ---- park the list on the initial value (runs once the list exists) ---- */
+  /* ---- park the list on the initial value (runs once the list exists,
+     and again whenever the row count changes so the wheel stays aligned). ---- */
   useLayoutEffect(() => {
     const el = listRef.current
     if (!el) return
     el.scrollTop = index * ITEM_HEIGHT
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready])
+  }, [ready, sheetRows])
 
   /* ---- take focus once the list exists ---- */
   useEffect(() => {
     if (ready) listRef.current?.focus({ preventScroll: true })
   }, [ready])
 
-  /* ---- dismiss on outside click ---- */
+  /* ---- dismiss on outside click (popover mode only — the sheet has a
+     backdrop that handles its own click). ---- */
   useEffect(() => {
+    if (isSheet) return undefined
     const onPointerDown = (event) => {
       const target = event.target
       if (popoverRef.current?.contains(target)) return
-      // Let the anchor's own onClick toggle the popover closed.
       if (anchorEl?.contains?.(target)) return
       onClose?.()
     }
@@ -132,7 +173,7 @@ export const RestTimePicker = ({
       document.removeEventListener("mousedown", onPointerDown, true)
       document.removeEventListener("touchstart", onPointerDown, true)
     }
-  }, [anchorEl, onClose])
+  }, [anchorEl, onClose, isSheet])
 
   const commit = useCallback(
     (next) => {
@@ -178,7 +219,6 @@ export const RestTimePicker = ({
           break
         }
         case "Escape": {
-          // Keep the modal shell underneath from also closing.
           event.preventDefault()
           event.stopPropagation()
           onClose?.()
@@ -195,15 +235,24 @@ export const RestTimePicker = ({
     [index, values, commit, onClose, scrollToIndex],
   )
 
-  if (!pos) return null
+  if (!ready) return null
 
-  return createPortal(
+  // CSS custom property drives --rtd-list-h / --rtd-pad-h in sheet mode.
+  const sheetVars = isSheet ? { "--rtd-rows": String(sheetRows) } : undefined
+  const positionStyle = isSheet
+    ? sheetVars
+    : { left: `${pos.left}px`, top: `${pos.top}px` }
+
+  const picker = (
     <div
       ref={popoverRef}
-      className="rest-time-picker"
-      style={{ left: `${pos.left}px`, top: `${pos.top}px` }}
+      className={`rest-time-picker${isSheet ? " rest-time-picker--sheet" : ""}`}
+      style={positionStyle}
       onKeyDown={handleKeyDown}
-      role="presentation"
+      onClick={isSheet ? (e) => e.stopPropagation() : undefined}
+      role={isSheet ? "dialog" : "presentation"}
+      aria-modal={isSheet ? "true" : undefined}
+      aria-label={isSheet ? ariaLabel : undefined}
     >
       <div className="rest-time-picker__band" aria-hidden="true" />
       <ul
@@ -235,7 +284,21 @@ export const RestTimePicker = ({
           </li>
         ))}
       </ul>
-    </div>,
-    document.body,
+    </div>
   )
+
+  if (isSheet) {
+    return createPortal(
+      <div
+        className="rest-time-sheet-backdrop"
+        role="presentation"
+        onClick={onClose}
+      >
+        {picker}
+      </div>,
+      document.body,
+    )
+  }
+
+  return createPortal(picker, document.body)
 }

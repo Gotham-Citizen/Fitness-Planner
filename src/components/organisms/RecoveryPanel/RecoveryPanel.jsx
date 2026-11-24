@@ -34,7 +34,7 @@ export const RecoveryPanel = ({ recovery, loading, onSelectMuscle }) => {
       {!panelOpen && (
         <button
           type="button"
-          className="panel-fab"
+          className="panel-fab panel-fab--recovery"
           onClick={open}
           aria-expanded={panelOpen}
           aria-controls="recovery-panel-drawer"

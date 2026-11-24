@@ -31,7 +31,7 @@ const clampIndex = (value, last) => (value < 0 ? 0 : value > last ? last : value
  * exercise id rather than by index, so hopping around the list cannot strand a
  * half-logged set behind you.
  */
-export const WorkoutSessionView = ({ list, session, effortScale, timerSound, timerVibrate, timerFlash, onLogSet, onUpdateSet, onDeleteSet, onFinish, onBack, invalidSetIds }) => {
+export const WorkoutSessionView = ({ list, session, effortScale, timerSound, timerVibrate, timerFlash, defaultWeightUnit = "kg", onLogSet, onUpdateSet, onDeleteSet, onFinish, onBack, invalidSetIds }) => {
   const { t } = useTranslation()
   const userScale = normalizeEffortScale(effortScale)
   const timerApis = useRef({})
@@ -89,10 +89,10 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
   const handleAddSet = useCallback(
     (exerciseId) => {
       const existing = setsByExercise[exerciseId] || []
-      onLogSet(session.id, exerciseId, existing.length + 1, null, null, "kg", null, userScale)
+      onLogSet(session.id, exerciseId, existing.length + 1, null, null, defaultWeightUnit, null, userScale)
       setOpenEx((prev) => ({ ...prev, [exerciseId]: true }))
     },
-    [onLogSet, setsByExercise, session.id, userScale],
+    [defaultWeightUnit, onLogSet, setsByExercise, session.id, userScale],
   )
 
   const handleDuplicateSet = useCallback(
@@ -194,7 +194,7 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
     return (
       <section className="session-view">
         <div className="session-header">
-          <Button onClick={onBack}>{t("session.back")}</Button>
+          <Button onClick={onBack}>{t("common.back")}</Button>
           <h2 className="session-title">{t("session.activeTitle", { name: list.name })}</h2>
         </div>
         <p className="workout-list-empty">{t("editWorkout.empty")}</p>
@@ -210,7 +210,7 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
   return (
     <section className="session-view">
       <div className="session-header">
-        <Button onClick={onBack}>{t("session.back")}</Button>
+        <Button onClick={onBack}>{t("common.back")}</Button>
         <h2 className="session-title">{t("session.activeTitle", { name: list.name })}</h2>
       </div>
 
@@ -270,6 +270,8 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
 
       <div className="session-footer">
         <Button onClick={() => onFinish(session.id)}>{t("session.finish")}</Button>
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
       </div>
 
       {(() => {
