@@ -13,10 +13,11 @@ export const STRENGTH_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 45,
-    name: { en: "Strength Foundation A", zh: "力量基础 A" },
+    name: { en: "Strength Foundation A", zh: "力量基础 A", es: "Base de fuerza A" },
     desc: {
       en: "Full-body session built on the big three lifts at a novice-friendly 8-10 RM.",
       zh: "以三大项为核心的全身训练，采用适合初学者的 8-10 RM 负荷。",
+      es: "Sesión de cuerpo completo basada en los tres grandes levantamientos, con 8-10 RM adaptados a principiantes.",
     },
     focus: ["quads", "pectorals", "lats", "delts", "abs"],
     slots: [
@@ -34,10 +35,11 @@ export const STRENGTH_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 45,
-    name: { en: "Strength Foundation B", zh: "力量基础 B" },
+    name: { en: "Strength Foundation B", zh: "力量基础 B", es: "Base de fuerza B" },
     desc: {
       en: "Deadlift-led full body day; pull-ups balance the pressing volume.",
       zh: "以硬拉为主的全身训练日；引体向上平衡推类训练量。",
+      es: "Día de cuerpo completo liderado por el peso muerto; las dominadas equilibran el volumen de empuje.",
     },
     focus: ["glutes", "pectorals", "lats", "hamstrings", "delts"],
     slots: [
@@ -55,10 +57,11 @@ export const STRENGTH_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 45,
-    name: { en: "Strength Foundation C", zh: "力量基础 C" },
+    name: { en: "Strength Foundation C", zh: "力量基础 C", es: "Base de fuerza C" },
     desc: {
       en: "Front squat + overhead day to round out a 3-day full-body week.",
       zh: "前蹲 + 推举训练日，补全每周三练的全身计划。",
+      es: "Día de sentadilla frontal + press militar para completar una semana de tres sesiones de cuerpo completo.",
     },
     focus: ["quads", "delts", "lats", "glutes", "abs"],
     slots: [
@@ -76,10 +79,11 @@ export const STRENGTH_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 55,
-    name: { en: "Strength Upper A", zh: "上肢力量 A" },
+    name: { en: "Strength Upper A", zh: "上肢力量 A", es: "Fuerza de tren superior A" },
     desc: {
       en: "Heavy 6-8 RM pressing and rowing with arm accessories.",
       zh: "6-8 RM 大重量推拉训练，辅以手臂动作。",
+      es: "Empujes y remos pesados de 6-8 RM con ejercicios accesorios de brazos.",
     },
     focus: ["pectorals", "lats", "delts", "biceps", "triceps"],
     slots: [
@@ -98,10 +102,11 @@ export const STRENGTH_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 55,
-    name: { en: "Strength Lower A", zh: "下肢力量 A" },
+    name: { en: "Strength Lower A", zh: "下肢力量 A", es: "Fuerza de tren inferior A" },
     desc: {
       en: "Squat-focused lower day with machine support work.",
       zh: "以深蹲为主的下肢训练日，辅以器械支撑训练。",
+      es: "Día de tren inferior centrado en la sentadilla con trabajo complementario en máquinas.",
     },
     focus: ["quads", "glutes", "hamstrings", "calves"],
     slots: [
@@ -120,10 +125,11 @@ export const STRENGTH_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 55,
-    name: { en: "Strength Upper B", zh: "上肢力量 B" },
+    name: { en: "Strength Upper B", zh: "上肢力量 B", es: "Fuerza de tren superior B" },
     desc: {
       en: "Incline pressing and vertical pulls vary the stimulus from Upper A.",
       zh: "上斜推举与垂直拉类，与上肢力量 A 形成互补刺激。",
+      es: "Los empujes inclinados y las tracciones verticales varían el estímulo respecto a tren superior A.",
     },
     focus: ["pectorals", "lats", "delts", "triceps", "biceps"],
     slots: [
@@ -142,10 +148,11 @@ export const STRENGTH_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 55,
-    name: { en: "Strength Lower B", zh: "下肢力量 B" },
+    name: { en: "Strength Lower B", zh: "下肢力量 B", es: "Fuerza de tren inferior B" },
     desc: {
       en: "Deadlift-led lower day with front squats as the secondary heavy lift.",
       zh: "以硬拉为主的下肢训练日，前蹲作为第二大重量动作。",
+      es: "Día de tren inferior liderado por el peso muerto, con la sentadilla frontal como segundo levantamiento pesado.",
     },
     focus: ["glutes", "hamstrings", "quads", "calves", "spine"],
     slots: [
@@ -164,10 +171,11 @@ export const STRENGTH_PRESETS = [
     equipment: "dumbbell",
     level: "beginner",
     durationMin: 40,
-    name: { en: "Dumbbell Strength A", zh: "哑铃力量 A" },
+    name: { en: "Dumbbell Strength A", zh: "哑铃力量 A", es: "Fuerza con mancuernas A" },
     desc: {
       en: "Home-friendly full body with a single dumbbell set.",
       zh: "只需一副哑铃即可完成的居家全身训练。",
+      es: "Cuerpo completo fácil de hacer en casa con un solo juego de mancuernas.",
     },
     focus: ["quads", "pectorals", "lats", "delts", "abs"],
     slots: [
@@ -185,10 +193,11 @@ export const STRENGTH_PRESETS = [
     equipment: "dumbbell",
     level: "beginner",
     durationMin: 40,
-    name: { en: "Dumbbell Strength B", zh: "哑铃力量 B" },
+    name: { en: "Dumbbell Strength B", zh: "哑铃力量 B", es: "Fuerza con mancuernas B" },
     desc: {
       en: "Second dumbbell day — hinges and incline pressing vary the stimulus.",
       zh: "第二个哑铃训练日——以髋铰链与上斜推举变换刺激。",
+      es: "Segundo día de mancuernas: los movimientos de bisagra de cadera y los empujes inclinados varían el estímulo.",
     },
     focus: ["hamstrings", "pectorals", "lats", "delts", "abs"],
     slots: [
@@ -206,10 +215,11 @@ export const STRENGTH_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 35,
-    name: { en: "Bodyweight Strength A", zh: "徒手力量 A" },
+    name: { en: "Bodyweight Strength A", zh: "徒手力量 A", es: "Fuerza con peso corporal A" },
     desc: {
       en: "No-equipment full body (pull-up bar recommended for one slot).",
       zh: "无器械全身训练（其中引体向上建议备有单杠）。",
+      es: "Cuerpo completo sin equipo (se recomienda barra de dominadas para un ejercicio).",
     },
     focus: ["quads", "pectorals", "lats", "triceps", "glutes"],
     slots: [
@@ -227,10 +237,11 @@ export const STRENGTH_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 35,
-    name: { en: "Bodyweight Strength B", zh: "徒手力量 B" },
+    name: { en: "Bodyweight Strength B", zh: "徒手力量 B", es: "Fuerza con peso corporal B" },
     desc: {
       en: "Harder push-up and chin-up variations with single-leg work.",
       zh: "更高难度的俯卧撑与反手引体向上，配合单腿动作。",
+      es: "Variantes más difíciles de flexiones y dominadas supinadas con trabajo de una pierna.",
     },
     focus: ["pectorals", "lats", "biceps", "glutes", "abs"],
     slots: [

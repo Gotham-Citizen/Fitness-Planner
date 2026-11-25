@@ -1,0 +1,36 @@
+/* ConfirmDialog styles — molecules. Themed via ModalShell + global tokens. */
+
+.confirm-dialog {
+  width: 400px;
+}
+
+.confirm-dialog .modal-title {
+  color: var(--danger, #e5534b);
+}
+
+.confirm-dialog-icon {
+  margin-right: var(--space-2);
+}
+
+.confirm-dialog-message {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.confirm-dialog .modal-footer {
+  gap: 8px;
+}
+
+/* tone="danger" is only styled for icon buttons globally; give the confirm
+   action the same themed danger palette used elsewhere in the app. */
+.confirm-dialog .primary-button.danger {
+  background: var(--danger, #e5534b);
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--danger, #e5534b) 30%, transparent);
+}
+
+.confirm-dialog .primary-button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger, #e5534b) 85%, #000);
+}

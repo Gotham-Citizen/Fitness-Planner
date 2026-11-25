@@ -16,7 +16,6 @@ export const SummaryPage = ({
   gender,
   weightUnit,
   onDone,
-  onHistory,
   onBack,
 }) => {
   return (
@@ -30,7 +29,6 @@ export const SummaryPage = ({
           heroTitle={heroTitle}
           weightUnit={weightUnit}
           onDone={onDone}
-          onHistory={onHistory}
           onBack={onBack}
           previousSessions={previousSessions}
           gender={gender}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { useTranslation } from "react-i18next"
 
-import { useLeaveGuard } from "../hooks/useLeaveGuard.js"
+import { useLeaveGuard, useThemeFavicon } from "../hooks/index.js"
 
 import { CustomExerciseForm, LeavePrompt, MobileTabBar, PickBanner, SavePanel } from "../components/molecules/index.js"
 import { AppHeader, EditWorkoutView, ExerciseLibrary, MovementDetail } from "../components/organisms/index.js"
@@ -30,6 +30,7 @@ import {   addExerciseToList,
   createExercise,
   createSession,
   createWorkoutList,
+  createWorkoutListWithExercises,
   deleteAccount,
   deleteExercise,
   deleteSession,
@@ -37,6 +38,7 @@ import {   addExerciseToList,
   deleteWeighIn,
   deleteWorkoutList,
   fetchAllSessions as fetchAllUserSessions,
+  fetchExercise,
   fetchExercises,
   fetchMe,
   fetchSessionsForList,
@@ -57,10 +59,12 @@ reorderWorkoutListExercises,
   updateWorkoutExerciseSettings } from "../lib/api.js"
 import { profileBodyweightKg } from "../lib/bodyweight.js"
 import { todayKeyLocal } from "../lib/journal.js"
-import { buildHierarchy, findExercise, searchExercises, titleCase } from "../lib/muscles.js"
+import { buildHierarchy, exerciseName, findExercise, searchExercises, titleCase } from "../lib/muscles.js"
 import { generatePlan } from "../lib/planGenerator.js"
+import { presetName } from "../lib/presets/index.js"
 import { appendViewedTarget, buildRecentRows, loadViewedTargets } from "../lib/recent.js"
 import { computeRecovery } from "../lib/recovery.js"
+import { nextOccurrenceISO } from "../lib/schedule.js"
 import { classifySets } from "../lib/setValidation.js"
 import { resolveAlertSound } from "../lib/timerAlert.js"
 import { clearStoredLanguage, persistLanguage, storedLanguage } from "../utils/i18n.js"
@@ -82,6 +86,7 @@ export const App = () => {
   const [exercises, setExercises] = useState(null)
   const [workoutLists, setWorkoutLists] = useState([])
   const [view, setView] = useState("home")
+  const [plannerTab, setPlannerTab] = useState("exercises")
   const [selected, setSelected] = useState(null)
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [saveTarget, setSaveTarget] = useState(null)
@@ -92,6 +97,7 @@ export const App = () => {
   const [summaryList, setSummaryList] = useState(null)
   const [historySessions, setHistorySessions] = useState([])
   const [historyList, setHistoryList] = useState(null)
+  const [historySummaryList, setHistorySummaryList] = useState(null)
   const [historySummarySession, setHistorySummarySession] = useState(null)
   const [historyReturnView, setHistoryReturnView] = useState("workouts")
   const [journalFilterListId, setJournalFilterListId] = useState("all")
@@ -115,8 +121,16 @@ export const App = () => {
   const [sortAlpha, setSortAlpha] = useState(false)
   const [sortByDifficulty, setSortByDifficulty] = useState(false)
   const [questionnaireReturnView, setQuestionnaireReturnView] = useState("account")
+  const [savingQuestionnaire, setSavingQuestionnaire] = useState(false)
   const bwBackfillFor = useRef({})
   const errorTimerRef = useRef(null)
+
+  // Every entry into the planner that means "browse movements" resets the tab;
+  // only the Browse programs button opens the Programs tab directly.
+  const openPlannerExercises = () => {
+    setPlannerTab("exercises")
+    setView("planner")
+  }
   // 从 Journal 跳出到 personal-records / workout-history / 单条 session
   // 详情之前，记下滚动位置；回到 journal 且内容就绪后再滚回去。
   const journalScrollRef = useRef({ window: 0, main: 0 })
@@ -132,6 +146,19 @@ export const App = () => {
     }
   }, [])
 
+  // Library rows omit instruction bodies; fetch them only when a movement opens.
+  const withExerciseDetails = useCallback(async (ex) => {
+    if (!ex || (ex.instructions && ex.instruction_steps)) return ex
+    try {
+      const full = await fetchExercise(ex.id)
+      return { ...ex, ...full }
+    } catch (err) {
+      console.error("Failed to load exercise detail", err)
+      showError(t("errors.loadExercises"))
+      return ex
+    }
+  }, [showError, t])
+
   useEffect(() => () => {
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
   }, [])
@@ -144,7 +171,15 @@ export const App = () => {
     persistTheme(theme)
   }, [theme])
 
+  // Declared after the theme effect so the CSS variables already resolve to
+  // the new palette when the favicon SVG is generated.
+  useThemeFavicon(theme)
+
   useEffect(() => {
+    if (!getToken()) {
+      clearStoredLanguage()
+      return
+    }
     fetchMe()
       .then(({ user }) => {
         setUser(user)
@@ -239,7 +274,7 @@ export const App = () => {
     setCustomFormListId(null)
     setSelected({ category: ex.category, target: ex.target })
     setSelectedExercise(null)
-    setView("planner")
+    openPlannerExercises()
     return ex
   }
 
@@ -444,18 +479,18 @@ export const App = () => {
     setWorkoutLists((prev) => prev.map((l) => (l.id === updated.id ? updated : l)))
   }
 
-  const findListByNameInsensitive = (name) => {
+  const findListByNameInsensitive = (name, ignoreId = null) => {
     const lowered = name.trim().toLowerCase()
-    return workoutLists.find((l) => l.name.toLowerCase() === lowered) || null
+    return workoutLists.find((l) => l.id !== ignoreId && l.name.toLowerCase() === lowered) || null
   }
 
-  const resolveCreateConflict = (trimmed, serverExisting, { silentExact = false } = {}) => {
+  const resolveCreateConflict = (trimmed, serverExisting, { silentExact = false, ignoreId = null } = {}) => {
     const existing = serverExisting
       ? workoutLists.find((l) => l.id === serverExisting.id) || {
           id: serverExisting.id,
           name: serverExisting.name,
         }
-      : findListByNameInsensitive(trimmed)
+      : findListByNameInsensitive(trimmed, ignoreId)
     if (!existing) return null
     if (existing.name === trimmed) {
       if (!silentExact) showError(t("errors.nameExists", { name: existing.name }))
@@ -470,7 +505,7 @@ export const App = () => {
   }
 
   const handleSelectTarget = (category, target) => {
-    setView("planner")
+    openPlannerExercises()
     setSelectedExercise(null)
     setSelected({ category, target })
     logViewedTarget(category, target)
@@ -479,7 +514,7 @@ export const App = () => {
   }
 
   const handleSelectCategory = (category) => {
-    setView("planner")
+    openPlannerExercises()
     setSelectedExercise(null)
     if (!category) {
       setSelected(null)
@@ -494,7 +529,7 @@ export const App = () => {
 
   // M6 — equipment scope selection from the library's Equipment tab.
   const handleSelectEquipment = (equipment) => {
-    setView("planner")
+    openPlannerExercises()
     setSelectedExercise(null)
     setSelected(equipment ? { equipment } : null)
     setSortAlpha(false)
@@ -506,10 +541,13 @@ export const App = () => {
     handleSelectTarget(category, target)
   }
 
-  const handleSelectExercise = (ex) => {
-    setView("planner")
+  const handleSelectExercise = async (ex) => {
+    if (!ex) return
+    openPlannerExercises()
     setSelectedExercise(ex)
-    if (ex?.category && ex?.target) logViewedTarget(ex.category, ex.target)
+    if (ex.category && ex.target) logViewedTarget(ex.category, ex.target)
+    const full = await withExerciseDetails(ex)
+    if (full !== ex) setSelectedExercise((prev) => (prev && prev.id === ex.id ? full : prev))
   }
 
   const goHome = () => {
@@ -525,7 +563,7 @@ export const App = () => {
   const handleStartAddExercise = (list) => {
     setPendingAddList({ id: list.id, name: list.name })
     setLastAdded(null)
-    setView("planner")
+    openPlannerExercises()
     setSelectedExercise(null)
   }
 
@@ -608,7 +646,7 @@ export const App = () => {
     if (updated) {
       const list = updated.name || pendingAddList.name
       setPendingAddList({ id: updated.id, name: list })
-      setLastAdded({ exerciseName: selectedExercise.name })
+      setLastAdded({ exercise: selectedExercise })
     }
   }
 
@@ -629,20 +667,22 @@ export const App = () => {
       return
     }
     if (pendingAddExerciseIds.has(exercise.id)) {
-      setLastAdded({ exerciseName: exercise.name })
+      setLastAdded({ exercise })
       return
     }
     const updated = await handleAddExerciseToList(pendingAddList.id, exercise.id)
     if (updated) {
       const list = updated.name || pendingAddList.name
       setPendingAddList({ id: updated.id, name: list })
-      setLastAdded({ exerciseName: exercise.name })
+      setLastAdded({ exercise })
     }
   }
 
-  const handleOpenFromWorkout = (snapshot) => {
-    const full = findExercise(exercises || [], snapshot.id) || snapshot
-    setSelectedExercise(full)
+  const handleOpenFromWorkout = async (snapshot) => {
+    const base = findExercise(exercises || [], snapshot.id) || snapshot
+    setSelectedExercise(base)
+    const full = await withExerciseDetails(base)
+    if (full !== base) setSelectedExercise((prev) => (prev && prev.id === base.id ? full : prev))
   }
 
   const handleCreateList = async (name) => {
@@ -708,17 +748,22 @@ export const App = () => {
       goLogin()
       return null
     }
-    if (!preset?.name) return null
+    // Preset names are localized objects ({ en, zh, es }); the API needs a
+    // plain localized string or it rejects the request as "name is required".
+    const name = typeof preset?.name === "string"
+      ? preset.name.trim()
+      : presetName(preset, normalizeLang(i18n.language)).trim()
+    if (!name) return null
     try {
       const ids = (preset.exerciseIds ?? preset.exercises ?? [])
         .map((ex) => (typeof ex === "string" ? ex : ex?.id))
         .filter(Boolean)
       if (ids.length === 0) {
-        const list = await createWorkoutList(preset.name)
+        const list = await createWorkoutList(name)
         setWorkoutLists((prev) => [list, ...prev])
         return list
       }
-      const list = await createWorkoutList(preset.name, ids[0])
+      const list = await createWorkoutList(name, ids[0])
       for (let i = 1; i < ids.length; i++) {
         try {
           await addExerciseToList(list.id, ids[i])
@@ -736,9 +781,16 @@ export const App = () => {
     }
   }
 
-  const handleRenameList = async (id, newName) => {
+  const handleRenameList = async (id, newName, { checkConflict = false, ignoreId = null } = {}) => {
     const trimmed = typeof newName === "string" ? newName.trim() : ""
     if (!trimmed) return null
+    if (checkConflict) {
+      const conflict = resolveCreateConflict(trimmed, null, {
+        silentExact: true,
+        ignoreId,
+      })
+      if (conflict) return conflict
+    }
     try {
       const updated = await renameWorkoutList(id, trimmed)
       replaceList(updated)
@@ -883,14 +935,6 @@ export const App = () => {
     setView("workouts")
   }
 
-  const handleSummaryHistory = () => {
-    if (summaryList) {
-      setSummarySession(null)
-      handleShowHistory(summaryList)
-      setSummaryList(null)
-    }
-  }
-
   const handleShowHistory = async (list) => {
     try {
       const sessions = await fetchSessionsForList(list.id)
@@ -902,6 +946,24 @@ export const App = () => {
       console.error(err)
       showError(t("errors.loadSessions"))
     }
+  }
+
+  // History summaries need exercise metadata for names, ranks and effort
+  // settings. The all-sessions view uses a synthetic list with no exercises,
+  // so resolve from saved lists and fall back to the exercise catalog.
+  const resolveHistorySummaryList = (session) => {
+    const saved = workoutLists.find((list) => list.id === session?.listId)
+    const base = saved || {
+      id: session?.listId || "__all",
+      name: session?.listName || t("common.deletedWorkout"),
+      exercises: [],
+    }
+    const byId = new Map()
+    for (const exercise of base.exercises || []) byId.set(exercise.id, exercise)
+    for (const exercise of exercises || []) {
+      if (!byId.has(exercise.id)) byId.set(exercise.id, exercise)
+    }
+    return { ...base, exercises: Array.from(byId.values()) }
   }
 
   // M4 — all-sessions history. Uses a synthetic list so the shared
@@ -929,12 +991,9 @@ export const App = () => {
 
   const handleOpenJournalSession = (session) => {
     saveJournalScroll()
-    const list = workoutLists.find((l) => l.id === session.listId) || {
-      id: session.listId,
-      name: session.listName || t("common.deletedWorkout"),
-      exercises: [],
-    }
+    const list = resolveHistorySummaryList(session)
     setHistoryList(list)
+    setHistorySummaryList(list)
     setHistorySessions(allSessions.filter((s) => s.listId === session.listId))
     setHistorySummarySession(session)
     setHistoryReturnView("journal")
@@ -952,12 +1011,9 @@ export const App = () => {
   // personal-records page (not the journal) so the user keeps their context.
   const handleOpenPersonalRecordsSession = (session) => {
     saveJournalScroll()
-    const list = workoutLists.find((l) => l.id === session.listId) || {
-      id: session.listId,
-      name: session.listName || t("common.deletedWorkout"),
-      exercises: [],
-    }
+    const list = resolveHistorySummaryList(session)
     setHistoryList(list)
+    setHistorySummaryList(list)
     setHistorySessions(allSessions.filter((s) => s.listId === session.listId))
     setHistorySummarySession(session)
     setHistoryReturnView("personal-records")
@@ -975,17 +1031,20 @@ export const App = () => {
     setView("workouts")
     setHistorySessions([])
     setHistoryList(null)
+    setHistorySummaryList(null)
     setHistorySummarySession(null)
   }
 
   const handleOpenHistorySummary = (session, from = "history") => {
     setHistorySummarySession(session)
+    setHistorySummaryList(resolveHistorySummaryList(session))
     setHistoryReturnView(from)
     setView("history-summary")
   }
 
   const handleBackFromHistorySummary = () => {
     setHistorySummarySession(null)
+    setHistorySummaryList(null)
     if (historyReturnView === "journal") setView("journal")
     else if (historyReturnView === "personal-records") setView("personal-records")
     else if (historyReturnView === "workout-history") setView("workout-history")
@@ -1025,6 +1084,69 @@ export const App = () => {
     }
   }
 
+  // Build workout lists from questionnaire answers and make the chosen
+  // schedule (fixed week or repeating rotation) active. Shared by signup and
+  // by the questionnaire retake. Existing lists stay in the library.
+  const createStarterPlan = async (answers) => {
+    try {
+      const isRotation = answers?.scheduleMode === "rotation"
+      const restDays = Math.min(6, Math.max(1, Number(answers?.restDays) || 1))
+      // The catalog loads for guests too; refetch when it is missing so a
+      // failed or in-flight initial load cannot produce an empty plan.
+      const catalog = exercises?.length ? exercises : await fetchExercises()
+      const plan = generatePlan(
+        isRotation ? { ...answers, daysPerWeek: answers.workoutDays } : answers,
+        catalog,
+        i18n.language,
+      )
+      // Keep each created list paired with its intended weekday so a failed
+      // list never shifts the remaining days onto the wrong schedule slots.
+      const scheduled = []
+      for (const [index, list] of plan.lists.entries()) {
+        try {
+          const created = await createWorkoutListWithExercises(list.name, list.exercises)
+          scheduled.push({ weekday: plan.weekdays[index], id: created.id, list: created })
+        } catch (err) {
+          console.error("generatePlan: create list failed", list.name, err)
+        }
+      }
+      if (scheduled.length > 0) {
+        // Rotation stores one full cycle (workouts then rest) and repeats it
+        // from today; fixed keeps the generated weekday slots.
+        const schedule = isRotation
+          ? {
+              mode: "rotation",
+              weekStartsOn: 0,
+              rotation: [
+                ...scheduled.map(({ id }) => ({ type: "workout", listId: id })),
+                ...Array.from({ length: restDays }, () => ({ type: "rest" })),
+              ],
+              rotationStartedAt: nextOccurrenceISO(new Date().getDay()),
+            }
+          : {
+              mode: "fixed",
+              weekStartsOn: 0,
+              fixed: Object.fromEntries(scheduled.map(({ weekday, id }) => [String(weekday), id])),
+            }
+        try {
+          const { user: updated } = await updateProfile({ schedule })
+          if (updated) setUser(updated)
+        } catch (err) {
+          console.error("generatePlan: save schedule failed", err)
+        }
+        // Seed immediately: an in-flight refetch may otherwise paint a stale
+        // empty list before the new POSTs land.
+        const fresh = scheduled.map(({ list }) => list)
+        setWorkoutLists((prev) => [
+          ...fresh,
+          ...(prev || []).filter((l) => !fresh.some((f) => f.id === l.id)),
+        ])
+      }
+    } catch (err) {
+      console.error("generatePlan failed", err)
+    }
+  }
+
   // M7 — accept the signup mode and its options; generate starter lists
   // when the signup wizard asked for a plan.
   const handleAuth = async (token, authedUser, mode = "login", options = {}) => {
@@ -1034,37 +1156,7 @@ export const App = () => {
     setSelectedExercise(null)
 
     if (mode === "signup" && options?.generatePlan && options?.answers) {
-      try {
-        const plan = generatePlan(options.answers)
-        for (const list of plan?.lists ?? []) {
-          const ids = (list.exerciseIds ?? list.exercises ?? [])
-            .map((ex) => (typeof ex === "string" ? ex : ex?.id))
-            .filter(Boolean)
-          if (ids.length === 0) continue
-          try {
-            const created = await createWorkoutList(list.name, ids[0])
-            for (let i = 1; i < ids.length; i++) {
-              try {
-                await addExerciseToList(created.id, ids[i])
-              } catch (e) {
-                console.error("generatePlan: add exercise failed", e)
-              }
-            }
-          } catch (err) {
-            console.error("generatePlan: create list failed", list.name, err)
-          }
-        }
-        if (plan?.schedule) {
-          try {
-            const { user: updated } = await updateProfile({ schedule: plan.schedule })
-            if (updated) setUser(updated)
-          } catch (err) {
-            console.error("generatePlan: save schedule failed", err)
-          }
-        }
-      } catch (err) {
-        console.error("generatePlan failed", err)
-      }
+      await createStarterPlan(options.answers)
     }
 
     try {
@@ -1112,6 +1204,7 @@ export const App = () => {
     setActiveSessionList(null)
     setHistorySessions([])
     setHistoryList(null)
+    setHistorySummaryList(null)
     setHistorySummarySession(null)
     setSummarySession(null)
     setSummaryList(null)
@@ -1140,16 +1233,30 @@ export const App = () => {
   }
 
   const handleUpdateQuestionnaire = async (answers) => {
+    setSavingQuestionnaire(true)
     try {
-      const { user: updated } = await saveQuestionnaire(answers)
+      // `generatePlan` is a UI-only choice — the server stores answers only.
+      const { generatePlan: shouldGeneratePlan, ...savedAnswers } = answers || {}
+      const { user: updated } = await saveQuestionnaire(savedAnswers)
       if (updated) setUser(updated)
-      // Return to whichever view opened the questionnaire.
+      if (shouldGeneratePlan) {
+        await createStarterPlan(savedAnswers)
+        try {
+          const fresh = await fetchWorkoutLists()
+          setWorkoutLists(fresh)
+        } catch (err) {
+          console.error("Failed to refresh lists", err)
+        }
+      }
+      // Return to whichever view opened the questionnaire once everything is saved.
       setView(questionnaireReturnView)
       return updated
     } catch (err) {
       console.error(err)
       showError(err?.message || t("account.failedQuestionnaire"))
       throw err
+    } finally {
+      setSavingQuestionnaire(false)
     }
   }
 
@@ -1243,7 +1350,7 @@ export const App = () => {
   const handleSearchChange = (value) => {
     setSearchQuery(value)
     if (view === "home" && value.trim() !== "") {
-      setView("planner")
+      openPlannerExercises()
       setFocusSearchOnNextPlanner(true)
     }
   }
@@ -1255,7 +1362,7 @@ export const App = () => {
 
   const handleTabNavigate = (tab) => {
     if (tab === "home") { setView("home"); setSelectedExercise(null) }
-    else if (tab === "planner") { setView("planner"); setSelectedExercise(null) }
+    else if (tab === "planner") { openPlannerExercises(); setSelectedExercise(null) }
     else if (tab === "workouts") requireAuthOrGo("workouts")
     else if (tab === "journal") requireAuthOrGo("journal")
     else if (tab === "balance") requireAuthOrGo("balance")
@@ -1282,7 +1389,9 @@ export const App = () => {
   const banner = pendingAddList && view !== "session" ? (
     <PickBanner
       listName={pendingAddList.name}
-      addedExerciseName={lastAdded?.exerciseName ?? null}
+      addedExerciseName={lastAdded?.exercise
+        ? exerciseName(lastAdded.exercise, normalizeLang(i18n.language))
+        : null}
       onDone={handleFinishAddExercise}
       onCancel={handleCancelAddExercise}
     />
@@ -1354,7 +1463,6 @@ export const App = () => {
         gender={user?.gender ?? null}
         weightUnit={user?.unit || "kg"}
         onDone={handleDoneSummary}
-        onHistory={handleSummaryHistory}
       />
     )
   } else if (view === "history" && historyList) {
@@ -1381,21 +1489,23 @@ export const App = () => {
         onBack={() => {
           setHistorySessions([])
           setHistoryList(null)
+          setHistorySummaryList(null)
           setView("journal")
         }}
         onOpenSummary={(session) => handleOpenHistorySummary(session, "workout-history")}
         onDeleteSession={handleDeleteHistorySession}
       />
     )
-  } else if (view === "history-summary" && historySummarySession && historyList) {
+  } else if (view === "history-summary" && historySummarySession && (historySummaryList || historyList)) {
+    const summaryList = historySummaryList || historyList
     body = (
       <SummaryPage
         banner={banner}
         sidebar={historyReturnView === "journal" || historyReturnView === "personal-records" || historyReturnView === "workout-history" ? null : librarySidebar}
-        list={historyList}
+        list={summaryList}
         session={historySummarySession}
         mode="history"
-        heroTitle={historyList.name}
+        heroTitle={summaryList.name}
         previousSessions={historySessions}
         gender={user?.gender ?? null}
         weightUnit={user?.unit || "kg"}
@@ -1415,6 +1525,7 @@ export const App = () => {
         onCreateList={handleCreateList}
         onRenameList={handleRenameList}
         onEditWorkout={handleEditWorkout}
+        onAddExercises={handleEditAddExercise}
         onStartSession={handleStartSession}
         onHistory={handleShowHistory}
         onSelectMuscle={handleSelectMuscle}
@@ -1424,7 +1535,11 @@ export const App = () => {
           setSelectedExercise(null)
           setView("questionnaire")
         }}
-        onOpenPresets={() => setView("planner")}
+        onOpenPresets={() => {
+          setPlannerTab("programs")
+          setView("planner")
+          setSelectedExercise(null)
+        }}
       />
     )
   } else if (view === "journal") {
@@ -1475,6 +1590,7 @@ export const App = () => {
         theme={theme}
         onPickTheme={handlePickTheme}
         onUpdateProfile={handleUpdateProfile}
+        onSetTargetWeight={handleSetTargetWeight}
         onDeleteAccount={handleDeleteAccount}
         onLogout={handleLogout}
         onOpenTimerAlerts={() => { setSelectedExercise(null); setView("timer-alerts") }}
@@ -1503,11 +1619,16 @@ export const App = () => {
           initialAnswers={{
             goal: user?.questionnaire?.goal,
             experience: user?.questionnaire?.experience,
+            focus: user?.questionnaire?.focus,
+            scheduleMode: user?.questionnaire?.scheduleMode,
+            workoutDays: user?.questionnaire?.workoutDays,
+            restDays: user?.questionnaire?.restDays,
             daysPerWeek: user?.questionnaire?.daysPerWeek,
             equipment: user?.questionnaire?.equipment,
             sessionMinutes: user?.questionnaire?.sessionMinutes,
           }}
           onSave={handleUpdateQuestionnaire}
+          saving={savingQuestionnaire}
           onBack={() => { setSelectedExercise(null); setView(questionnaireReturnView) }}
         />
       </AuthTemplate>
@@ -1554,6 +1675,8 @@ export const App = () => {
   } else {
     body = (
       <PlannerPage
+        activeTab={plannerTab}
+        onTabChange={setPlannerTab}
         banner={banner}
         searching={searching}
         exercises={exercises}
@@ -1615,6 +1738,7 @@ export const App = () => {
           onRemoveExercise={handleRemoveExercise}
           onUpdateSettings={handleUpdateWorkoutSettings}
           onReorderExercises={handleReorderExercises}
+          onRenameList={handleRenameList}
         />
       )}
       <LeavePrompt open={leavePromptOpen} onStay={stay} onLeave={leave} />

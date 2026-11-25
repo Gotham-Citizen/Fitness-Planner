@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
 
 import { exerciseName, localizedEquipment, mediaUrl } from "../../../lib/muscles.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./MovementCard.css"
 
@@ -8,7 +9,7 @@ import { GifFrame } from "../../atoms/index.js"
 
 export const MovementCard = ({ exercise, onSelect, onSave, quickAddActive, isAdded, lang }) => {
   const { t, i18n } = useTranslation()
-  const l = lang || (String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en")
+  const l = lang ? normalizeLang(lang) : normalizeLang(i18n.language)
   const name = exerciseName(exercise, l)
   const gifSrc = mediaUrl(exercise.gif_url || exercise.image)
   const added = quickAddActive && isAdded

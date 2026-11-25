@@ -3,6 +3,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { resolveShowEffort } from "../../../lib/effort.js"
+import { buildExerciseMeta, keyVariants, lookupExercise } from "../../../lib/exerciseIds.js"
 import { exerciseName, mediaUrl } from "../../../lib/muscles.js"
 import { formatDateTime as formatDate } from "../../../utils/format.js"
 import { localeFromI18n, normalizeLang } from "../../../utils/locale.js"
@@ -10,26 +11,7 @@ import { localeFromI18n, normalizeLang } from "../../../utils/locale.js"
 import "./WorkoutHistoryView.css"
 
 import { Button } from "../../atoms/index.js"
-import { SetTags } from "../../molecules/index.js"
-
-// Session 里 exercise_id 有时是补零字符串（"0585"），list/动作库里是
-// 数字（585）或 "585"。两边都建多键索引，查找时按同一组变体回退。
-const keyVariants = (id) => {
-  if (id == null) return [String(id)]
-  const s = String(id)
-  const stripped = s.replace(/^0+(?=\d)/, "")
-  const out = new Set([id, s, stripped])
-  const n = Number(stripped)
-  if (Number.isFinite(n)) out.add(n)
-  return [...out]
-}
-
-const lookupMeta = (map, id) => {
-  for (const k of keyVariants(id)) {
-    if (map.has(k)) return map.get(k)
-  }
-  return undefined
-}
+import { ConfirmDialog, SetTags } from "../../molecules/index.js"
 
 // 只输出时分，避免与标题区的日期重复。
 const formatTime = (iso, locale) => {
@@ -56,6 +38,7 @@ export const WorkoutHistoryView = ({
   const [expanded, setExpanded] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [clearing, setClearing] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState(null)
 
   const toggle = (id) => setExpanded(expanded === id ? null : id)
 
@@ -69,15 +52,10 @@ export const WorkoutHistoryView = ({
     return { ...(baseList || {}), exercises: Array.from(byId.values()) }
   }, [list, exercises])
 
-  const exerciseMetaById = useMemo(() => {
-    const m = new Map()
-    for (const ex of enrichedList?.exercises || []) {
-      for (const k of keyVariants(ex.id)) {
-        if (!m.has(k)) m.set(k, ex)
-      }
-    }
-    return m
-  }, [enrichedList])
+  const exerciseMetaById = useMemo(
+    () => buildExerciseMeta(enrichedList?.exercises || []),
+    [enrichedList],
+  )
 
   const listOrder = useMemo(() => {
     const m = new Map()
@@ -96,29 +74,37 @@ export const WorkoutHistoryView = ({
     return Infinity
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     if (!onDeleteSession) return
-    if (!window.confirm(t("history.confirmDelete"))) return
-    try {
-      setDeletingId(id)
-      await onDeleteSession(id)
-      if (expanded === id) setExpanded(null)
-    } finally {
-      setDeletingId(null)
-    }
+    setPendingDelete({ kind: "one", id })
   }
 
-  const handleClearAll = async () => {
+  const handleClearAll = () => {
     if (!onClearAll || sessions.length === 0) return
-    if (!window.confirm(t("history.confirmClear", { count: sessions.length, name: list.name }))) return
+    setPendingDelete({ kind: "all" })
+  }
+
+  const confirmPendingDelete = async () => {
+    const pending = pendingDelete
+    if (!pending) return
     try {
-      setClearing(true)
-      await onClearAll()
-      setExpanded(null)
+      if (pending.kind === "one") {
+        setDeletingId(pending.id)
+        await onDeleteSession(pending.id)
+        if (expanded === pending.id) setExpanded(null)
+      } else {
+        setClearing(true)
+        await onClearAll()
+        setExpanded(null)
+      }
+      setPendingDelete(null)
     } finally {
+      setDeletingId(null)
       setClearing(false)
     }
   }
+
+  const pendingIsAll = pendingDelete?.kind === "all"
 
   return (
     <section className="history-view">
@@ -212,7 +198,7 @@ export const WorkoutHistoryView = ({
                     {orderedExerciseIds.map((exerciseId) => {
                       const exSets = setsByExercise[exerciseId]
                       const snapshot = exSets[0]
-                      const meta = lookupMeta(exerciseMetaById, exerciseId)
+                      const meta = lookupExercise(exerciseMetaById, exerciseId)
 
                       const displayName = meta
                         ? exerciseName(meta, lang)
@@ -246,6 +232,20 @@ export const WorkoutHistoryView = ({
             )
           })}
         </div>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={t("history.deleteTitle")}
+          message={pendingIsAll
+            ? t("history.confirmClear", { count: sessions.length, name: list.name })
+            : t("history.confirmDelete")}
+          confirmLabel={pendingIsAll ? t("history.clearAll") : t("history.deleteTitle")}
+          cancelLabel={t("lists.cancel")}
+          busy={Boolean(deletingId || clearing)}
+          onConfirm={confirmPendingDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </section>
   )

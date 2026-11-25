@@ -3,6 +3,9 @@
 /* ---------- Rest timer ---------- */
 
 .rest-timer {
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
   padding: 8px 10px;
   margin-bottom: 12px;
 }

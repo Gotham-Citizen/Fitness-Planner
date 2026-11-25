@@ -1,5 +1,6 @@
 export { useDragReorder } from "./useDragReorder.js"
 export { useEscapeToClose } from "./useEscapeToClose.js"
+export { useLeaveGuard } from "./useLeaveGuard.js"
 export { usePanelDrawer } from "./usePanelDrawer.js"
 export { useScrollMemory } from "./useScrollMemory.js"
 export { useThemeFavicon } from "./useThemeFavicon.js"

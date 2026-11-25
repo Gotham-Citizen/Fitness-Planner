@@ -10,6 +10,7 @@ import { PlannerTemplate } from "../../components/templates/index.js"
 
 import { canonicalEquipment, CUSTOM_EQUIPMENT_KEY, isCustomExercise } from "../../lib/equipmentGroups.js"
 import { alphaCompare, localizedCategory, localizedEquipment, localizedTarget, searchExercises, titleCase } from "../../lib/muscles.js"
+import { normalizeLang } from "../../utils/locale.js"
 
 import "./PlannerPage.css"
 
@@ -37,6 +38,8 @@ const loadTargetFilter = () => {
 
 export const PlannerPage = ({
   banner,
+  activeTab,
+  onTabChange,
   exercises,
   searchQuery,
   selectedTarget,
@@ -64,12 +67,12 @@ export const PlannerPage = ({
   onAutoFocusSearchHandled,
 }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
 
   const hasQuery = Boolean(searchQuery?.trim())
 
-  // Planner tabs: "exercises" (browser) / "programs" (preset workouts).
-  const [activeTab, setActiveTab] = useState("exercises")
+  // Planner tabs ("exercises" / "programs") are owned by App so other pages
+  // can open the Programs tab directly.
 
   // NEW — difficulty filter (null = show all)
   const [difficultyFilter, setDifficultyFilter] = useState(null)
@@ -179,7 +182,7 @@ export const PlannerPage = ({
     }
     return names
       .map((name) => ({ name, label: localizedTarget(name) }))
-      .sort((a, b) => a.label.localeCompare(b.label, lang === "zh" ? "zh" : "en"))
+      .sort((a, b) => a.label.localeCompare(b.label, normalizeLang(lang)))
   }, [scopedPool, lang])
 
   // 在当前范围里搜索
@@ -402,7 +405,7 @@ export const PlannerPage = ({
         role="tab"
         className={activeTab === "exercises" ? "on" : ""}
         aria-pressed={activeTab === "exercises"}
-        onClick={() => setActiveTab("exercises")}
+        onClick={() => onTabChange("exercises")}
       >
         <span>{t("planner.tabExercises")}</span>
       </button>
@@ -411,7 +414,7 @@ export const PlannerPage = ({
         role="tab"
         className={activeTab === "programs" ? "on" : ""}
         aria-pressed={activeTab === "programs"}
-        onClick={() => setActiveTab("programs")}
+        onClick={() => onTabChange("programs")}
       >
         <span>{t("planner.tabPrograms")}</span>
       </button>

@@ -7,20 +7,20 @@
 
 .workout-list-card {
   padding: 16px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .workout-list-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   min-width: 0;
-  flex-wrap: nowrap;
   margin-bottom: 12px;
 }
 
 .workout-list-title {
-  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -28,12 +28,11 @@
   color: var(--text-strong);
   font-size: 17px;
   font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .workout-list-count {
+  display: block;
   color: var(--text-muted);
   font-size: 13px;
 }
@@ -93,6 +92,10 @@
 }
 
 .workouts-create {
+  margin-bottom: 20px;
+}
+
+.workouts-browse {
   margin-top: 20px;
 }
 
@@ -145,9 +148,9 @@
 .workout-list-actions {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
-  flex: 0 0 auto;
   min-width: 0;
 }
 
@@ -169,9 +172,17 @@
 
 .workout-list-actions .wl-full { display: inline; }
 
+@media (max-width: 560px) {
+  .workout-list-header {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 8px;
+  }
+  .workout-list-actions { justify-content: flex-start; }
+}
+
 @media (max-width: 480px) {
   .workout-list-card { padding: 12px; }
-  .workout-list-header { gap: 8px; }
   .workout-list-name { font-size: 15px; }
   .workout-list-count { font-size: 12px; }
   .workout-list-actions { gap: 6px; }

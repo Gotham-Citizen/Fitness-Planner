@@ -1,0 +1,67 @@
+/* Header for the Edit Workout view: back, title and inline rename.
+   Right padding keeps the inline controls clear of the modal close button. */
+
+.edit-workout-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 52px 10px 12px;
+  border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+  background: inherit;
+}
+
+.edit-workout-back {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 6px 10px;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.edit-workout-back:hover {
+  background: rgba(128, 128, 128, 0.1);
+}
+
+.edit-workout-back:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.edit-workout-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edit-workout-rename {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.edit-workout-rename .text-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 520px) {
+  .edit-workout-header {
+    flex-wrap: wrap;
+  }
+
+  .edit-workout-rename {
+    flex-basis: 100%;
+  }
+}

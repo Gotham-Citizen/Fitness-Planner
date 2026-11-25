@@ -1,0 +1,47 @@
+/* SegmentedToggle styles — co-located (atomic Phase 4). Uses the same tokens
+   as the project's compact buttons (.unit-toggle-button / .rest-toggle) so
+   consumers that don't pass a custom buttonClassName still look native. */
+
+.segmented-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.segmented-toggle-button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--r-sm);
+  padding: var(--space-1) var(--space-3);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.segmented-toggle-button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-strong);
+}
+
+.segmented-toggle-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A disabled group dims only its unselected choices. */
+.segmented-toggle-button:disabled:not(.is-selected) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* disableSelected marks the active choice disabled — keep it looking active. */
+.segmented-toggle-button.is-selected,
+.segmented-toggle-button.is-selected:disabled {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  opacity: 1;
+  cursor: default;
+}

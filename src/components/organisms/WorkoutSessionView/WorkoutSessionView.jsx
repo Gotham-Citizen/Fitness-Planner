@@ -35,6 +35,12 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
   const { t } = useTranslation()
   const userScale = normalizeEffortScale(effortScale)
   const timerApis = useRef({})
+  // The visible RestTimer can outlive the movement that started it: navigating
+  // to another movement leaves the countdown running, so remember its owner.
+  // State drives rendering; the ref mirror lets synchronous timer callbacks
+  // read the owner immediately after it changes.
+  const [restOwner, setRestOwner] = useState(null)
+  const restOwnerRef = useRef(null)
   const invalidIds = new Set(invalidSetIds || [])
 
   const exercises = list.exercises || []
@@ -57,6 +63,9 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
   // elsewhere, or an empty list), so the index is always clamped on read.
   const activeIndex = clampIndex(currentIndex, Math.min(lastIndex, MAX_EXERCISES - 1))
   const current = exercises[activeIndex]
+  // Captured per render so the timer API is registered/unregistered under a
+  // stable id, even when the owner changes while it is running.
+  const timerOwnerId = restOwner?.id ?? current?.id
 
   const setsByExercise = useMemo(() => {
     const grouped = {}
@@ -86,6 +95,27 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
     setRestingEx((prev) => (prev[exerciseId] ? prev : { ...prev, [exerciseId]: true }))
   }, [])
 
+  // Navigation is independent of the rest timer: the countdown keeps running
+  // and stays bound to the exercise that started it.
+  const navigateTo = useCallback((index) => {
+    setCurrentIndex(clampIndex(index, lastIndex))
+  }, [lastIndex])
+
+  // Only one RestTimer is mounted at a time, so its API may be registered
+  // under the previous movement while a new timer is being started.
+  const activeTimerApi = () => timerApis.current[restOwnerRef.current?.id ?? current?.id]
+    ?? Object.values(timerApis.current)[0]
+
+  const rememberRestOwner = (owner) => {
+    restOwnerRef.current = owner
+    setRestOwner(owner)
+  }
+
+  const clearRestOwner = () => {
+    restOwnerRef.current = null
+    setRestOwner(null)
+  }
+
   const handleAddSet = useCallback(
     (exerciseId) => {
       const existing = setsByExercise[exerciseId] || []
@@ -110,20 +140,34 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
   )
 
   const handleFinishSet = (exerciseId) => {
-    const started = timerApis.current[exerciseId]?.start?.() === true
+    const ex = exercises.find((e) => e.id === exerciseId)
+    rememberRestOwner({ id: exerciseId, secs: ex?.restSecs, enabled: ex?.restEnabled })
+    const started = activeTimerApi()?.start?.({ secs: ex?.restSecs, enabled: ex?.restEnabled }) === true
     // Timer off (or unavailable): next set is available immediately.
-    if (!started) setReady(exerciseId)
-    else setResting(exerciseId)
+    if (!started) {
+      clearRestOwner()
+      setReady(exerciseId)
+    } else setResting(exerciseId)
+  }
+
+  // Tapping Next with an unfinished set is treated as finishing that set:
+  // the rest timer starts and keeps running on the next movement.
+  const handleNext = () => {
+    if (openEx[current.id] && !restingEx[current.id]) handleFinishSet(current.id)
+    navigateTo(activeIndex + 1)
   }
 
   const handleDeleteSet = (exerciseId, setId) => {
+    const ownerId = restOwnerRef.current?.id ?? exerciseId
     onDeleteSet(session.id, setId)
     try {
-      timerApis.current[exerciseId]?.stop?.()
+      activeTimerApi()?.stop?.()
     } catch {
       // ignore
     }
+    clearRestOwner()
     setReady(exerciseId)
+    if (ownerId !== exerciseId) setReady(ownerId)
   }
 
   const handleSetChange = (setId, field, value, scale) => {
@@ -217,12 +261,15 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
       <SessionProgressBar
         current={activeIndex}
         total={exercises.length}
-        onSelect={(index) => setCurrentIndex(clampIndex(index, lastIndex))}
+        onSelect={navigateTo}
       />
 
       <MovementDetailCard exercise={current}>
         <SessionExerciseSets
           exercise={current}
+          timerExerciseId={timerOwnerId}
+          timerSecs={restOwner?.secs ?? current.restSecs}
+          timerEnabled={restOwner?.enabled ?? current.restEnabled}
           sets={exSets}
           userScale={userScale}
           timerSound={timerSound}
@@ -241,11 +288,18 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
           onCommitWeight={commitWeight}
           onWeightDraft={(setId, value) => setWeightDrafts((prev) => ({ ...prev, [setId]: value }))}
           onOpenRir={setRirSheetSetId}
-          onRestFinish={() => setReady(current.id)}
-          onRestStart={() => setResting(current.id)}
+          onRestFinish={() => {
+            const ownerId = restOwnerRef.current?.id
+            clearRestOwner()
+            if (ownerId) setReady(ownerId)
+          }}
+          onRestStart={() => {
+            const ownerId = restOwnerRef.current?.id
+            if (ownerId) setResting(ownerId)
+          }}
           onRestApi={(api) => {
-            if (api) timerApis.current[current.id] = api
-            else delete timerApis.current[current.id]
+            if (api) timerApis.current[timerOwnerId] = api
+            else delete timerApis.current[timerOwnerId]
           }}
         />
       </MovementDetailCard>
@@ -253,25 +307,24 @@ export const WorkoutSessionView = ({ list, session, effortScale, timerSound, tim
       <div className="session-nav">
         <Button
           variant="ghost"
-          onClick={() => setCurrentIndex((index) => clampIndex(index - 1, lastIndex))}
+          onClick={() => navigateTo(activeIndex - 1)}
           disabled={activeIndex <= 0}
         >
           {t("session.previous")}
         </Button>
         <span className="session-nav-count">{t("session.movementOf", { n: activeIndex + 1, total: exercises.length })}</span>
-        <Button
-          variant="ghost"
-          onClick={() => setCurrentIndex((index) => clampIndex(index + 1, lastIndex))}
-          disabled={activeIndex >= lastIndex}
-        >
-          {t("session.next")}
-        </Button>
-      </div>
-
-      <div className="session-footer">
-        <Button onClick={() => onFinish(session.id)}>{t("session.finish")}</Button>
-        <span aria-hidden="true" />
-        <span aria-hidden="true" />
+        {activeIndex < lastIndex ? (
+          <Button
+            variant="ghost"
+            onClick={handleNext}
+          >
+            {t("session.next")}
+          </Button>
+        ) : (
+          <Button className="finish-session-button" onClick={() => onFinish(session.id)}>
+            {t("session.finish")}
+          </Button>
+        )}
       </div>
 
       {(() => {

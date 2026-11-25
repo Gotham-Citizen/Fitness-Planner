@@ -50,7 +50,7 @@ export const PersonalRecordsPage = ({
     const fallback = rec.name || ""
     if (!rec.meta) return fallback
     return exerciseName(
-      { name: fallback, nameZh: rec.meta.nameZh },
+      { name: fallback, nameZh: rec.meta.nameZh, nameEs: rec.meta.nameEs },
       lang,
     ) || fallback
   }

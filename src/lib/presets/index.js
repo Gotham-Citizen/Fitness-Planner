@@ -6,7 +6,15 @@ import i18n from "../../utils/i18n.js"
 import { normalizeLang } from "../../utils/locale.js"
 
 import { titleCase } from "../muscles.js"
+import {
+  BODY_PART_TARGETS,
+  bodyPartName,
+  PRESET_BODY_PARTS,
+  presetBodyPart,
+  QUESTIONNAIRE_FOCUS,
+} from "./bodyParts.js"
 import { BUILD_PRESETS } from "./build.js"
+import { COVERAGE_PRESETS } from "./coverage.js"
 import { ENDURANCE_PRESETS } from "./endurance.js"
 import { FOCUS_PRESETS } from "./focus.js"
 import {
@@ -20,7 +28,19 @@ import {
 import { SLIM_PRESETS } from "./slim.js"
 import { STRENGTH_PRESETS } from "./strength.js"
 
-export { equipmentMeta, goalMeta, levelMeta,PRESET_EQUIPMENT, PRESET_GOALS, PRESET_LEVELS }
+export {
+  BODY_PART_TARGETS,
+  bodyPartName,
+  equipmentMeta,
+  goalMeta,
+  levelMeta,
+  PRESET_BODY_PARTS,
+  PRESET_EQUIPMENT,
+  PRESET_GOALS,
+  PRESET_LEVELS,
+  presetBodyPart,
+  QUESTIONNAIRE_FOCUS,
+}
 
 export const PRESETS = [
   ...STRENGTH_PRESETS,
@@ -28,33 +48,24 @@ export const PRESETS = [
   ...SLIM_PRESETS,
   ...ENDURANCE_PRESETS,
   ...FOCUS_PRESETS,
+  ...COVERAGE_PRESETS,
 ]
 
 export const getPreset = (id) => PRESETS.find((p) => p.id === id) || null
 
 // --- Body-part showcase ---------------------------------------------------
-// Home-page grouping: every preset lands under one focus body part so the
-// showcase can title each section ("Chest", "Back", …). Split presets map
-// directly; multi-part splits (full-body/upper/lower/push/pull) group as
-// "full-body".
-
-export const PRESET_BODY_PARTS = [
-  { id: "full-body", name: { en: "Full Body", zh: "全身" } },
-  { id: "chest", name: { en: "Chest", zh: "胸部" } },
-  { id: "back", name: { en: "Back", zh: "背部" } },
-  { id: "legs", name: { en: "Legs & glutes", zh: "腿臀" } },
-  { id: "shoulders", name: { en: "Shoulders", zh: "肩部" } },
-  { id: "arms", name: { en: "Arms", zh: "手臂" } },
-  { id: "core", name: { en: "Core", zh: "核心" } },
-  { id: "cardio", name: { en: "Cardio", zh: "有氧" } },
-]
+// The taxonomy (PRESET_BODY_PARTS, presetBodyPart, bodyPartName) lives in
+// ./bodyParts.js and is re-exported above so the coverage preset module can
+// use it without a circular import.
 
 // Fallback chain when the exact equipment tier has no match: dumbbell users
-// can always fall back to bodyweight moves. Shared with the plan generator.
+// can fall back to bands then bodyweight; band users to bodyweight moves
+// (pull-ups/chin-ups live in that pool). Shared with the plan generator.
 export const EQUIPMENT_FALLBACK = {
-  dumbbell: ["dumbbell", "bodyweight"],
+  dumbbell: ["dumbbell", "band", "bodyweight"],
   bodyweight: ["bodyweight"],
-  gym: ["gym", "dumbbell", "bodyweight"],
+  band: ["band", "bodyweight"],
+  gym: ["gym", "dumbbell", "band", "bodyweight"],
 }
 
 // Questionnaire answer ranges shared by the signup wizard (AuthView) and the
@@ -76,36 +87,27 @@ export const POPULAR_PRESET_IDS = [
 ]
 
 // "Recommended for you": presets matching the saved questionnaire answers —
-// goal first, then the equipment tier (with fallback), level-appropriate.
-// Returns up to `limit` presets, empty when there are no answers yet.
+// focus areas first, then the equipment tier (with fallback). Returns up to
+// `limit` presets, empty when there are no answers yet.
 export const recommendPresets = (answers, limit = 6) => {
   if (!answers || !answers.goal) return []
   const tiers = EQUIPMENT_FALLBACK[answers.equipment] || EQUIPMENT_FALLBACK.gym
   const matching = PRESETS.filter((p) => p.goal === answers.goal)
-  const byTier = tiers
-    .flatMap((tier) => matching.filter((p) => p.equipment === tier))
-  const rest = matching.filter((p) => !byTier.includes(p))
-  return [...byTier, ...rest].slice(0, limit)
-}
-
-const SPLIT_TO_BODY_PART = {
-  chest: "chest",
-  back: "back",
-  legs: "legs",
-  glutes: "legs",
-  shoulders: "shoulders",
-  arms: "arms",
-  core: "core",
-  cardio: "cardio",
-}
-
-export const presetBodyPart = (preset) => SPLIT_TO_BODY_PART[preset.split] || "full-body"
-
-export const bodyPartName = (partId, lang) => {
-  const meta = PRESET_BODY_PARTS.find((p) => p.id === partId)
-  if (!meta) return partId
-  const l = normalizeLang(lang)
-  return l === "zh" ? meta.name.zh : meta.name.en
+  const focusTargets = new Set(
+    (answers.focus || [])
+      .filter((f) => f && f !== "full-body")
+      .flatMap((f) => BODY_PART_TARGETS[f] || []),
+  )
+  const byFocus = focusTargets.size
+    ? matching.filter(
+        (p) => presetBodyPart(p) !== "full-body" && (p.focus || []).some((tg) => focusTargets.has(tg)),
+      )
+    : []
+  const byTier = tiers.flatMap((tier) =>
+    matching.filter((p) => p.equipment === tier && !byFocus.includes(p)),
+  )
+  const rest = matching.filter((p) => !byFocus.includes(p) && !byTier.includes(p))
+  return [...byFocus, ...byTier, ...rest].slice(0, limit)
 }
 
 // Group presets by their focus body part, keeping the PRESET_BODY_PARTS
@@ -121,44 +123,40 @@ export const groupPresetsByBodyPart = (presets) => {
 }
 
 // --- Localization helpers -------------------------------------------------
-// Curated preset content is inline bilingual ({ en, zh }); dataset taxonomy
-// (focus targets) reuses the shared muscles.target dictionary.
+// Curated preset content is inline multilingual ({ en, zh, es }); dataset
+// taxonomy (focus targets) reuses the shared muscles.target dictionary.
 
-export const presetName = (preset, lang) => {
+const localizedText = (value, lang) => {
   const l = normalizeLang(lang)
-  return l === "zh" ? preset.name.zh : preset.name.en
+  return value?.[l] || value?.en || value?.zh || ""
 }
 
-export const presetDesc = (preset, lang) => {
-  const l = normalizeLang(lang)
-  return l === "zh" ? preset.desc.zh : preset.desc.en
-}
+export const presetName = (preset, lang) => localizedText(preset?.name, lang)
+
+export const presetDesc = (preset, lang) => localizedText(preset?.desc, lang)
 
 export const goalName = (goalId, lang) => {
   const meta = goalMeta(goalId)
   if (!meta) return goalId
-  const l = normalizeLang(lang)
-  return l === "zh" ? meta.name.zh : meta.name.en
+  return localizedText(meta.name, lang) || goalId
 }
 
 export const equipmentName = (equipmentId, lang) => {
   const meta = equipmentMeta(equipmentId)
   if (!meta) return equipmentId
-  const l = normalizeLang(lang)
-  return l === "zh" ? meta.name.zh : meta.name.en
+  return localizedText(meta.name, lang) || equipmentId
 }
 
 export const levelName = (levelId, lang) => {
   const meta = levelMeta(levelId)
   if (!meta) return levelId
-  const l = normalizeLang(lang)
-  return l === "zh" ? meta.name.zh : meta.name.en
+  return localizedText(meta.name, lang) || levelId
 }
 
-// Localized dataset target label ("pectorals" -> 胸大肌 in zh, else title case).
+// Localized dataset target label ("pectorals" -> 胸大肌 / pectorales).
 export const focusLabel = (target, lang) => {
-  if (normalizeLang(lang) === "zh") {
-    return i18n.t(`muscles.target.${target}`, { defaultValue: "" }) || target
+  if (normalizeLang(lang) !== "en") {
+    return i18n.t(`muscles.target.${target}`, { defaultValue: "" }) || titleCase(target)
   }
   return titleCase(target)
 }

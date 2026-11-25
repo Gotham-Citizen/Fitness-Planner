@@ -13,10 +13,11 @@ export const BUILD_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 50,
-    name: { en: "Push Day", zh: "推日" },
+    name: { en: "Push Day", zh: "推日", es: "Día de empuje" },
     desc: {
       en: "Chest, shoulders, triceps — 8-15 RM hypertrophy range.",
       zh: "胸、肩、肱三头肌——8-15 RM 增肌区间。",
+      es: "Pecho, hombros y tríceps — rango de hipertrofia de 8-15 RM.",
     },
     focus: ["pectorals", "delts", "triceps"],
     slots: [
@@ -35,10 +36,11 @@ export const BUILD_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 50,
-    name: { en: "Pull Day", zh: "拉日" },
+    name: { en: "Pull Day", zh: "拉日", es: "Día de tracción" },
     desc: {
       en: "Back, rear delts, biceps — vertical and horizontal pulling.",
       zh: "背部、后三角、肱二头肌——垂直与水平拉类动作。",
+      es: "Espalda, deltoides posteriores y bíceps — tracciones verticales y horizontales.",
     },
     focus: ["lats", "upper back", "traps", "biceps", "delts"],
     slots: [
@@ -57,10 +59,11 @@ export const BUILD_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 55,
-    name: { en: "Leg Day", zh: "腿日" },
+    name: { en: "Leg Day", zh: "腿日", es: "Día de piernas" },
     desc: {
       en: "Quads, hamstrings, glutes and calves in the 8-15 RM range.",
       zh: "股四头肌、腘绳肌、臀肌与小腿，8-15 RM 区间。",
+      es: "Cuádriceps, isquiotibiales, glúteos y gemelos en el rango de 8-15 RM.",
     },
     focus: ["quads", "hamstrings", "glutes", "calves"],
     slots: [
@@ -79,10 +82,11 @@ export const BUILD_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 50,
-    name: { en: "Upper Hypertrophy", zh: "上肢增肌" },
+    name: { en: "Upper Hypertrophy", zh: "上肢增肌", es: "Hipertrofia de tren superior" },
     desc: {
       en: "Balanced upper-body volume for 4-day upper/lower splits.",
       zh: "均衡的上肢训练量，适合每周四练的上下肢分化。",
+      es: "Volumen equilibrado de tren superior para divisiones superior/inferior de 4 días.",
     },
     focus: ["pectorals", "lats", "delts", "biceps", "triceps"],
     slots: [
@@ -102,10 +106,11 @@ export const BUILD_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 50,
-    name: { en: "Lower Hypertrophy", zh: "下肢增肌" },
+    name: { en: "Lower Hypertrophy", zh: "下肢增肌", es: "Hipertrofia de tren inferior" },
     desc: {
       en: "Squat + deadlift pairing with machine finishers.",
       zh: "深蹲 + 硬拉组合，辅以器械收尾动作。",
+      es: "Combinación de sentadilla + peso muerto con ejercicios finales en máquina.",
     },
     focus: ["quads", "glutes", "hamstrings", "calves"],
     slots: [
@@ -124,10 +129,11 @@ export const BUILD_PRESETS = [
     equipment: "dumbbell",
     level: "beginner",
     durationMin: 45,
-    name: { en: "Dumbbell Push Day", zh: "哑铃推日" },
+    name: { en: "Dumbbell Push Day", zh: "哑铃推日", es: "Día de empuje con mancuernas" },
     desc: {
       en: "Home pushing day with dumbbells only.",
       zh: "仅用哑铃的居家推类训练日。",
+      es: "Día de empuje en casa solo con mancuernas.",
     },
     focus: ["pectorals", "delts", "triceps"],
     slots: [
@@ -145,10 +151,11 @@ export const BUILD_PRESETS = [
     equipment: "dumbbell",
     level: "beginner",
     durationMin: 45,
-    name: { en: "Dumbbell Pull Day", zh: "哑铃拉日" },
+    name: { en: "Dumbbell Pull Day", zh: "哑铃拉日", es: "Día de tracción con mancuernas" },
     desc: {
       en: "Home pulling day with dumbbells only.",
       zh: "仅用哑铃的居家拉类训练日。",
+      es: "Día de tracción en casa solo con mancuernas.",
     },
     focus: ["lats", "upper back", "biceps", "delts"],
     slots: [
@@ -166,10 +173,11 @@ export const BUILD_PRESETS = [
     equipment: "dumbbell",
     level: "beginner",
     durationMin: 45,
-    name: { en: "Dumbbell Leg Day", zh: "哑铃腿日" },
+    name: { en: "Dumbbell Leg Day", zh: "哑铃腿日", es: "Día de piernas con mancuernas" },
     desc: {
       en: "Home leg day with a single dumbbell set.",
       zh: "一副哑铃即可完成的居家腿部训练日。",
+      es: "Día de piernas en casa con un solo juego de mancuernas.",
     },
     focus: ["quads", "hamstrings", "glutes", "calves"],
     slots: [
@@ -187,10 +195,11 @@ export const BUILD_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 35,
-    name: { en: "Bodyweight Upper", zh: "徒手上肢" },
+    name: { en: "Bodyweight Upper", zh: "徒手上肢", es: "Tren superior con peso corporal" },
     desc: {
       en: "Push-up and chin-up progressions (pull-up bar needed).",
       zh: "俯卧撑与反手引体向上进阶（需要单杠）。",
+      es: "Progresiones de flexiones y dominadas supinadas (se necesita barra de dominadas).",
     },
     focus: ["pectorals", "lats", "triceps", "biceps"],
     slots: [
@@ -208,10 +217,11 @@ export const BUILD_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 30,
-    name: { en: "Bodyweight Lower", zh: "徒手下肢" },
+    name: { en: "Bodyweight Lower", zh: "徒手下肢", es: "Tren inferior con peso corporal" },
     desc: {
       en: "Squat jumps, bridges and single-leg work for legs and glutes.",
       zh: "跳跃深蹲、臀桥与单腿动作，练腿又练臀。",
+      es: "Saltos con sentadilla, puentes de glúteo y trabajo de una pierna para piernas y glúteos.",
     },
     focus: ["quads", "glutes", "hamstrings", "abs"],
     slots: [
@@ -229,10 +239,11 @@ export const BUILD_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 25,
-    name: { en: "Core Circuit", zh: "核心循环" },
+    name: { en: "Core Circuit", zh: "核心循环", es: "Circuito de core" },
     desc: {
       en: "Abs and obliques circuit to add to any split.",
       zh: "腹肌与腹斜肌循环，可搭配任何分化计划。",
+      es: "Circuito de abdominales y oblicuos para añadir a cualquier división de entrenamiento.",
     },
     focus: ["abs"],
     slots: [

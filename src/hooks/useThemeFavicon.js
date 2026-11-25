@@ -27,8 +27,7 @@ export const useThemeFavicon = (theme) => {
       `<rect x="10" y="14.5" width="9.5" height="4.5" rx="2.25" fill="${barAccent}"/>` +
       "</svg>"
 
-    const link = document.querySelector('link[rel="icon"]')
-    if (!link) return
-    link.setAttribute("href", `data:image/svg+xml,${encodeURIComponent(svg)}`)
+    const links = document.querySelectorAll('link[rel="icon"], link[rel="alternate icon"]')
+    links.forEach((link) => link.setAttribute("href", `data:image/svg+xml,${encodeURIComponent(svg)}`))
   }, [theme])
 }

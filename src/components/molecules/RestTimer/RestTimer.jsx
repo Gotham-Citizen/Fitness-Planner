@@ -131,9 +131,17 @@ export const RestTimer = ({ exerciseId, initialSecs, initialEnabled, readOnly = 
 
   // Starts a rest countdown. Returns false when the timer is off
   // (caller should proceed immediately instead of waiting).
-  const startTimer = useCallback(() => {
-    if (!enabled) return false
-    start(secs)
+  // Accepts overrides so the session can start a timer with the settings of
+  // the exercise it belongs to, even if the visible timer was last rendered
+  // for a different movement.
+  const startTimer = useCallback((options) => {
+    const nextEnabled = options?.enabled ?? enabled
+    const requestedSecs = Number(options?.secs)
+    const nextSecs = Number.isFinite(requestedSecs)
+      ? Math.min(1800, Math.max(5, Math.round(requestedSecs)))
+      : secs
+    if (!nextEnabled) return false
+    start(nextSecs)
     notifyStart()
     return true
   }, [enabled, secs, start])

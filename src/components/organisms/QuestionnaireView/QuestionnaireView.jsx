@@ -3,13 +3,16 @@ import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
+  bodyPartName,
   equipmentName,
   goalName,
+  PRESET_BODY_PARTS,
   PRESET_EQUIPMENT,
   PRESET_GOALS,
   QUESTIONNAIRE_DAYS,
   QUESTIONNAIRE_SESSION_MINUTES,
 } from "../../../lib/presets/index.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./QuestionnaireView.css"
 
@@ -21,7 +24,11 @@ const EXPERIENCE_OPTIONS = [
   { id: "advanced", icon: "🔥" },
 ]
 
-const STEP_COUNT = 6
+const STEP_COUNT = 7
+
+const SCHEDULE_MODES = ["fixed", "rotation"]
+const LOOP_MIN = 1
+const LOOP_MAX = 6
 
 /**
  * Training-goals survey retake (opened from Account → Goals).
@@ -36,12 +43,16 @@ export const QuestionnaireView = ({
   onBack,
 }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const [step, setStep] = useState(1)
   const [answers, setAnswers] = useState(() => ({
     goal: initialAnswers?.goal || null,
     experience: initialAnswers?.experience || null,
+    focus: initialAnswers?.focus?.length ? initialAnswers.focus : ["full-body"],
+    scheduleMode: initialAnswers?.scheduleMode === "rotation" ? "rotation" : "fixed",
     daysPerWeek: initialAnswers?.daysPerWeek || null,
+    workoutDays: initialAnswers?.workoutDays || 2,
+    restDays: initialAnswers?.restDays || 1,
     equipment: initialAnswers?.equipment || null,
     sessionMinutes: initialAnswers?.sessionMinutes || null,
     generatePlan: false,
@@ -73,12 +84,29 @@ export const QuestionnaireView = ({
     setAnswers((prev) => ({ ...prev, [field]: value }))
   }
 
+  // "General / full body" is exclusive; selecting another area clears it,
+  // and clearing the last area restores the general option.
+  const toggleFocus = (partId) => {
+    setAnswers((prev) => {
+      const current = prev.focus || ["full-body"]
+      if (partId === "full-body") return { ...prev, focus: ["full-body"] }
+      const selected = current.filter((part) => part !== "full-body")
+      const next = selected.includes(partId)
+        ? selected.filter((part) => part !== partId)
+        : [...selected, partId]
+      return { ...prev, focus: next.length ? next : ["full-body"] }
+    })
+  }
+
   const stepAnswersComplete = () => {
     if (step === 1) return Boolean(answers.goal)
-    if (step === 2) return Boolean(answers.experience)
-    if (step === 3) return Boolean(answers.daysPerWeek)
-    if (step === 4) return Boolean(answers.equipment)
-    if (step === 5) return Boolean(answers.sessionMinutes !== undefined)
+    if (step === 2) return (answers.focus || []).length > 0
+    if (step === 3) return Boolean(answers.experience)
+    if (step === 4) return answers.scheduleMode === "rotation"
+      ? Boolean(answers.workoutDays && answers.restDays)
+      : Boolean(answers.daysPerWeek)
+    if (step === 5) return Boolean(answers.equipment)
+    if (step === 6) return Boolean(answers.sessionMinutes !== undefined)
     return false
   }
 
@@ -89,14 +117,71 @@ export const QuestionnaireView = ({
   }
 
 const handleSave = async () => {
-  const { goal, experience, daysPerWeek, equipment, sessionMinutes, generatePlan } = answers
-  if (!goal || !experience || !daysPerWeek || !equipment) return
+  const {
+    goal, experience, focus, scheduleMode, daysPerWeek, workoutDays, restDays,
+    equipment, sessionMinutes, generatePlan,
+  } = answers
+  if (!goal || !experience || !equipment) return
+  if (scheduleMode === "fixed" ? !daysPerWeek : (!workoutDays || !restDays)) return
   try {
-    await onSave?.({ goal, experience, daysPerWeek: Number(daysPerWeek), equipment, sessionMinutes, generatePlan })
+    await onSave?.({
+      goal,
+      experience,
+      focus,
+      scheduleMode,
+      daysPerWeek: Number(scheduleMode === "rotation" ? workoutDays : daysPerWeek),
+      workoutDays,
+      restDays,
+      equipment,
+      sessionMinutes,
+      generatePlan,
+    })
   } catch {
     // 错误已由 handleUpdateQuestionnaire 的 showError 显示
   }
 }
+
+  const changeLoopPart = (field, delta) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [field]: Math.min(LOOP_MAX, Math.max(LOOP_MIN, prev[field] + delta)),
+    }))
+  }
+
+  // One repeating cycle laid out across a week: workout days then rest days.
+  const loopPreview = Array.from({ length: 7 }, (_, index) => {
+    const position = index % (answers.workoutDays + answers.restDays)
+    return position < answers.workoutDays
+      ? { key: index, kind: "workout", label: `${t("questionnaire.workoutShort")}${position + 1}` }
+      : { key: index, kind: "rest", label: t("questionnaire.restShort") }
+  })
+
+  const stepperField = (label, field, value) => (
+    <div className="auth-stepper-row">
+      <span className="auth-field-label">{label}</span>
+      <div className="auth-stepper">
+        <button
+          type="button"
+          className="auth-stepper-button"
+          onClick={() => changeLoopPart(field, -1)}
+          disabled={value <= LOOP_MIN}
+          aria-label={`${t("questionnaire.stepperMinus")} ${label}`}
+        >
+          −
+        </button>
+        <span className="auth-stepper-value" aria-live="polite">{value}</span>
+        <button
+          type="button"
+          className="auth-stepper-button"
+          onClick={() => changeLoopPart(field, 1)}
+          disabled={value >= LOOP_MAX}
+          aria-label={`${t("questionnaire.stepperPlus")} ${label}`}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  )
 
   // Tap-to-select option card — mirrors the signup wizard's auth-option
   const optionButton = ({ key: optionKey, selected, onClick, children, className = "" }) => (
@@ -154,7 +239,7 @@ const handleSave = async () => {
                       <span className="auth-option-icon" aria-hidden="true">{goalOption.icon}</span>
                       <span>
                         <strong>{goalName(goalOption.id, lang)}</strong>
-                        <small>{lang === "zh" ? goalOption.tagline.zh : goalOption.tagline.en}</small>
+                        <small>{goalOption.tagline[lang] || goalOption.tagline.en}</small>
                       </span>
                     </span>
                   ),
@@ -165,6 +250,26 @@ const handleSave = async () => {
         )}
 
         {step === 2 && (
+          <>
+            {optionField(t("questionnaire.focusLabel"), (
+              <div className="auth-options auth-options-focus">
+                {PRESET_BODY_PARTS.map((part) => optionButton({
+                  key: part.id,
+                  selected: answers.focus.includes(part.id),
+                  onClick: () => toggleFocus(part.id),
+                  children: (
+                    <span className="auth-option-inner auth-option-plain">
+                      <strong>{bodyPartName(part.id, lang)}</strong>
+                    </span>
+                  ),
+                }))}
+              </div>
+            ))}
+            <p className="auth-field-hint">{t("questionnaire.focusHint")}</p>
+          </>
+        )}
+
+        {step === 3 && (
           <>
             {optionField(t("questionnaire.experienceLabel"), (
               <div className="auth-options">
@@ -187,26 +292,66 @@ const handleSave = async () => {
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <>
-            {optionField(t("questionnaire.daysLabel"), (
+            {optionField(t("questionnaire.scheduleModeLabel"), (
               <div className="auth-options auth-options-row">
-                {QUESTIONNAIRE_DAYS.map((days) => optionButton({
-                  key: days,
-                  selected: answers.daysPerWeek === days,
-                  onClick: () => select("daysPerWeek", days),
-                  children: (
-                    <span className="auth-option-inner auth-option-plain">
-                      <strong>{t("questionnaire.daysOption", { count: days })}</strong>
-                    </span>
-                  ),
-                }))}
+                {SCHEDULE_MODES.map((modeOption) => (
+                  optionButton({
+                    key: modeOption,
+                    selected: answers.scheduleMode === modeOption,
+                    onClick: () => select("scheduleMode", modeOption),
+                    children: (
+                      <span className="auth-option-inner">
+                        <span>
+                          <strong>{t(`schedule.mode${modeOption === "fixed" ? "Fixed" : "Rotation"}`)}</strong>
+                          <small>{t(`schedule.mode${modeOption === "fixed" ? "Fixed" : "Rotation"}Hint`)}</small>
+                        </span>
+                      </span>
+                    ),
+                  })
+                ))}
               </div>
             ))}
+            {answers.scheduleMode === "fixed" ? (
+              optionField(t("questionnaire.daysLabel"), (
+                <div className="auth-options auth-options-row auth-options-days">
+                  {QUESTIONNAIRE_DAYS.map((days) => optionButton({
+                    key: days,
+                    selected: answers.daysPerWeek === days,
+                    onClick: () => select("daysPerWeek", days),
+                    children: (
+                      <span className="auth-option-inner auth-option-plain">
+                        <strong>{t("questionnaire.daysOption", { count: days })}</strong>
+                      </span>
+                    ),
+                  }))}
+                </div>
+              ))
+            ) : (
+              <div className="auth-field">
+                <span className="auth-field-label">{t("questionnaire.schedulePatternLabel")}</span>
+                <div className="auth-loop-steppers">
+                  {stepperField(t("questionnaire.workoutDaysLabel"), "workoutDays", answers.workoutDays)}
+                  {stepperField(t("questionnaire.restDaysLabel"), "restDays", answers.restDays)}
+                </div>
+                <div className="auth-loop-preview" aria-label={t("questionnaire.loopPreviewLabel")}>
+                  {loopPreview.map((cell) => (
+                    <span
+                      key={cell.key}
+                      className={`auth-loop-cell${cell.kind === "rest" ? " is-rest" : ""}`}
+                    >
+                      {cell.label}
+                    </span>
+                  ))}
+                </div>
+                <p className="auth-field-hint">{t("questionnaire.loopHint")}</p>
+              </div>
+            )}
           </>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <>
             {optionField(t("questionnaire.equipmentLabel"), (
               <div className="auth-options">
@@ -228,7 +373,7 @@ const handleSave = async () => {
           </>
         )}
 
-        {step === 5 && (
+        {step === 6 && (
           <>
             {optionField(t("questionnaire.sessionLabel"), (
               <div className="auth-options auth-options-row">
@@ -257,7 +402,7 @@ const handleSave = async () => {
           </>
         )}
 
-        {step === 6 && (
+        {step === 7 && (
           <div className="questionnaire-generate">
             <div className="auth-options">
               {optionButton({

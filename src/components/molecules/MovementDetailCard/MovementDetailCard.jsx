@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
 
 import { exerciseName, mediaUrl, movementInstructions } from "../../../lib/muscles.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./MovementDetailCard.css"
 
@@ -21,7 +22,7 @@ import "./MovementDetailCard.css"
  */
 export const MovementDetailCard = ({ exercise, children }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const name = exerciseName(exercise, lang)
   const { steps, prose } = movementInstructions(exercise, lang)
   const hasRx = exercise.prescribedSets != null || Boolean(exercise.prescribedReps)
@@ -46,6 +47,7 @@ export const MovementDetailCard = ({ exercise, children }) => {
       <div className="movement-detail-gif-wrap">
         {imgSrc ? (
           <img
+            key={imgSrc}
             className="movement-detail-gif"
             src={imgSrc}
             alt={name}

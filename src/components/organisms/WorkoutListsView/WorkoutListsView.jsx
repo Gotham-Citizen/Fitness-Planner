@@ -3,45 +3,70 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { exerciseName, mediaUrl } from "../../../lib/muscles.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./WorkoutListsView.css"
 
 import { Button, GifFrame, TextInput } from "../../atoms/index.js"
 
 
-export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, onCreateList, onRenameList, onEditWorkout, onStartSession, onHistory, startingSession, showGoalsPrompt, onOpenQuestionnaire, onOpenPresets }) => {
+export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, onCreateList, onRenameList, onEditWorkout, onAddExercises, onStartSession, onHistory, startingSession, showGoalsPrompt, onOpenQuestionnaire, onOpenPresets }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState("")
   const [pendingRename, setPendingRename] = useState(null)
   const [renaming, setRenaming] = useState(false)
+  const [creating, setCreating] = useState(false)
 
   const resetCreate = () => {
     setName("")
     setShowCreate(false)
     setPendingRename(null)
+    setCreating(false)
+  }
+
+  const finishCreate = (list) => {
+    resetCreate()
+    if (list?.id) onAddExercises?.(list)
   }
 
   const handleCreate = async (e) => {
     e.preventDefault()
+    if (creating) return
     const trimmed = name.trim()
     if (!trimmed) return
-    // Backwards compatibility: onCreateList may return a legacy id string.
-    const result = await onCreateList(trimmed)
-    if (typeof result === "string") {
-      resetCreate()
-      return
+    setCreating(true)
+    try {
+      // Backwards compatibility: onCreateList may return a legacy id string.
+      const result = await onCreateList(trimmed)
+      if (typeof result === "string") {
+        finishCreate({ id: result, name: trimmed })
+        return
+      }
+      if (!result) {
+        resetCreate()
+        return
+      }
+      if (result.status === "conflict") {
+        setPendingRename({ existing: result.existing, proposed: result.proposed })
+        return
+      }
+      if (result.status === "created") {
+        finishCreate(result.list ?? { id: result.id, name: trimmed })
+        return
+      }
+      // duplicate / error / empty / auth: App already toasted; keep the form open.
+    } finally {
+      setCreating(false)
     }
-    if (!result || result.status === "created") {
-      resetCreate()
-      return
-    }
-    if (result.status === "conflict") {
-      setPendingRename({ existing: result.existing, proposed: result.proposed })
-      return
-    }
-    // duplicate / error / empty: App already toasted; keep form open for editing.
+  }
+
+  const handleNameKeyDown = (e) => {
+    // Enter confirms an IME candidate first; only submit once composition ends.
+    if (e.key !== "Enter" || e.nativeEvent?.isComposing || e.nativeEvent?.keyCode === 229) return
+    e.preventDefault()
+    handleCreate(e)
   }
 
   const handleConfirmRename = async () => {
@@ -73,6 +98,57 @@ export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, o
           <Button onClick={onOpenQuestionnaire}>{t("lists.goalsPromptCta")}</Button>
         </div>
       )}
+
+      <div className="workouts-create">
+        {showCreate ? (
+          <>
+            <form className="create-list-form" onSubmit={handleCreate}>
+              <TextInput
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={handleNameKeyDown}
+                placeholder={t("lists.listNamePh")}
+                aria-label={t("lists.listNameAria")}
+              />
+              <Button type="submit" disabled={!name.trim() || creating}>
+                {t("lists.create")}
+              </Button>
+              <Button variant="ghost" onClick={resetCreate} disabled={creating}>
+                {t("lists.cancel")}
+              </Button>
+            </form>
+            {pendingRename && (
+              <div className="rename-confirm" role="alert">
+                <p>
+                  {t("lists.wantRename", { from: pendingRename.existing.name, to: pendingRename.proposed })}
+                </p>
+                <div className="rename-confirm-actions">
+                  <Button
+                    onClick={handleConfirmRename}
+                    disabled={renaming}
+                  >
+                    {renaming ? t("lists.renaming") : t("lists.yesRename")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={handleCancelRename}
+                    disabled={renaming}
+                  >
+                    {t("lists.keepName", { name: pendingRename.existing.name })}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="workouts-create-actions">
+            <Button variant="secondary" onClick={() => setShowCreate(true)}>
+              {t("lists.newList")}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {workoutLists.length === 0 ? (
         <div className="workouts-empty">
@@ -158,60 +234,13 @@ export const WorkoutListsView = ({ workoutLists, onRemoveList, onOpenExercise, o
         </div>
       )}
 
-      <div className="workouts-create">
-        {showCreate ? (
-          <>
-            <form className="create-list-form" onSubmit={handleCreate}>
-              <TextInput
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("lists.listNamePh")}
-                aria-label={t("lists.listNameAria")}
-              />
-              <Button type="submit" disabled={!name.trim()}>
-                {t("lists.create")}
-              </Button>
-              <Button variant="ghost" onClick={resetCreate}>
-                {t("lists.cancel")}
-              </Button>
-            </form>
-            {pendingRename && (
-              <div className="rename-confirm" role="alert">
-                <p>
-                  {t("lists.wantRename", { from: pendingRename.existing.name, to: pendingRename.proposed })}
-                </p>
-                <div className="rename-confirm-actions">
-                  <Button
-                    onClick={handleConfirmRename}
-                    disabled={renaming}
-                  >
-                    {renaming ? t("lists.renaming") : t("lists.yesRename")}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={handleCancelRename}
-                    disabled={renaming}
-                  >
-                    {t("lists.keepName", { name: pendingRename.existing.name })}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="workouts-create-actions">
-            <Button variant="secondary" onClick={() => setShowCreate(true)}>
-              {t("lists.newList")}
-            </Button>
-            {onOpenPresets && (
-              <Button variant="ghost" onClick={onOpenPresets}>
-                {t("lists.browsePresets")}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+      {onOpenPresets && (
+        <div className="workouts-browse">
+          <Button variant="ghost" onClick={onOpenPresets}>
+            {t("lists.browsePresets")}
+          </Button>
+        </div>
+      )}
     </section>
   )
 }

@@ -145,11 +145,43 @@
 }
 
 .rir-pill {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: var(--set-h);
   box-sizing: border-box;
+  border: 1px solid var(--border);
   border-radius: var(--set-radius);
+  background: var(--bg-hover);
+  color: var(--text-strong);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.rir-pill:hover {
+  border-color: var(--accent);
+}
+
+.rir-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rir-value {
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.rir-pill.is-unrated {
+  color: var(--text-muted);
+}
+
+.rir-pill.is-unrated .rir-value {
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .set-field-label {
@@ -296,7 +328,8 @@
 
 /* Prev / Next get a generous fixed width so they read as real buttons,
    not tiny chevrons. The label stays centred inside. */
-.session-nav .ghost-button {
+.session-nav .ghost-button,
+.session-nav .finish-session-button {
   min-width: 120px;
   text-align: center;
 }
@@ -312,7 +345,8 @@
   .session-nav {
     gap: 16px;
   }
-  .session-nav .ghost-button {
+  .session-nav .ghost-button,
+  .session-nav .finish-session-button {
     min-width: 210px;
     padding: var(--space-2) var(--space-4);
     font-size: 15px;
@@ -326,7 +360,8 @@
   .session-nav {
     gap: 24px;
   }
-  .session-nav .ghost-button {
+  .session-nav .ghost-button,
+  .session-nav .finish-session-button {
     min-width: 220px;
     padding: var(--space-3) var(--space-5);
     font-size: 16px;
@@ -343,7 +378,8 @@
   .session-nav {
     gap: 32px;
   }
-  .session-nav .ghost-button {
+  .session-nav .ghost-button,
+  .session-nav .finish-session-button {
     min-width: 180px;
     font-size: 17px;
   }

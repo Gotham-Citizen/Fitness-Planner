@@ -5,8 +5,8 @@ import { nextOccurrenceISO, REST_DAY_VALUE, weekdayFromISODate } from "../../../
 /**
  * Editor state and save handlers for the plan & schedule page. Owns the
  * fixed-week and rotation drafts plus the instant-save actions (week start,
- * schedule type); the editors keep their own drafts and save them through the
- * step actions.
+ * loop start); the editors keep their own drafts and save them through the
+ * step actions. The schedule mode itself comes from the questionnaire.
  *
  * Drafts are initialized once — the page remounts when the user changes (App
  * keys account sub-pages), so no user-change effect is needed.
@@ -103,52 +103,45 @@ export const useScheduleDrafts = ({ schedule, weekStartsOn, onUpdateProfile, t }
   }
 
   // --- Rotation loop ---
-  const changeEntry = (i, value) =>
-    setRotationDraft((prev) => prev.map((e, idx) => (idx === i
-      ? (value === REST_DAY_VALUE ? { type: "rest" } : { type: "workout", listId: value })
-      : e)))
-  const addDay = () => setRotationDraft((prev) => [...prev, { type: "rest" }])
-  const removeDay = (i) => setRotationDraft((prev) => prev.filter((_, idx) => idx !== i))
-  const saveRotation = () => {
-    if (rotationDraft.length === 0) {
+  // Every edit saves immediately so leaving the wizard mid-step never loses a
+  // change. `latestRef` makes back-to-back saves compose instead of racing.
+  const saveRotationDraft = (rotation, day) => {
+    if (rotation.length === 0) {
       setError(t("schedule.rotationEmpty"))
       return Promise.resolve(false)
     }
     return saveSchedule(
-      { mode: "rotation", rotation: rotationDraft, rotationStartedAt: nextOccurrenceISO(startWeekday) },
+      { mode: "rotation", rotation, rotationStartedAt: nextOccurrenceISO(day) },
       "rotation",
     )
   }
+  const changeEntry = (i, value) => {
+    const next = rotationDraft.map((e, idx) => (idx === i
+      ? (value === REST_DAY_VALUE ? { type: "rest" } : { type: "workout", listId: value })
+      : e))
+    setRotationDraft(next)
+    return saveRotationDraft(next, startWeekday)
+  }
+  const addDay = () => {
+    const next = [...rotationDraft, { type: "rest" }]
+    setRotationDraft(next)
+    return saveRotationDraft(next, startWeekday)
+  }
+  const removeDay = (i) => {
+    const next = rotationDraft.filter((_, idx) => idx !== i)
+    setRotationDraft(next)
+    return saveRotationDraft(next, startWeekday)
+  }
+  const pickStartWeekday = (day) => {
+    if (day === startWeekday) return Promise.resolve(true)
+    setStartWeekday(day)
+    return saveRotationDraft(rotationDraft, day)
+  }
+  const saveRotation = () => saveRotationDraft(rotationDraft, startWeekday)
   const resetRotation = () => {
     setRotationDraft(savedRotation)
     setStartWeekday(savedStartWeekday == null ? new Date().getDay() : savedStartWeekday)
     setError(null)
-  }
-
-  // --- Schedule type ---
-  // Switching saves instantly. Rotation needs at least one entry plus a start
-  // date, so seed them from the latest known schedule or the draft instead of
-  // failing the server validation.
-  const pickMode = (next) => {
-    if (saving !== null) return Promise.resolve(true)
-    const latest = latestRef.current ?? {}
-    if (latest.mode === next) return Promise.resolve(true)
-    if (next !== "rotation") {
-      return saveSchedule({ mode: next }, "mode")
-    }
-    const latestRotation = Array.isArray(latest.rotation) && latest.rotation.length > 0
-      ? latest.rotation.map((e) => ({ ...e }))
-      : null
-    const rotation = latestRotation ?? (rotationDraft.length > 0 ? rotationDraft.map((e) => ({ ...e })) : [{ type: "rest" }])
-    const latestStart = weekdayFromISODate(latest.rotationStartedAt)
-    // Keep a saved start date verbatim; otherwise resolve the picked weekday.
-    const weekday = latestRotation && latestStart != null ? latestStart : startWeekday
-    const startedISO = typeof latest.rotationStartedAt === "string"
-      ? latest.rotationStartedAt
-      : nextOccurrenceISO(weekday)
-    setRotationDraft(rotation)
-    setStartWeekday(weekday)
-    return saveSchedule({ mode: "rotation", rotation, rotationStartedAt: startedISO }, "mode")
   }
 
   return {
@@ -169,6 +162,6 @@ export const useScheduleDrafts = ({ schedule, weekStartsOn, onUpdateProfile, t }
     resetRotation,
     startWeekday,
     setStartWeekday,
-    pickMode,
+    pickStartWeekday,
   }
 }
