@@ -25,17 +25,17 @@ Click the link to try it! The deployed frontend talks to a live [Cloudflare Work
 ```bash
 npm install
 npm run fetch:data        # download the dataset + exercise media into public/ and server/data/
-npm run db:gen           # generate server/seed.sql from the dataset
+npm run db:gen           # generate server/sql/generated/seed.sql from the dataset
 npm run db:schema:local  # create the local (Miniflare) D1 schema
 npm run db:data:local    # load the seed data
-npm run db:test:gen      # regenerate server/test-data.sql (test account; dates relative to today)
-npm run db:test:local    # load the test data (sessions this week, one per comparison rung)
+npm run db:test:gen      # regenerate server/sql/generated/test-data.sql (dates relative to today)
+npm run db:test:local    # load the test data (six-month journey, 4 sessions this week)
 npm run dev              # Vite (web, :5173) + wrangler dev --local (API, :8787)
 ```
 
 Opens at `http://localhost:5173` and works fully offline.
 
-> `server/data/` and `server/seed.sql` are gitignored by design — a fresh clone regenerates them with `npm run fetch:data` + `npm run db:gen`. Auth also needs a `JWT_SECRET`; for local development put it in `server/.dev.vars` (gitignored), e.g. `JWT_SECRET=any-long-random-string`.
+> `server/data/` and `server/sql/generated/` are gitignored by design — a fresh clone regenerates them with `npm run fetch:data`, `npm run db:gen`, and `npm run db:test:gen`. Curated localized exercise names live in tracked JSON under `server/curated/`. Auth also needs a `JWT_SECRET`; for local development put it in `server/.dev.vars` (gitignored), e.g. `JWT_SECRET=any-long-random-string`.
 
 All configuration values are optional for local development (see `.env.example`):
 
@@ -176,7 +176,7 @@ npm run preview
 ### Backend / Infrastructure
 
 - **Express 5** — API routes, mounted on Cloudflare Workers (`nodejs_compat`) via `server/worker.js`
-- **Cloudflare D1** (SQLite) — exercises, custom exercises, users, workout lists, sessions, sets, weigh-ins (`server/schema.sql`)
+- **Cloudflare D1** (SQLite) — exercises, custom exercises, users, workout lists, sessions, sets, weigh-ins (`server/sql/schema.sql`)
 - **jose** — JWT signing/verification (HS256) with the secret held server-side
 - **Web Crypto PBKDF2** — password hashing (100k iterations, SHA-256, per-user salt)
 - **Wrangler** — Workers/D1 CLI for local dev (Miniflare) and deployment
@@ -200,8 +200,8 @@ npm run preview
 │   └── favicon.svg
 ├── scripts/
 │   ├── download-assets.mjs          # Fetch dataset + media into public/ and server/data/
-│   ├── generate-seed.mjs            # Emit server/seed.sql from the dataset JSON (adds pinyin, difficulty)
-│   └── generate-test-data.mjs       # Emit server/test-data.sql (test account, dates relative to today, level coverage)
+│   ├── generate-seed.mjs            # Emit server/sql/generated/seed.sql (adds pinyin, zh + es names, difficulty)
+│   └── generate-test-data.mjs       # Emit server/sql/generated/test-data.sql (generated, gitignored)
 ├── shared/                          # Modules imported by BOTH client and server
 │   ├── normalize.js                 # Effort-scale / language / unit normalization
 │   └── setRules.js                  # Set validity rules (weight-but-no-reps etc.)
@@ -212,11 +212,13 @@ npm run preview
 │   ├── auth.js                      # PBKDF2 hashing + JWT create/verify (jose)
 │   ├── authMiddleware.js            # requireAuth / optionalAuth guards
 │   ├── validate.js                  # Email / gender / number validation
-│   ├── schema.sql                   # D1 schema (destructive reset — fresh databases only)
-│   ├── test-data.sql                # Local dev fixtures (test user + level-spread sessions, generated)
+│   ├── curated/                     # Tracked curated localized names (exercise-names-es.json)
+│   ├── sql/
+│   │   ├── schema.sql               # D1 schema (destructive reset — fresh databases only)
+│   │   └── generated/               # Generated seed.sql + test-data.sql (gitignored)
 │   ├── wrangler.jsonc               # Worker config (assets, D1 binding, nodejs_compat)
 │   ├── .dev.vars                    # Local secrets (gitignored) — JWT_SECRET
-│   └── data/                        # Generated dataset + seed (gitignored)
+│   └── data/                        # Generated dataset + Chinese names (gitignored)
 └── src/
     ├── main.jsx                     # React mount point
     ├── index.css                    # Global styles + theme variables
@@ -295,16 +297,18 @@ To add a new language: add a translation file under `src/utils/locales/<lang>/tr
 ### Data Pipeline
 
 1. **`npm run fetch:data`** — Downloads `exercises.json` from the upstream dataset and all 1,324 GIFs + thumbnails into `public/videos/` and `public/images/` (mirroring the dataset's relative paths). Also saves the JSON to `server/data/exercises.json`.
-2. **`npm run db:gen`** — Reads the local JSON, merges curated Chinese names from `server/data/exercise-names-zh.json`, computes pinyin + initials via `pinyin-pro`, assigns deterministic difficulty bands (1–3), and emits `server/seed.sql` with `INSERT` statements for the `exercises` table.
+2. **`npm run db:gen`** — Reads the local JSON, merges curated Chinese names from `server/data/exercise-names-zh.json` and Spanish names from `server/curated/exercise-names-es.json`, computes pinyin + initials via `pinyin-pro`, assigns deterministic difficulty bands (1–3), and emits `server/sql/generated/seed.sql` with `INSERT` statements for the `exercises` table.
 3. **`npm run db:schema:local`** — Applies the D1 schema to the local Miniflare database (destructive).
 4. **`npm run db:data:local`** — Loads the seed data.
-5. **`npm run db:test:gen`** — Generates deterministic test fixtures (`server/test-data.sql`) with a test user, 3 workout lists, 15 sessions across 4 time blocks (2025, 1Y, 90d, this week), 13 weigh-ins trending toward a goal, and questionnaire/schedule data. The script **asserts** coverage before writing:
-   - Every comparison rung hit exactly once (kg and lbs ladders in agreement)
+5. **`npm run db:test:gen`** — Generates deterministic test fixtures (`server/sql/generated/test-data.sql`, gitignored) with a test user, 3 workout lists, 26 sessions over six months (22 weekly + 4 in the current week), 26 weigh-ins trending toward the 68 kg goal, and questionnaire/rotation-schedule data. The script **asserts** coverage before writing:
+   - The 15 milestone sessions hit every comparison rung in order, ending at 2× a school bus (kg and lbs ladders in agreement)
    - Full rank ladder coverage (Iron → Challenger + Unranked) on female tables
    - Per-block effort design (unrated, legacy hard, easy bias, full spread with RPE)
-   - Monotonic weight progression per exercise (new-best badges always fire)
-   - Recent sessions inside the current Sunday-start week
+   - Monotonic volume and per-exercise weight progression (new-best badges always fire)
+   - Recent sessions inside the current Sunday-start week and never in the future
 6. **`npm run db:test:local`** — Applies the test fixtures (idempotent: deletes and re-inserts test-prefixed rows).
+
+   Generated SQL is never committed: run `npm run db:gen` and `npm run db:test:gen` before loading it. `npm run db:schema:local/remote` is destructive — it drops every table and reapplies `server/sql/schema.sql`. Use it only for local Miniflare or a brand-new remote D1; never rerun it against a remote database that has users. Existing databases pick up new columns at runtime, and schema changes such as the `es` language value are applied by migration rather than a destructive reset.
 
 ### Local Dev Commands
 
@@ -324,11 +328,11 @@ After running `npm run db:test:local`, log in with:
 - **Email:** `123456@gmail.com`
 - **Password:** `123456`
 
-This account has questionnaire answers (goal: build, experience: intermediate, 3 days/week, gym, 60 min), a rotation schedule, and 15 sessions covering every rank tier and comparison rung.
+This account has questionnaire answers (goal: build, experience: intermediate, 3 days/week, gym, 60 min), a push/pull/legs rotation schedule, and 26 sessions across six months covering every rank tier and comparison rung.
 
 ## Database Schema
 
-Key tables (see `server/schema.sql` for full DDL):
+Key tables (see `server/sql/schema.sql` for full DDL):
 
 | Table | Purpose |
 | --- | --- |

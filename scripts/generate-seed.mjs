@@ -8,7 +8,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
 const SRC = resolve(ROOT, 'server', 'data', 'exercises.json')
 const NAMES_ZH = resolve(ROOT, 'server', 'data', 'exercise-names-zh.json')
-const OUT = resolve(ROOT, 'server', 'seed.sql')
+const NAMES_ES = resolve(ROOT, 'server', 'curated', 'exercise-names-es.json')
+const OUT = resolve(ROOT, 'server', 'sql', 'generated', 'seed.sql')
 
 function sql(value) {
   if (value == null) return 'NULL'
@@ -45,27 +46,35 @@ function assignDifficulty(id) {
   return 3
 }
 
-// Curated Chinese names, keyed by exercise id. Missing ids stay NULL so the
-// frontend falls back to English — the map can grow one entry at a time.
-let namesZh = {}
-try {
-  const raw = JSON.parse(await readFile(NAMES_ZH, 'utf8'))
-  for (const [id, name] of Object.entries(raw)) {
-    if (id.startsWith('_')) continue
-    if (typeof name === 'string' && name.trim()) namesZh[id] = name.trim()
+// Curated localized names, keyed by exercise id. Missing ids stay NULL so the
+// frontend falls back to English — the maps can grow one entry at a time.
+async function loadNames(path) {
+  try {
+    const raw = JSON.parse(await readFile(path, 'utf8'))
+    const names = {}
+    for (const [id, name] of Object.entries(raw)) {
+      if (id.startsWith('_')) continue
+      if (typeof name === 'string' && name.trim()) names[id] = name.trim()
+    }
+    return names
+  } catch {
+    return {}
   }
-} catch {
-  namesZh = {}
 }
+
+const namesZh = await loadNames(NAMES_ZH)
+const namesEs = await loadNames(NAMES_ES)
 
 const rows = exercises.map((ex) => {
   const nameZh = namesZh[ex.id] ?? null
+  const nameEs = namesEs[ex.id] ?? null
   const { pinyin: namePinyin, initials: nameInitials } = pinyinFields(nameZh)
   const difficulty = assignDifficulty(ex.id)
   return [
     ex.id,
     ex.name,
     nameZh,
+    nameEs,
     namePinyin,
     nameInitials,
     ex.category,
@@ -83,7 +92,7 @@ const rows = exercises.map((ex) => {
 
 const inserts = rows.map(
   (values) =>
-    `INSERT INTO exercises (id, name, name_zh, name_pinyin, name_initials, category, target, equipment, muscle_group, secondary_muscles, image, gif_url, instructions, instruction_steps, difficulty) VALUES (${values
+    `INSERT INTO exercises (id, name, name_zh, name_es, name_pinyin, name_initials, category, target, equipment, muscle_group, secondary_muscles, image, gif_url, instructions, instruction_steps, difficulty) VALUES (${values
       .map(sql)
       .join(', ')});`,
 )
@@ -95,4 +104,4 @@ ${inserts.join('\n')}
 
 await mkdir(dirname(OUT), { recursive: true })
 await writeFile(OUT, sqlText)
-console.log(`Wrote ${OUT} with ${inserts.length} exercise inserts (${Object.keys(namesZh).length} with Chinese names).`)
+console.log(`Wrote ${OUT} with ${inserts.length} exercise inserts (${Object.keys(namesZh).length} Chinese names, ${Object.keys(namesEs).length} Spanish names).`)

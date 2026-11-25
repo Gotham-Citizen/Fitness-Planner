@@ -34,7 +34,7 @@ CREATE TABLE users (
   created_at TEXT NOT NULL,
   gender TEXT CHECK (gender IS NULL OR gender IN ('male', 'female', 'other')),
   name TEXT,
-  language TEXT NOT NULL DEFAULT 'en' CHECK (language IN ('en', 'zh')),
+  language TEXT NOT NULL DEFAULT 'en' CHECK (language IN ('en', 'zh', 'es')),
   bodyweight REAL CHECK (bodyweight IS NULL OR bodyweight >= 0),
   bodyweight_unit TEXT NOT NULL DEFAULT 'kg' CHECK (bodyweight_unit IN ('kg', 'lbs')),
   unit TEXT NOT NULL DEFAULT 'kg' CHECK (unit IN ('kg', 'lbs')),
@@ -56,12 +56,14 @@ CREATE TABLE users (
 -- ---------- exercises ----------
 -- Shared seed library (user_id NULL) + per-user custom exercises. Text fields
 -- secondary_muscles / instructions / instruction_steps hold JSON; the zh
--- name/pinyin/initials columns power Chinese search. `difficulty` is the
--- 1–3 easy/medium/hard band shown in the library.
+-- name/pinyin/initials columns power Chinese search and name_es holds the
+-- curated Spanish display name. `difficulty` is the 1–3 easy/medium/hard band
+-- shown in the library.
 CREATE TABLE exercises (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   name_zh TEXT,
+  name_es TEXT,
   name_pinyin TEXT,
   name_initials TEXT,
   category TEXT NOT NULL,

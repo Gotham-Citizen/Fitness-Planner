@@ -33,7 +33,7 @@ dist-ssr
 
 # Generated data and local state
 server/data
-server/seed.sql
+server/sql/generated/
 .wrangler
 *.db
 *.sqlite
