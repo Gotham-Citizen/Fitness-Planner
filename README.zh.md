@@ -25,17 +25,17 @@
 ```bash
 npm install
 npm run fetch:data        # 下载数据集 + 动作媒体文件到 public/ 和 server/data/
-npm run db:gen           # 从数据集生成 server/seed.sql
+npm run db:gen           # 从数据集生成 server/sql/generated/seed.sql
 npm run db:schema:local  # 创建本地（Miniflare）D1 表结构
 npm run db:data:local    # 导入种子数据
-npm run db:test:gen      # 重新生成 server/test-data.sql（测试账号；日期相对当天计算）
-npm run db:test:local    # 导入测试数据（本周训练记录，每个会话对应不同的趣味对比档位）
+npm run db:test:gen      # 重新生成 server/sql/generated/test-data.sql（日期相对当天计算）
+npm run db:test:local    # 导入测试数据（六个月训练历程，本周 4 个会话）
 npm run dev              # Vite（网页端，:5173）+ wrangler dev --local（API，:8787）
 ```
 
 打开 `http://localhost:5173`，完全离线可用。
 
-> `server/data/` 和 `server/seed.sql` 按设计被 gitignore —— 新 clone 的仓库通过 `npm run fetch:data` + `npm run db:gen` 重新生成。登录功能还需要 `JWT_SECRET`：本地开发请在 `server/.dev.vars`（已 gitignore）中配置，例如 `JWT_SECRET=任意长随机字符串`。
+> `server/data/` 和 `server/sql/generated/` 按设计被 gitignore —— 新 clone 的仓库通过 `npm run fetch:data`、`npm run db:gen` 和 `npm run db:test:gen` 重新生成。人工整理的本地化动作名保存在已跟踪的 `server/curated/` 中。登录功能还需要 `JWT_SECRET`：本地开发请在 `server/.dev.vars`（已 gitignore）中配置，例如 `JWT_SECRET=任意长随机字符串`。
 
 本地开发的所有配置项均可省略（模板见 `.env.example`）：
 
@@ -176,7 +176,7 @@ npm run preview
 ### 后端 / 基础设施
 
 - **Express 5** —— API 路由，通过 `server/worker.js` 运行在 Cloudflare Workers（`nodejs_compat`）上
-- **Cloudflare D1**（SQLite）—— 动作、自定义动作、用户、训练列表、训练记录、组数、体重打卡（`server/schema.sql`）
+- **Cloudflare D1**（SQLite）—— 动作、自定义动作、用户、训练列表、训练记录、组数、体重打卡（`server/sql/schema.sql`）
 - **jose** —— JWT 签发/校验（HS256），密钥仅保存在服务端
 - **Web Crypto PBKDF2** —— 密码哈希（10 万次迭代，SHA-256，每用户独立盐值）
 - **Wrangler** —— Workers/D1 命令行工具，用于本地开发（Miniflare）与部署
@@ -200,8 +200,8 @@ npm run preview
 │   └── favicon.svg
 ├── scripts/
 │   ├── download-assets.mjs          # 下载数据集 + 媒体到 public/ 和 server/data/
-│   ├── generate-seed.mjs            # 从数据集 JSON 生成 server/seed.sql（补充拼音、难度）
-│   └── generate-test-data.mjs       # 生成 server/test-data.sql（测试账号，日期相对今天，全梯度覆盖）
+│   ├── generate-seed.mjs            # 生成 server/sql/generated/seed.sql（补充拼音、中文名、西班牙语名、难度）
+│   └── generate-test-data.mjs       # 生成 server/sql/generated/test-data.sql（生成文件，已 gitignore）
 ├── shared/                          # 客户端与服务端共用模块
 │   ├── normalize.js                 # 力度量表 / 语言 / 单位归一化
 │   └── setRules.js                  # 组有效性规则（有重量无次数等）
@@ -212,11 +212,13 @@ npm run preview
 │   ├── auth.js                      # PBKDF2 哈希 + JWT 签发/校验（jose）
 │   ├── authMiddleware.js            # requireAuth / optionalAuth 鉴权中间件
 │   ├── validate.js                  # 邮箱 / 性别 / 数字校验
-│   ├── schema.sql                   # D1 表结构（破坏性重置 —— 仅用于全新数据库）
-│   ├── test-data.sql                # 本地开发测试数据（测试账号 + 全梯度覆盖训练记录，生成的）
+│   ├── curated/                     # 已跟踪的人工本地化动作名（exercise-names-es.json）
+│   ├── sql/
+│   │   ├── schema.sql               # D1 表结构（破坏性重置 —— 仅用于全新数据库）
+│   │   └── generated/               # 生成的 seed.sql + test-data.sql（已 gitignore）
 │   ├── wrangler.jsonc               # Worker 配置（静态资源、D1 绑定、nodejs_compat）
 │   ├── .dev.vars                    # 本地密钥（gitignored）—— JWT_SECRET
-│   └── data/                        # 生成的数据集与种子文件（gitignored）
+│   └── data/                        # 生成的数据集与中文名（gitignored）
 └── src/
     ├── main.jsx                     # React 挂载入口
     ├── index.css                     # 全局样式 + 主题变量
@@ -295,16 +297,18 @@ npm run preview
 ### 数据流水线
 
 1. **`npm run fetch:data`** —— 从上游数据集下载 `exercises.json` 及全部 1,324 个 GIF + 缩略图到 `public/videos/` 与 `public/images/`（保持数据集的相对路径），同时把 JSON 存到 `server/data/exercises.json`。
-2. **`npm run db:gen`** —— 读取本地 JSON，合并 `server/data/exercise-names-zh.json` 中的人工中文名，用 `pinyin-pro` 计算拼音与首字母，按确定性规则分配 1–3 难度档，输出 `server/seed.sql`（`exercises` 表的 `INSERT` 语句）。
+2. **`npm run db:gen`** —— 读取本地 JSON，合并 `server/data/exercise-names-zh.json` 中的人工中文名和 `server/curated/exercise-names-es.json` 中的人工西班牙语名，用 `pinyin-pro` 计算拼音与首字母，按确定性规则分配 1–3 难度档，输出 `server/sql/generated/seed.sql`（`exercises` 表的 `INSERT` 语句）。
 3. **`npm run db:schema:local`** —— 把 D1 表结构应用到本地 Miniflare 数据库（破坏性重置）。
 4. **`npm run db:data:local`** —— 导入种子数据。
-5. **`npm run db:test:gen`** —— 生成确定性测试数据（`server/test-data.sql`）：测试用户、3 个训练列表、跨 4 个时间块（2025、1Y、90d、本周）的 15 个会话、13 条趋向目标的体重打卡、问卷与排程数据。脚本在写入前**断言**覆盖度：
-   - 每个趣味对比档位恰好命中一次（公斤与磅阶梯保持一致）
-   - 全段位覆盖（坚韧 → 王者 + Unranked，女性标准表）
+5. **`npm run db:test:gen`** —— 生成确定性测试数据（`server/sql/generated/test-data.sql`，已 gitignore）：测试用户、3 个训练列表、跨六个月的 26 个会话（22 个按周分布 + 本周 4 个）、26 条趋向 68 kg 目标的体重打卡、问卷与推/拉/腿轮换排程数据。脚本在写入前**断言**覆盖度：
+   - 15 个里程碑会话按顺序命中每个对比档位，最终达到 2× 校车体积（公斤与磅阶梯一致）
+   - 女性标准表覆盖全段位（坚韧 → 王者 + Unranked）
    - 分块力度设计（全未评分、旧数据硬核、简单偏向、全频段含 RPE）
-   - 单动作重量单调不减（新最佳徽章持续触发）
-   - 近期会话落在当前以周日为起始的周内
+   - 总体积与单动作重量单调递增（新最佳徽章持续触发）
+   - 近期会话落在当前以周日为起始的周内，且不会出现在未来
 6. **`npm run db:test:local`** —— 应用测试数据（幂等：先删再插 `test-` 前缀行）。
+
+   生成的 SQL 不提交到仓库：加载前先运行 `npm run db:gen` 和 `npm run db:test:gen`。`npm run db:schema:local/remote` 是破坏性操作 —— 它会删除所有表并重新应用 `server/sql/schema.sql`。仅对本地 Miniflare 或全新的远程 D1 使用；切勿对已有用户的远程数据库重复执行。现有数据库会在运行时补充新列，而 `es` 语言值等表结构变更通过迁移应用，而不是破坏性重置。
 
 ### 本地开发命令
 
@@ -324,16 +328,16 @@ npm run preview
 - **邮箱：** `123456@gmail.com`
 - **密码：** `123456`
 
-该账号已填好问卷（目标：增肌、经验：中级、每周 3 天、健身房、60 分钟），配置了轮换排程，并拥有覆盖全部段位与对比档位的 15 个会话。
+该账号已填好问卷（目标：增肌、经验：中级、每周 3 天、健身房、60 分钟），配置了推/拉/腿轮换排程，并拥有跨六个月的 26 个会话，覆盖全部段位与对比档位。
 
 ## 数据库结构
 
-核心表（完整 DDL 见 `server/schema.sql`）：
+核心表（完整 DDL 见 `server/sql/schema.sql`）：
 
 | 表 | 用途 |
 | --- | --- |
 | `users` | 身份与偏好（问卷、排程、体重、力度量表、计时器提醒、语言） |
-| `exercises` | 共享种子库（`user_id` 为 NULL）+ 用户自定义动作；含中文名/拼音/首字母供搜索 |
+| `exercises` | 共享种子库（`user_id` 为 NULL）+ 用户自定义动作；含中文名/西班牙语名/拼音/首字母供搜索与显示 |
 | `exercise_media` | Base64 编码的自定义 GIF（原始上限 1.4 MB） |
 | `workout_lists` | 用户的命名列表；用户级唯一名（大小写不敏感） |
 | `workout_list_exercises` | 列表内动作及其逐动作设置（休息、计划组数/次数、手动 `position`） |

@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
     base: process.env.VITE_BASE ?? '/',
     plugins: [react()],
     server: {
+      // Fail loudly on a port clash instead of drifting to 5174 while the
+      // browser and API proxy still assume 5173.
+      strictPort: true,
       proxy: {
         '/api': {
           // Defaults to the local wrangler dev server (npm run dev runs both).
