@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers'
 
+import exerciseNamesEs from './curated/exercise-names-es.json'
 import { isPositiveNumber } from './validate.js'
 import { hasReps, hasWeight } from '../shared/setRules.js'
 import { normalizeDisplayName, normalizeEffortScale, normalizeGender } from '../shared/normalize.js'
@@ -13,26 +14,35 @@ function parseJson(text, fallback) {
   }
 }
 
-  function toExercise(row) {
-   return {
-     id: row.id,
-     name: row.name,
-     nameZh: row.name_zh ?? null,
-     namePinyin: row.name_pinyin ?? null,
-     nameInitials: row.name_initials ?? null,
-     category: row.category,
-     target: row.target,
-     equipment: row.equipment,
-     muscle_group: row.muscle_group,
-     secondary_muscles: parseJson(row.secondary_muscles, []),
-     image: row.image,
-     gif_url: row.gif_url,
-     instructions: parseJson(row.instructions, {}),
-     instruction_steps: parseJson(row.instruction_steps, {}),
-     difficulty: row.difficulty ?? 1,
-     user_id: row.user_id ?? null,
-   }
- }
+// Compact catalog row: the instruction bodies are the bulk of the exercise
+// payload, so the library list omits them and fetches them per movement on open.
+function toExerciseSummary(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    nameZh: row.name_zh ?? null,
+    nameEs: row.name_es ?? null,
+    namePinyin: row.name_pinyin ?? null,
+    nameInitials: row.name_initials ?? null,
+    category: row.category,
+    target: row.target,
+    equipment: row.equipment,
+    muscle_group: row.muscle_group,
+    secondary_muscles: parseJson(row.secondary_muscles, []),
+    image: row.image,
+    gif_url: row.gif_url,
+    difficulty: row.difficulty ?? 1,
+    user_id: row.user_id ?? null,
+  }
+}
+
+function toExercise(row) {
+  return {
+    ...toExerciseSummary(row),
+    instructions: parseJson(row.instructions, {}),
+    instruction_steps: parseJson(row.instruction_steps, {}),
+  }
+}
 
 function toListExercise(row) {
   const rawSecs = Number(row.rest_secs)
@@ -41,6 +51,7 @@ function toListExercise(row) {
     id: row.id,
     name: row.name,
     nameZh: row.name_zh ?? null,
+    nameEs: row.name_es ?? null,
     namePinyin: row.name_pinyin ?? null,
     nameInitials: row.name_initials ?? null,
     category: row.category,
@@ -73,7 +84,8 @@ function normalizeRir(value) {
 }
 
 function normalizeLanguage(value) {
-  return String(value ?? '').trim().toLowerCase() === 'zh' ? 'zh' : 'en'
+  const v = String(value ?? '').trim().toLowerCase()
+  return ['zh', 'es'].includes(v) ? v : 'en'
 }
 
 // --- Plan & schedule (fixed week / rotation) -------------------------------
@@ -155,22 +167,51 @@ function normalizeTimerSound(value) {
 
 const QUESTIONNAIRE_GOALS = ['slim', 'strength', 'build', 'endurance']
 const QUESTIONNAIRE_EXPERIENCE = ['beginner', 'intermediate', 'advanced']
-const QUESTIONNAIRE_EQUIPMENT = ['gym', 'dumbbell', 'bodyweight']
+const QUESTIONNAIRE_EQUIPMENT = ['gym', 'dumbbell', 'bodyweight', 'band']
+const QUESTIONNAIRE_SCHEDULE_MODES = ['fixed', 'rotation']
+const QUESTIONNAIRE_FOCUS = ['full-body', 'chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'cardio']
 const QUESTIONNAIRE_SESSION_MINUTES = [30, 45, 60, 90, 120, 150, 180]
+
+function normalizeFocus(raw) {
+  if (!Array.isArray(raw)) return ['full-body']
+  const selected = raw.filter((item) => QUESTIONNAIRE_FOCUS.includes(item))
+  if (!selected.length || selected.includes('full-body')) return ['full-body']
+  return [...new Set(selected)]
+}
 
 export function normalizeQuestionnaire(answers) {
   if (answers == null || typeof answers !== 'object' || Array.isArray(answers)) return null
   const goal = QUESTIONNAIRE_GOALS.includes(answers.goal) ? answers.goal : null
   const experience = QUESTIONNAIRE_EXPERIENCE.includes(answers.experience) ? answers.experience : null
-  const days = Number(answers.daysPerWeek)
-  const daysPerWeek = Number.isFinite(days) && days >= 2 && days <= 6 ? Math.round(days) : null
+  const scheduleMode = QUESTIONNAIRE_SCHEDULE_MODES.includes(answers.scheduleMode) ? answers.scheduleMode : 'fixed'
+  const workoutDaysRaw = Number(answers.workoutDays)
+  const workoutDays = Number.isFinite(workoutDaysRaw) && workoutDaysRaw >= 1 && workoutDaysRaw <= 6
+    ? Math.round(workoutDaysRaw)
+    : 2
+  const restDaysRaw = Number(answers.restDays)
+  const restDays = Number.isFinite(restDaysRaw) && restDaysRaw >= 1 && restDaysRaw <= 6
+    ? Math.round(restDaysRaw)
+    : 1
+  // Rotation answers carry their frequency in workoutDays; older clients only
+  // send daysPerWeek, so that still works for fixed schedules.
+  const days = Number(answers.daysPerWeek ?? (scheduleMode === 'rotation' ? workoutDays : undefined))
+  const daysPerWeek = Number.isFinite(days) && days >= 1 && days <= 6 ? Math.round(days) : null
   const equipment = QUESTIONNAIRE_EQUIPMENT.includes(answers.equipment) ? answers.equipment : null
   const mins = Number(answers.sessionMinutes)
   const sessionMinutes = QUESTIONNAIRE_SESSION_MINUTES.includes(mins) ? mins : null
   if (!goal || !experience || !daysPerWeek || !equipment) {
     throw new Error('goal, experience, daysPerWeek, and equipment are required')
   }
-  const out = { goal, experience, daysPerWeek, equipment }
+  const out = {
+    goal,
+    experience,
+    scheduleMode,
+    daysPerWeek,
+    workoutDays,
+    restDays,
+    equipment,
+    focus: normalizeFocus(answers.focus),
+  }
   if (sessionMinutes) out.sessionMinutes = sessionMinutes
   return out
 }
@@ -237,7 +278,7 @@ function toSessionBodyweight(row) {
   }
 }
 
-const SELECT_LIST_EXERCISES = `SELECT e.id, e.name, e.name_zh AS name_zh, e.name_pinyin AS name_pinyin, e.name_initials AS name_initials,
+const SELECT_LIST_EXERCISES = `SELECT e.id, e.name, e.name_zh AS name_zh, e.name_es AS name_es, e.name_pinyin AS name_pinyin, e.name_initials AS name_initials,
     e.category, e.target, e.equipment, e.image, e.gif_url,
     e.secondary_muscles, e.instructions, e.instruction_steps, e.difficulty,
     wle.rest_secs AS rest_secs, wle.rest_enabled AS rest_enabled, wle.rir_enabled AS rir_enabled,
@@ -247,6 +288,12 @@ const SELECT_LIST_EXERCISES = `SELECT e.id, e.name, e.name_zh AS name_zh, e.name
   JOIN exercises e ON e.id = wle.exercise_id
   WHERE wle.list_id = ?
   ORDER BY wle.position ASC, wle.added_at ASC`
+
+// The catalog list never needs instruction bodies; selecting them from D1 just
+// to drop them in toExerciseSummary wastes several MB per request.
+const SELECT_EXERCISE_SUMMARY = `SELECT id, name, name_zh, name_es, name_pinyin, name_initials,
+    category, target, equipment, muscle_group, secondary_muscles, image, gif_url, difficulty, user_id
+  FROM exercises`
 
 const SELECT_LIST_BY_ID = 'SELECT * FROM workout_lists WHERE id = ? AND user_id = ? AND deleted_at IS NULL'
 
@@ -315,16 +362,19 @@ function extractMediaId(gifUrl) {
 
 const db = {
   async getExercises(userId) {
+    await this.ensureNameEsColumn()
+    const publicRows = `${SELECT_EXERCISE_SUMMARY} WHERE user_id IS NULL`
     const { results } = userId
       ? await env.DB
-        .prepare('SELECT * FROM exercises WHERE user_id IS NULL OR user_id = ? ORDER BY name ASC')
+        .prepare(`${publicRows} OR user_id = ? ORDER BY name ASC`)
         .bind(userId)
         .all()
-      : await env.DB.prepare('SELECT * FROM exercises WHERE user_id IS NULL ORDER BY name ASC').all()
-    return results.map(toExercise)
+      : await env.DB.prepare(`${publicRows} ORDER BY name ASC`).all()
+    return results.map(toExerciseSummary)
   },
 
   async getExercise(id, userId) {
+    await this.ensureNameEsColumn()
     const row = await env.DB.prepare('SELECT * FROM exercises WHERE id = ?').bind(id).first()
     if (!row) return null
     // Custom exercises are private to their owner; library rows (user_id NULL) are public.
@@ -353,7 +403,7 @@ const db = {
     const instrText = typeof instructions === 'string' ? instructions.trim() : ''
     const fallbackText = steps.join('\n')
     const text = instrText || fallbackText
-    const instrLang = instructionsLang === 'zh' ? 'zh' : 'en'
+    const instrLang = ['zh', 'es'].includes(instructionsLang) ? instructionsLang : 'en'
     const instructionsJson = text ? JSON.stringify({ [instrLang]: text }) : '{}'
     const stepsJson = steps.length ? JSON.stringify({ [instrLang]: steps }) : '{}'
     const id = `custom-${crypto.randomUUID()}`
@@ -388,7 +438,7 @@ const db = {
       // wipes the others (library rows carry 10 languages; custom rows en).
       const prev = parseJson(row.instructions, {})
       const merged = prev && typeof prev === 'object' ? prev : {}
-      const lang = instructionsLang === 'zh' ? 'zh' : 'en'
+      const lang = ['zh', 'es'].includes(instructionsLang) ? instructionsLang : 'en'
       if (text) merged[lang] = text
       else delete merged[lang]
       updates.push('instructions = ?')
@@ -504,6 +554,7 @@ const db = {
 
   async getWorkoutList(userId, id) {
     await this.ensureListExercisePosition()
+    await this.ensureNameEsColumn()
     const list = await env.DB.prepare(SELECT_LIST_BY_ID).bind(id, userId).first()
     if (!list) return null
     const { results: rows } = await env.DB.prepare(SELECT_LIST_EXERCISES).bind(id).all()
@@ -898,6 +949,27 @@ const db = {
       await env.DB.prepare('ALTER TABLE users ADD COLUMN plan TEXT').run()
     }
     this._planColumnReady = true
+  },
+
+  // name_es postdates the original exercises schema. Existing D1 databases
+  // get it on first exercise read; fresh databases already have it via schema.
+  async ensureNameEsColumn() {
+    if (this._nameEsColumnReady) return
+    const { results } = await env.DB.prepare('PRAGMA table_info(exercises)').all()
+    if (!results.some((c) => c.name === 'name_es')) {
+      await env.DB.prepare('ALTER TABLE exercises ADD COLUMN name_es TEXT').run()
+      const statements = Object.entries(exerciseNamesEs)
+        .filter(([id, name]) => !id.startsWith('_') && typeof name === 'string' && name.trim())
+        .map(([id, name]) =>
+          env.DB
+            .prepare('UPDATE exercises SET name_es = ? WHERE id = ? AND name_es IS NULL')
+            .bind(name.trim(), id),
+        )
+      for (let i = 0; i < statements.length; i += 500) {
+        await env.DB.batch(statements.slice(i, i + 500))
+      }
+    }
+    this._nameEsColumnReady = true
   },
 
   // --- Weigh-in history (journal bodyweight card) ---
