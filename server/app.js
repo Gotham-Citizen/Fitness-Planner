@@ -45,7 +45,7 @@ export function createApp() {
       const languageRaw = req.body?.language
       const language = languageRaw == null ? null : String(languageRaw).trim().toLowerCase()
       if (language !== null && language !== 'en' && language !== 'zh' && language !== 'es') {
-        return res.status(400).json({ error: 'language must be en or zh' })
+        return res.status(400).json({ error: 'language must be en, zh, or es' })
       }
       // Survey answers collected in the signup wizard. Validated with the
       // same rules as the retake endpoint; absent = signup without answers
@@ -82,7 +82,7 @@ export function createApp() {
         return res.status(401).json({ error: 'Invalid email or password' })
       }
       const token = await createToken(user.id)
-      const safeUser = { id: user.id, email: user.email, name: user.name ?? null, createdAt: user.createdAt, gender: user.gender ?? null, bodyweight: user.bodyweight ?? null, bodyweightUnit: user.bodyweightUnit || 'kg', unit: user.unit || 'kg', targetWeight: user.targetWeight ?? null, effortScale: user.effortScale || 'rir', timerSound: user.timerSound || 'beep', timerPlaySound: user.timerPlaySound ?? 1, timerVibrate: user.timerVibrate ?? 1, timerFlash: user.timerFlash ?? 0, language: user.language || 'en', questionnaire: user.questionnaire ?? null, questionnaireUpdatedAt: user.questionnaireUpdatedAt ?? null }
+      const safeUser = { id: user.id, email: user.email, name: user.name ?? null, createdAt: user.createdAt, gender: user.gender ?? null, bodyweight: user.bodyweight ?? null, bodyweightUnit: user.bodyweightUnit || 'kg', unit: user.unit || 'kg', targetWeight: user.targetWeight ?? null, effortScale: user.effortScale || 'rir', timerSound: user.timerSound || 'beep', timerPlaySound: user.timerPlaySound ?? 1, timerVibrate: user.timerVibrate ?? 1, timerFlash: user.timerFlash ?? 0, language: user.language || 'en', schedule: user.schedule ?? null, questionnaire: user.questionnaire ?? null, questionnaireUpdatedAt: user.questionnaireUpdatedAt ?? null }
       res.json({ token, user: safeUser })
     } catch (err) {
       next(err)
@@ -299,7 +299,7 @@ export function createApp() {
       const equipment = typeof req.body?.equipment === 'string' ? req.body.equipment.trim() : ''
       const gifUrl = typeof req.body?.gifUrl === 'string' ? req.body.gifUrl.trim() : ''
       const instructions = typeof req.body?.instructions === 'string' ? req.body.instructions.trim() : ''
-      const instructionsLang = req.body?.instructionsLang === 'zh' ? 'zh' : 'en'
+      const instructionsLang = ['zh', 'es'].includes(req.body?.instructionsLang) ? req.body.instructionsLang : 'en'
       const instructionSteps = Array.isArray(req.body?.instructionSteps)
         ? req.body.instructionSteps
         : []
@@ -356,7 +356,7 @@ export function createApp() {
         fields.instructions = typeof req.body.instructions === 'string' ? req.body.instructions : ''
       }
       if ('instructionsLang' in (req.body || {})) {
-        fields.instructionsLang = req.body.instructionsLang === 'zh' ? 'zh' : 'en'
+        fields.instructionsLang = ['zh', 'es'].includes(req.body.instructionsLang) ? req.body.instructionsLang : 'en'
       }
       if (Object.keys(fields).length === 0) {
         return res.status(400).json({ error: 'Nothing to update' })
