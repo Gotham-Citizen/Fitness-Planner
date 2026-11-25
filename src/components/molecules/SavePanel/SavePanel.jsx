@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { exerciseName, mediaUrl } from "../../../lib/muscles.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./SavePanel.css"
 
@@ -37,7 +38,7 @@ const RenameConfirm = ({ inline, pendingRename, busy, renaming, resolving, confi
 
 export const SavePanel = ({ exercise, workoutLists, onAddToList, onCreateList, onRenameList, onClose }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState("")
   const [added, setAdded] = useState({})

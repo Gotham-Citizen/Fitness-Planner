@@ -190,6 +190,106 @@
   flex-wrap: wrap;
 }
 
+/* Weekly-days choices: 6 options fill exactly two rows of three. */
+.auth-options-days {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.auth-options-days .auth-option {
+  justify-content: center;
+  padding: 10px 8px;
+  font-size: 13px;
+}
+
+/* Muscle-focus choices: 8 options fill exactly two rows of four. */
+.auth-options-focus {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.auth-options-focus .auth-option {
+  justify-content: center;
+  padding: 10px 8px;
+  font-size: 13px;
+}
+.auth-field-hint {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Rotation loop: compact +/- steppers and a 7-day W/R preview. */
+.auth-loop-steppers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+.auth-stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.auth-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.auth-stepper-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+}
+.auth-stepper-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.auth-stepper-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.auth-stepper-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.auth-stepper-value {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.auth-loop-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.auth-loop-cell {
+  min-width: 34px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.auth-loop-cell.is-rest {
+  background: var(--bg-hover);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
 /* ---------- Focus-visible for row options ---------- */
 .auth-options-row .auth-option:focus-visible {
   outline: 2px solid var(--accent);
@@ -292,5 +392,8 @@
   }
   .auth-step-back {
     width: 100%;
+  }
+  .auth-options-focus {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

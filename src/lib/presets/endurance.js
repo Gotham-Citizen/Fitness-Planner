@@ -11,10 +11,11 @@ export const ENDURANCE_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 35,
-    name: { en: "Muscular Endurance A", zh: "肌肉耐力 A" },
+    name: { en: "Muscular Endurance A", zh: "肌肉耐力 A", es: "Resistencia muscular A" },
     desc: {
       en: "Light full-body machine circuit, 15-20 reps per set.",
       zh: "轻负荷全身器械循环，每组 15-20 次。",
+      es: "Circuito de máquinas de cuerpo completo con carga ligera, 15-20 repeticiones por serie.",
     },
     focus: ["quads", "lats", "pectorals", "delts"],
     slots: [
@@ -33,10 +34,11 @@ export const ENDURANCE_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 35,
-    name: { en: "Muscular Endurance B", zh: "肌肉耐力 B" },
+    name: { en: "Muscular Endurance B", zh: "肌肉耐力 B", es: "Resistencia muscular B" },
     desc: {
       en: "Second light circuit day with different movements.",
       zh: "第二个轻负荷循环训练日，动作组合不同。",
+      es: "Segundo día de circuito ligero con ejercicios diferentes.",
     },
     focus: ["hamstrings", "lats", "delts", "abs"],
     slots: [
@@ -55,10 +57,11 @@ export const ENDURANCE_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 25,
-    name: { en: "Core Endurance", zh: "核心耐力" },
+    name: { en: "Core Endurance", zh: "核心耐力", es: "Resistencia del core" },
     desc: {
       en: "High-rep core circuit with short rests.",
       zh: "高次数、短间歇的核心循环训练。",
+      es: "Circuito de core con muchas repeticiones y descansos cortos.",
     },
     focus: ["abs"],
     slots: [
@@ -77,10 +80,11 @@ export const ENDURANCE_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 25,
-    name: { en: "Cardio Intervals", zh: "有氧间歇" },
+    name: { en: "Cardio Intervals", zh: "有氧间歇", es: "Intervalos de cardio" },
     desc: {
       en: "Conditioning intervals with jump rope, burpees and jumps.",
       zh: "跳绳、波比跳与跳跃动作组成的有氧间歇训练。",
+      es: "Intervalos de acondicionamiento con salto de cuerda, burpees y saltos.",
     },
     focus: ["cardiovascular system", "quads", "calves"],
     slots: [

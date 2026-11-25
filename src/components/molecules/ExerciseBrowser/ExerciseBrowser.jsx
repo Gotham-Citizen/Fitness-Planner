@@ -33,7 +33,7 @@ export const ExerciseBrowser = ({ exercises, onSelectEquipment }) => {
       if (b.key === CUSTOM_EQUIPMENT_KEY) return -1
       const byCount = b.exercises.length - a.exercises.length
       if (byCount !== 0) return byCount
-      return a.label.localeCompare(b.label, lang === "zh" ? "zh" : "en")
+      return a.label.localeCompare(b.label, normalizeLang(lang))
     })
     return withLabels
   }, [exercises, lang, t])

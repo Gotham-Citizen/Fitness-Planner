@@ -83,22 +83,14 @@ export const ExerciseLibrary = ({
     return sorted
   }, [exercises, sortByDifficulty, sortByAlpha, lang])
 
-  // Part cards sorted like the equipment grid: most exercises first,
-  // ties A to Z by localized label.
-  const partCards = useMemo(() => {
-    const cards = (hierarchy || []).map((part) => ({
-      name: part.name,
-      label: localizedCategory(part.name),
-      count: part.count,
-      image: part.targets?.[0]?.exercises?.[0]?.image || null,
-    }))
-    cards.sort((a, b) => {
-      const byCount = b.count - a.count
-      if (byCount !== 0) return byCount
-      return a.label.localeCompare(b.label, lang === "zh" ? "zh" : "en")
-    })
-    return cards
-  }, [hierarchy, lang])
+  // Part cards follow the anatomy order from buildHierarchy (neck, shoulders,
+  // chest, back, arms, waist, legs, cardio) rather than exercise count.
+  const partCards = useMemo(() => (hierarchy || []).map((part) => ({
+    name: part.name,
+    label: localizedCategory(part.name),
+    count: part.count,
+    image: part.targets?.[0]?.exercises?.[0]?.image || null,
+  })), [hierarchy])
 
   // Part card: hand the scope to the main page and close the drawer;
   // clicking the active part again clears the selection.

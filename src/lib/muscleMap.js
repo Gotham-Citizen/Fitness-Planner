@@ -31,12 +31,12 @@ export const MUSCLE_LABEL = {
 
 export const muscleLabel = (slug) => MUSCLE_LABEL[slug] || slug
 
-// Localized bodymap muscle label (zh via utils/locales, else English).
+// Localized bodymap muscle label (zh/es via utils/locales, else English).
 // Called during render; components re-render on language change via
 // useTranslation, so reading the shared instance here stays current.
 export const localizedMuscleLabel = (slug) => {
   const fallback = muscleLabel(slug)
-  if (normalizeLang(i18n.language) !== "zh") return fallback
+  if (normalizeLang(i18n.language) === "en") return fallback
   return i18n.t(`muscles.map.${slug}`, { defaultValue: "" }) || fallback
 }
 

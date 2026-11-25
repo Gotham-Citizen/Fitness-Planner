@@ -1,8 +1,10 @@
+import "./SegmentedToggle.css"
+
 /**
  * Segmented option toggle. `options` are either plain values (label defaults
  * to the value, uppercased when `uppercase`) or `{ value, label }` objects.
  *
- * Purely structural — the consumer supplies the visual class names via
+ * Base styles live in SegmentedToggle.css; consumers may override them via
  * `className` / `buttonClassName`.
  */
 export const SegmentedToggle = ({
@@ -18,7 +20,7 @@ export const SegmentedToggle = ({
 }) => {
   return (
     <div
-      className={`segmented-toggle ${className}`.trim()}
+      className={["segmented-toggle", className].filter(Boolean).join(" ")}
       role="group"
       aria-label={ariaLabel}
     >
@@ -35,9 +37,11 @@ export const SegmentedToggle = ({
           <button
             key={v}
             type="button"
-            className={`segmented-toggle-button ${buttonClassName} ${
-              selected ? "is-selected" : ""
-            }`.trim()}
+            className={[
+              "segmented-toggle-button",
+              buttonClassName,
+              selected ? "is-selected" : "",
+            ].filter(Boolean).join(" ")}
             onClick={() => onPick?.(v)}
             disabled={disabled || (disableSelected && selected)}
             aria-pressed={selected}

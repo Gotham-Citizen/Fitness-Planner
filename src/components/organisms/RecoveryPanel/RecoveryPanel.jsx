@@ -4,13 +4,14 @@ import { usePanelDrawer } from "../../../hooks/index.js"
 
 import { localizedCategory, localizedTarget } from "../../../lib/muscles.js"
 import { formatLastTrained } from "../../../lib/recovery.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./RecoveryPanel.css"
 
 export const RecoveryPanel = ({ recovery, loading, onSelectMuscle }) => {
   const { t, i18n } = useTranslation()
   const { panelOpen, drawerOpen, isSmall, open, close, onTouchStart, onTouchEnd } = usePanelDrawer()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const rows = [...(recovery || [])].sort((a, b) =>
     a.percent !== b.percent ? a.percent - b.percent : a.label.localeCompare(b.label),
   )

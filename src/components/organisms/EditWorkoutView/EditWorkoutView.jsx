@@ -6,11 +6,12 @@ import { useDragReorder } from "../../../hooks/index.js"
 
 import { isRirEligible } from "../../../lib/effort.js"
 import { exerciseName, mediaUrl } from "../../../lib/muscles.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./EditWorkoutView.css"
 
 import { Button, GifFrame } from "../../atoms/index.js"
-import { ReorderControls } from "../../molecules/index.js"
+import { EditWorkoutHeader, ReorderControls } from "../../molecules/index.js"
 import { formatRestSecs } from "../../molecules/RestTimePicker/formatRest.js"
 import { RestTimePicker } from "../../molecules/RestTimePicker/RestTimePicker.jsx"
 
@@ -34,6 +35,7 @@ export const EditWorkoutView = ({
   onRemoveExercise,
   onUpdateSettings,
   onReorderExercises,
+  onRenameList,
 }) => {
   const { t, i18n } = useTranslation()
   const [editingRestId, setEditingRestId] = useState(null)
@@ -72,19 +74,11 @@ export const EditWorkoutView = ({
       role="region"
       aria-labelledby="edit-workout-title"
     >
-      <header className="edit-workout-page-header">
-        <button
-          type="button"
-          className="edit-workout-back"
-          onClick={onClose}
-          aria-label={t("editWorkout.closeEditor")}
-        >
-          ←
-        </button>
-        <h1 id="edit-workout-title" className="edit-workout-page-title">
-          {t("editWorkout.title", { name: list.name })}
-        </h1>
-      </header>
+      <EditWorkoutHeader
+        list={list}
+        onClose={onClose}
+        onRename={onRenameList}
+      />
 
       <main className="edit-workout-page-body">
         <div className="edit-workout-add-row">
@@ -136,7 +130,7 @@ export const EditWorkoutView = ({
                     <span className="workout-exercise-name">
                       {exerciseName(
                         ex,
-                        String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+                        normalizeLang(i18n.language)
                       )}
                     </span>
                     <Button
@@ -192,7 +186,6 @@ export const EditWorkoutView = ({
                         aria-expanded={editingRestId === ex.id}
                         aria-label={t("editWorkout.restFor", { name: ex.name })}
                       >
-                        <span aria-hidden="true">⏱</span>
                         <span className="rest-time-value">
                           {enabled ? formatRestSecs(secs) : t("editWorkout.restOff")}
                         </span>

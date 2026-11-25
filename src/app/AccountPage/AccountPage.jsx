@@ -10,6 +10,7 @@ export const AccountPage = ({
   theme,
   onPickTheme,
   onUpdateProfile,
+  onSetTargetWeight,
   onDeleteAccount,
   onLogout,
   onOpenTimerAlerts,
@@ -23,6 +24,7 @@ export const AccountPage = ({
         theme={theme}
         onPickTheme={onPickTheme}
         onUpdateProfile={onUpdateProfile}
+        onSetTargetWeight={onSetTargetWeight}
         onDeleteAccount={onDeleteAccount}
         onLogout={onLogout}
         onOpenTimerAlerts={onOpenTimerAlerts}

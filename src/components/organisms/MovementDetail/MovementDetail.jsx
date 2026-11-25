@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { exerciseName, localizedCategory, localizedEquipment, localizedMuscleGroup, localizedTarget, mediaUrl, movementInstructions } from "../../../lib/muscles.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./MovementDetail.css"
 
@@ -17,7 +18,7 @@ const DIFFICULTY_TAG = {
 
 export const MovementDetail = ({ exercise, onBack, onSave, saveLabel, onUpdateExercise, onDeleteExercise, lang }) => {
   const { t, i18n } = useTranslation()
-  const l = lang || (String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en")
+  const l = lang ? normalizeLang(lang) : normalizeLang(i18n.language)
   const name = exerciseName(exercise, l)
   // Same fallback chain the session's MovementDetailCard uses, so a movement
   // reads identically in the library and mid-workout.

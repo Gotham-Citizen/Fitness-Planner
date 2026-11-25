@@ -1,35 +1,37 @@
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
 import { orderedWeekdays, REST_DAY_VALUE, todayEntry, weekdayName } from "../../../lib/schedule.js";
+import { appLocale } from "../../../utils/locale.js";
 
 import "./PlanScheduleView.css"
 
-import { Button, SegmentedToggle } from "../../atoms/index.js"
+import { Button } from "../../atoms/index.js"
 import { useScheduleDrafts } from "./useScheduleDrafts.js";
 
 // Natural Sunday→Saturday order for the loop-start weekday picker.
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
-const STEP_COUNT = 3
-const STEP_MODE = 1
-const STEP_CONFIGURE = 2
-const STEP_PREVIEW = 3
+// The schedule type is chosen in the questionnaire, so the editor only has
+// two steps: configure the saved mode, then preview it.
+const STEP_COUNT = 2
+const STEP_CONFIGURE = 1
+const STEP_PREVIEW = 2
 
 /**
- * Plan & schedule editor — 3-step wizard:
- *   1) Schedule type (Fixed / Rotation)
- *   2) Configure — Week start + Fixed editor OR Loop start + Loop builder
- *   3) Preview (read-only)
+ * Plan & schedule editor — 2-step wizard:
+ *   1) Configure — Week start + Fixed editor OR Loop start + Loop builder
+ *   2) Preview (read-only)
  *
- * The schedule type saves instantly (like a toggle). Step 2 saves the week
- * start + fixed week (or the rotation loop) in ONE request when the user
- * presses "Next"; the wizard only advances once that save succeeded.
+ * The schedule mode (fixed / rotation) comes from the questionnaire and is
+ * not editable here. Step 1 saves the week start + fixed week (or the
+ * rotation loop) in ONE request when the user presses "Next"; the wizard
+ * only advances once that save succeeded.
  */
 export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }) => {
   const { t, i18n } = useTranslation()
-  const locale = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh-CN" : "en"
+  const locale = appLocale(i18n.language)
   const schedule = user?.schedule ?? null
   const weekStartsOn = Number.isInteger(schedule?.weekStartsOn) ? schedule.weekStartsOn : 0
   const mode = schedule?.mode === "rotation" ? "rotation" : "fixed"
@@ -47,19 +49,31 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
     removeDay,
     saveRotation,
     startWeekday,
-    setStartWeekday,
-    pickMode,
+    pickStartWeekday,
   } = useScheduleDrafts({ schedule, weekStartsOn, onUpdateProfile, t })
 
-  const [step, setStep] = useState(STEP_MODE)
+  const [step, setStep] = useState(STEP_CONFIGURE)
   const [weekStartsOnDraft, setWeekStartsOnDraft] = useState(weekStartsOn)
-  // Outcome of the last schedule-type save — step 1 waits for it so a failed
-  // save keeps the user here instead of opening the wrong editor.
-  const modeSaveRef = useRef(null)
+
+  // Esc steps back through the wizard, then exits from step 1 — same as the
+  // questionnaire. Edits are already saved, so no confirmation is needed.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const onKeyDown = (event) => {
+      if (event.key !== "Escape" && event.key !== "Esc") return
+      if (event.isComposing) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (saving !== null) return
+      event.preventDefault()
+      if (step > STEP_CONFIGURE) setStep((s) => Math.max(STEP_CONFIGURE, s - 1))
+      else onBack?.()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [onBack, saving, step])
 
   // Step labels for tracker (like questionnaire).
   const stepLabels = useMemo(() => [
-    t("schedule.modeTitle"),
     mode === "fixed" ? t("schedule.weekStartsOn") : t("schedule.rotationTitle"),
     t("schedule.previewTitle"),
   ], [t, mode])
@@ -99,12 +113,7 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
 
   // The wizard only moves on when the save behind the step actually landed.
   const goNext = async () => {
-    if (step === STEP_MODE) {
-      // The schedule type saves instantly — wait for that save, so a failure
-      // keeps the user on this step with the inline error visible.
-      const saved = modeSaveRef.current ? await modeSaveRef.current : true
-      if (!saved) return
-    } else if (step === STEP_CONFIGURE) {
+    if (step === STEP_CONFIGURE) {
       const saved = mode === "fixed"
         ? await saveFixedWeek(weekStartsOnDraft, fixedDraft)
         : await saveRotation()
@@ -112,11 +121,22 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
     }
     setStep((s) => Math.min(STEP_COUNT, s + 1))
   }
-  const goBack = () => setStep((s) => Math.max(STEP_MODE, s - 1))
+  const goBack = () => {
+    if (step > STEP_CONFIGURE) setStep((s) => Math.max(STEP_CONFIGURE, s - 1))
+    else onBack?.()
+  }
 
-  // When mode changes, stay on step 1; user clicks "Next" to proceed.
-  const handlePickMode = (nextMode) => {
-    modeSaveRef.current = pickMode(nextMode)
+  // Every edit persists immediately, including week start and individual
+  // weekday picks — Next/Done only navigate.
+  const pickWeekStart = (day) => {
+    if (day === weekStartsOnDraft) return
+    setWeekStartsOnDraft(day)
+    saveFixedWeek(day, fixedDraft)
+  }
+  const pickFixedDay = (day, value) => {
+    const next = { ...fixedDraft, [String(day)]: value || null }
+    setFixedDraft(next)
+    saveFixedWeek(weekStartsOnDraft, next)
   }
 
   return (
@@ -144,31 +164,7 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
       </ol>
 
       <div className="plan-schedule-panel">
-        {/* Step 1: Schedule type */}
-        {step === STEP_MODE && (
-          <div className="account-card">
-            <h3 className="account-section-title">{t("schedule.modeTitle")}</h3>
-            <SegmentedToggle
-              options={[
-                { value: "fixed", label: t("schedule.modeFixed") },
-                { value: "rotation", label: t("schedule.modeRotation") },
-              ]}
-              value={mode}
-              disabled={saving !== null}
-              onPick={handlePickMode}
-              ariaLabel={t("schedule.modeTitle")}
-            />
-            <p className="account-hint">{mode === "fixed" ? t("schedule.modeFixedHint") : t("schedule.modeRotationHint")}</p>
-            {error && <p className="account-inline-error">{error}</p>}
-            <div className="plan-schedule-step-actions">
-              <Button variant="primary" onClick={goNext} disabled={saving !== null}>
-                {t("auth.next")}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Configure — Week start (fixed) OR Loop builder (rotation) */}
+        {/* Step 1: Configure — Week start (fixed) OR Loop builder (rotation) */}
         {step === STEP_CONFIGURE && (
           <>
             {mode === "fixed" ? (
@@ -182,7 +178,7 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
                         key={day}
                         type="button"
                         className={`plan-schedule-day${weekStartsOnDraft === day ? " is-active" : ""}`}
-                        onClick={() => weekStartsOnDraft !== day && setWeekStartsOnDraft(day)}
+                        onClick={() => pickWeekStart(day)}
                         disabled={saving !== null}
                         aria-pressed={weekStartsOnDraft === day}
                       >
@@ -201,7 +197,7 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
                       <select
                         className="text-input"
                         value={fixedDraft[String(day)] ?? ""}
-                        onChange={(e) => setFixedDraft((prev) => ({ ...prev, [String(day)]: e.target.value || null }))}
+                        onChange={(e) => pickFixedDay(day, e.target.value)}
                         aria-label={t("schedule.dayAria", { day: weekdayName(day, locale) })}
                       >
                         <option value="">{t("schedule.restDay")}</option>
@@ -234,7 +230,7 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
                           key={day}
                           type="button"
                           className={`plan-schedule-day${startWeekday === day ? " is-active" : ""}`}
-                          onClick={() => setStartWeekday(day)}
+                          onClick={() => pickStartWeekday(day)}
                           disabled={saving !== null}
                           aria-pressed={startWeekday === day}
                         >
@@ -287,7 +283,7 @@ export const PlanScheduleView = ({ user, workoutLists, onUpdateProfile, onBack }
           </>
         )}
 
-        {/* Step 3: Preview (read-only) */}
+        {/* Step 2: Preview (read-only) */}
         {step === STEP_PREVIEW && (
           <div className="account-card">
             <h3 className="account-section-title">{t("schedule.previewTitle")}</h3>

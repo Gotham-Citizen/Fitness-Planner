@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { exerciseName as localizedExName } from "../../../lib/muscles.js"
 import { computeBalance } from "../../../lib/structuralBalance.js"
 import { BALANCE_STATUSES,DEFAULT_TEMPLATE_ID, EVALUATION_MODES, TEMPLATE_LIST } from "../../../lib/structuralBalanceTemplates.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./StructuralBalance.css"
 
@@ -17,7 +18,7 @@ const exerciseName = (exercises, id, lang) => {
 
 export const StructuralBalance = ({ sessions, exercises, bodyweightKg, gender }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const [templateId, setTemplateId] = useState(DEFAULT_TEMPLATE_ID)
   const statusLabel = (s) => {
     if (s === BALANCE_STATUSES.BALANCED) return t("structural.balanced")

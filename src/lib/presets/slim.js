@@ -13,10 +13,11 @@ export const SLIM_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 40,
-    name: { en: "Fat Burn Circuit A", zh: "燃脂循环 A" },
+    name: { en: "Fat Burn Circuit A", zh: "燃脂循环 A", es: "Circuito quemagrasas A" },
     desc: {
       en: "Gym circuit at 12-15 reps with a jump-rope finisher.",
       zh: "健身房循环训练，12-15 次每组，跳绳收尾。",
+      es: "Circuito de gimnasio de 12-15 repeticiones con salto de cuerda como cierre.",
     },
     focus: ["quads", "pectorals", "lats", "abs"],
     slots: [
@@ -35,10 +36,11 @@ export const SLIM_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 40,
-    name: { en: "Fat Burn Circuit B", zh: "燃脂循环 B" },
+    name: { en: "Fat Burn Circuit B", zh: "燃脂循环 B", es: "Circuito quemagrasas B" },
     desc: {
       en: "Dumbbell-and-machine circuit ending with burpees.",
       zh: "哑铃与器械循环训练，波比跳收尾。",
+      es: "Circuito de mancuernas y máquinas que termina con burpees.",
     },
     focus: ["glutes", "pectorals", "lats", "delts", "abs"],
     slots: [
@@ -57,10 +59,11 @@ export const SLIM_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 40,
-    name: { en: "Fat Burn Circuit C", zh: "燃脂循环 C" },
+    name: { en: "Fat Burn Circuit C", zh: "燃脂循环 C", es: "Circuito quemagrasas C" },
     desc: {
       en: "Kettlebell-swing-led circuit with mountain climbers.",
       zh: "壶铃摆动为主的循环训练，配合登山跑。",
+      es: "Circuito liderado por el balanceo con kettlebell y escaladores.",
     },
     focus: ["glutes", "triceps", "delts", "abs"],
     slots: [
@@ -79,10 +82,11 @@ export const SLIM_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 30,
-    name: { en: "Bodyweight Fat Burn", zh: "徒手燃脂" },
+    name: { en: "Bodyweight Fat Burn", zh: "徒手燃脂", es: "Quemagrasas con peso corporal" },
     desc: {
       en: "No-equipment HIIT circuit — cardio bursts between strength moves.",
       zh: "无器械 HIIT 循环——力量动作之间穿插有氧冲刺。",
+      es: "Circuito HIIT sin equipo: ráfagas de cardio entre ejercicios de fuerza.",
     },
     focus: ["pectorals", "quads", "abs", "glutes"],
     slots: [
@@ -101,10 +105,11 @@ export const SLIM_PRESETS = [
     equipment: "dumbbell",
     level: "beginner",
     durationMin: 35,
-    name: { en: "Dumbbell Fat Burn", zh: "哑铃燃脂" },
+    name: { en: "Dumbbell Fat Burn", zh: "哑铃燃脂", es: "Quemagrasas con mancuernas" },
     desc: {
       en: "Home dumbbell circuit with a jump-rope finisher.",
       zh: "居家哑铃循环训练，跳绳收尾。",
+      es: "Circuito de mancuernas en casa con salto de cuerda como cierre.",
     },
     focus: ["quads", "pectorals", "lats", "hamstrings"],
     slots: [

@@ -88,6 +88,9 @@ export const deleteAccount = () =>
 
 export const fetchExercises = () => request("/exercises")
 
+// The catalog list is intentionally compact; instruction bodies load on demand.
+export const fetchExercise = (id) => request(`/exercises/${id}`)
+
 export const createExercise = ({ name, category, target, equipment, gifUrl, instructionSteps, instructions, instructionsLang }) =>
   request("/exercises", { method: "POST", body: { name, category, target, equipment, gifUrl, instructionSteps, instructions, instructionsLang } })
 

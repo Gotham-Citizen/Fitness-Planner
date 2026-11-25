@@ -6,12 +6,13 @@
 //   rotation: { mode:'rotation', weekStartsOn, rotation: [entry...],
 //               rotationStartedAt: 'YYYY-MM-DD' }
 // Entries: { type:'workout', listId } | { type:'rest' }.
+import { appLocale } from "../utils/locale.js"
 
 // 2023-01-01 is a Sunday — offset by weekday for stable Intl labels.
 const SUNDAY_ANCHOR = new Date(2023, 0, 1)
 
 export const weekdayName = (weekday, locale = "en") =>
-  new Intl.DateTimeFormat(locale.startsWith("zh") ? "zh-CN" : "en", { weekday: "long" })
+  new Intl.DateTimeFormat(appLocale(locale), { weekday: "long" })
     .format(new Date(SUNDAY_ANCHOR.getTime() + weekday * 86400000))
 
 // Weekdays in display order, starting from the user's chosen week start.

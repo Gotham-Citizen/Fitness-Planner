@@ -18,6 +18,7 @@ import {
   recommendPresets,
   resolvePreset,
 } from "../../../lib/presets/index.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./ProgramsView.css"
 
@@ -49,26 +50,32 @@ const matchesPinyin = (preset, q) => {
   return false
 }
 
-// Searchable text of one preset: bilingual name + description + localized
-// focus labels + goal + body part + equipment + split. Lowercased once per filter pass.
+// Searchable text of one preset: all language variants of the name/description
+// + localized focus labels + goal + body part + equipment + split. Lowercased
+// once per filter pass.
 const programHaystack = (preset, lang) => [
   presetName(preset, "en"),
   presetName(preset, "zh"),
+  presetName(preset, "es"),
   presetDesc(preset, "en"),
   presetDesc(preset, "zh"),
+  presetDesc(preset, "es"),
   goalName(preset.goal, "en"),
   goalName(preset.goal, "zh"),
+  goalName(preset.goal, "es"),
   bodyPartName(presetBodyPart(preset), "en"),
   bodyPartName(presetBodyPart(preset), "zh"),
+  bodyPartName(presetBodyPart(preset), "es"),
   equipmentName(preset.equipment, "en"),
   equipmentName(preset.equipment, "zh"),
+  equipmentName(preset.equipment, "es"),
   preset.split, // "full-body", "upper", "lower", "push", "pull"
   ...(preset.focus || []).map((f) => focusLabel(f, lang)),
 ].join(" ").toLowerCase()
 
 export const ProgramsView = ({ exercises, questionnaire, onAddPreset, onOpenExercise }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const [query, setQuery] = useState("")
   const [addingId, setAddingId] = useState(null)
 

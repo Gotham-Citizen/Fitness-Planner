@@ -17,6 +17,7 @@ export const WorkoutsPage = ({
   onCreateList,
   onRenameList,
   onEditWorkout,
+  onAddExercises,
   onStartSession,
   onHistory,
   onSelectMuscle,
@@ -39,6 +40,7 @@ export const WorkoutsPage = ({
           onCreateList={onCreateList}
           onRenameList={onRenameList}
           onEditWorkout={onEditWorkout}
+          onAddExercises={onAddExercises}
           onStartSession={onStartSession}
           onHistory={onHistory}
           startingSession={startingSession}

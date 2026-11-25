@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 
 import { exerciseName } from "../../../lib/muscles.js"
 import { equipmentName, goalName, levelName, presetDesc, presetName } from "../../../lib/presets/index.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./PresetCard.css"
 
@@ -13,7 +14,7 @@ import { Button } from "../../atoms/index.js"
 // exercise list with sets/reps/rest prescriptions and an Add-as-list action.
 export const PresetCard = ({ preset, onAdd, onOpenExercise, adding = false }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const [expanded, setExpanded] = useState(false)
   const [added, setAdded] = useState(false)
 

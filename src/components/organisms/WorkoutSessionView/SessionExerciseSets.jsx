@@ -16,6 +16,9 @@ import { RestTimer } from "../../molecules/index.js"
  */
 export const SessionExerciseSets = ({
   exercise,
+  timerExerciseId,
+  timerSecs,
+  timerEnabled,
   sets,
   userScale,
   timerSound,
@@ -44,9 +47,9 @@ export const SessionExerciseSets = ({
   return (
     <>
       <RestTimer
-        exerciseId={exercise.id}
-        initialSecs={exercise.restSecs}
-        initialEnabled={exercise.restEnabled}
+        exerciseId={timerExerciseId ?? exercise.id}
+        initialSecs={timerSecs ?? exercise.restSecs}
+        initialEnabled={timerEnabled ?? exercise.restEnabled}
         readOnly
         sound={timerSound}
         vibrate={timerVibrate}

@@ -141,23 +141,6 @@
   text-rendering: optimizeLegibility;
 }
 
-/* --- @font-face with font-display: swap for reliability --- */
-@font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-display: swap;
-  font-weight: 200 800;
-  font-stretch: 100%;
-  src: local('Plus Jakarta Sans'), url('https://fonts.gstatic.com/s/plusjakartasans/v47/zrfb0FLsUc9JKCRsVkHfoxHLSckHGYg.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Sora';
-  font-display: swap;
-  font-weight: 200 800;
-  font-stretch: 100%;
-  src: local('Sora'), url('https://fonts.gstatic.com/s/sora/v30/MwQ5bhbm2POE2Vhfvpc.woff2') format('woff2');
-}
-
 /* --- Semantic HTML element mapping to typography tokens --- */
 h1 { font-size: var(--font-size-h1); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); letter-spacing: var(--letter-spacing-tight); }
 h2 { font-size: var(--font-size-h2); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); letter-spacing: var(--letter-spacing-tight); }

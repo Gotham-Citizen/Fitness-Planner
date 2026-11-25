@@ -46,9 +46,10 @@ export const titleCase = (value) => {
 }
 
 // Localized display labels for the exercise taxonomy. English falls back to
-// the title-cased key; Chinese comes from utils/locales/zh (muscles.*).
+// the title-cased key; Chinese/Spanish come from utils/locales (muscles.*).
 const dictLookup = (section, key, fallback) => {
-  if (normalizeLang(i18n.language) !== "zh") return fallback
+  const lang = normalizeLang(i18n.language)
+  if (lang === "en") return fallback
   // Lowercase so title-cased labels ('Upper Arms') resolve like raw keys.
   const k = String(key || "").toLowerCase()
   const v = i18n.t(`muscles.${section}.${k}`, { defaultValue: "" })
@@ -73,10 +74,11 @@ export const localizedMuscleGroup = (value) => {
   return dictLookup("group", String(value).toLowerCase(), titleCase(String(value)))
 }
 
-/** Exercise display name in the UI language (zh falls back to English). */
+/** Exercise display name in the UI language (zh/es fall back to English). */
 export const exerciseName = (ex, lang) => {
-  const l = lang || "en"
+  const l = normalizeLang(lang || "en")
   if (l === "zh" && ex?.nameZh) return ex.nameZh
+  if (l === "es" && ex?.nameEs) return ex.nameEs
   return ex?.name ?? ""
 }
 
@@ -91,7 +93,7 @@ export const alphaCompare = (a, b, lang) => {
   const bDigit = /^\d/.test(nameB)
   if (aDigit && !bDigit) return 1
   if (!aDigit && bDigit) return -1
-  return nameA.localeCompare(nameB, lang === "zh" ? "zh" : "en")
+  return nameA.localeCompare(nameB, normalizeLang(lang))
 }
 
 export const mediaUrl = (relPath) => {
@@ -148,10 +150,10 @@ export const buildHierarchy = (exercises, sortMode, lang = "en") => {
         const diffA = a.difficulty ?? 1
         const diffB = b.difficulty ?? 1
         if (diffA !== diffB) return diffA - diffB
-        return exerciseName(a, lang).localeCompare(exerciseName(b, lang), lang === "zh" ? "zh" : "en")
+        return exerciseName(a, lang).localeCompare(exerciseName(b, lang), normalizeLang(lang))
       })
     }
-    return exs.slice().sort((x, y) => exerciseName(x, lang).localeCompare(exerciseName(y, lang), lang === "zh" ? "zh" : "en"))
+    return exs.slice().sort((x, y) => exerciseName(x, lang).localeCompare(exerciseName(y, lang), normalizeLang(lang)))
   }
 
   const categories = [...byCategory.keys()].sort((a, b) => {
@@ -209,6 +211,7 @@ export const searchExercises = (exercises, query, lang = "en") => {
   const haystack = (ex) => [
     ex?.name,
     ex?.nameZh,
+    ex?.nameEs,
     localizedCategory(ex?.category),
     localizedTarget(ex?.target),
     localizedEquipment(ex?.equipment),
@@ -219,5 +222,5 @@ export const searchExercises = (exercises, query, lang = "en") => {
       return haystack(ex).some((h) => typeof h === "string" && h.toLowerCase().includes(q))
     })
     .slice()
-    .sort((a, b) => exerciseName(a, lang).localeCompare(exerciseName(b, lang), String(lang || "").toLowerCase().startsWith("zh") ? "zh" : "en"))
+    .sort((a, b) => exerciseName(a, lang).localeCompare(exerciseName(b, lang), normalizeLang(lang)))
 }

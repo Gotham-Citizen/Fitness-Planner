@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
+import { fromKg, toKg } from "../../../lib/bodyweight.js"
 import { equipmentName, goalName } from "../../../lib/presets/index.js"
 import { formatLongDate } from "../../../utils/format.js"
 import { persistLanguage } from "../../../utils/i18n.js"
@@ -28,8 +29,19 @@ const normalizeLanguageCode = (raw) => {
   return "en"
 }
 
+// Converts a value entered/displayed in one unit into the other unit, keeping
+// the single decimal place used by the bodyweight forms. Invalid/empty input
+// is left alone so the form can show its own validation error.
+const convertWeightValue = (value, fromUnit, toUnit) => {
+  if (fromUnit === toUnit) return value
+  const kg = toKg(value, fromUnit)
+  if (kg == null) return value
+  const converted = fromKg(kg, toUnit)
+  return converted == null ? value : String(converted)
+}
 
-export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogout, onDeleteAccount, onOpenTimerAlerts, onOpenQuestionnaire, onOpenPlanSchedule }) => {
+
+export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onSetTargetWeight, onLogout, onDeleteAccount, onOpenTimerAlerts, onOpenQuestionnaire, onOpenPlanSchedule }) => {
   const { t, i18n } = useTranslation()
   const locale = localeFromI18n(i18n)
   const [editing, setEditing] = useState(null)
@@ -138,6 +150,22 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
     }
   }
 
+  const handleBodyweightUnitChange = (nextUnit) => {
+    const unit = nextUnit === "lbs" ? "lbs" : "kg"
+    if (unit === bwUnitDraft) return
+    setBwDraft((prev) => convertWeightValue(prev, bwUnitDraft, unit))
+    setBwUnitDraft(unit)
+    setFieldError(null)
+  }
+
+  // targetWeight is stored in the profile's bodyweight unit (BodyweightCard
+  // relies on that convention), so switching units must convert the goal too.
+  const syncGoalUnit = async () => {
+    const previousUnit = user.bodyweightUnit || "kg"
+    if (bwUnitDraft === previousUnit || user.targetWeight == null || typeof onSetTargetWeight !== "function") return
+    await onSetTargetWeight(convertWeightValue(String(user.targetWeight), previousUnit, bwUnitDraft))
+  }
+
   const saveBodyweight = async () => {
     const trimmed = String(bwDraft || "").trim()
     if (trimmed === "") {
@@ -145,6 +173,7 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
         setSavingField("bodyweight")
         setFieldError(null)
         await onUpdateProfile({ bodyweight: null, bodyweightUnit: bwUnitDraft })
+        await syncGoalUnit()
         setEditing(null)
       } catch (err) {
         setFieldError(err?.message || t("account.failedBodyweight"))
@@ -162,6 +191,7 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
       setSavingField("bodyweight")
       setFieldError(null)
       await onUpdateProfile({ bodyweight: n, bodyweightUnit: bwUnitDraft })
+      await syncGoalUnit()
       setEditing(null)
     } catch (err) {
       setFieldError(err?.message || t("account.failedBodyweight"))
@@ -397,7 +427,7 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
                 <select
                   className="text-input"
                   value={bwUnitDraft}
-                  onChange={(e) => { setBwUnitDraft(e.target.value); setFieldError(null) }}
+                  onChange={(e) => handleBodyweightUnitChange(e.target.value)}
                   aria-label={t("account.bodyweightUnit")}
                 >
                   <option value="kg">kg</option>
@@ -601,6 +631,11 @@ export const AccountView = ({ user, theme, onPickTheme, onUpdateProfile, onLogou
                 type="email"
                 value={deleteDraft}
                 onChange={(e) => { setDeleteDraft(e.target.value); setDeleteError(null) }}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" || e.nativeEvent?.isComposing || e.nativeEvent?.keyCode === 229) return
+                  e.preventDefault()
+                  confirmDelete()
+                }}
                 placeholder={user.email || t("auth.emailPh")}
                 aria-label={t("auth.email")}
                 autoFocus

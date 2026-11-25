@@ -1,3 +1,4 @@
+import { buildExerciseMeta, lookupExercise } from "./exerciseIds.js"
 import { KG_TO_LBS, LBS_TO_KG } from "./units.js"
 
 const COMPARISONS_KG = [
@@ -88,7 +89,7 @@ export const summarizeSession = (session, list, labels = null) => {
     byExercise.get(s.exercise_id).push(s)
   }
 
-  const exerciseMeta = new Map((list?.exercises || []).map((ex) => [ex.id, ex]))
+  const exerciseMeta = buildExerciseMeta(list?.exercises || [])
 
   const perExercise = [...byExercise.entries()].map(([exerciseId, exSets]) => {
     let volumeKg = 0
@@ -110,7 +111,7 @@ export const summarizeSession = (session, list, labels = null) => {
         if (Number.isFinite(reps) && reps > 0) volumeLbs += reps * lbs
       }
     }
-    const meta = exerciseMeta.get(exerciseId) || {}
+    const meta = lookupExercise(exerciseMeta, exerciseId) || {}
     const round1 = (v) => (v === null ? null : Math.round(v * 10) / 10)
     return {
       exerciseId,

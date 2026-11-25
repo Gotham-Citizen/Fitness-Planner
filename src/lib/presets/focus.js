@@ -11,10 +11,11 @@ export const FOCUS_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 40,
-    name: { en: "Chest Focus", zh: "胸部专项" },
+    name: { en: "Chest Focus", zh: "胸部专项", es: "Enfoque en pecho" },
     desc: {
       en: "Press heavy, then stretch and finish with dips.",
       zh: "大重量推举，再充分拉伸，双杠臂屈伸收尾。",
+      es: "Empuja con peso pesado, estira y termina con fondos en paralelas.",
     },
     focus: ["pectorals", "triceps"],
     slots: [
@@ -32,10 +33,11 @@ export const FOCUS_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 45,
-    name: { en: "Back Focus", zh: "背部专项" },
+    name: { en: "Back Focus", zh: "背部专项", es: "Enfoque en espalda" },
     desc: {
       en: "Vertical and horizontal pulling with upper-back finishers.",
       zh: "垂直与水平拉类动作，上背部收尾。",
+      es: "Tracciones verticales y horizontales con ejercicios finales de espalda alta.",
     },
     focus: ["lats", "upper back", "traps"],
     slots: [
@@ -54,10 +56,11 @@ export const FOCUS_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 50,
-    name: { en: "Legs Focus", zh: "腿部专项" },
+    name: { en: "Legs Focus", zh: "腿部专项", es: "Enfoque en piernas" },
     desc: {
       en: "Squat, hinge, lunge — then isolate quads, hamstrings, calves.",
       zh: "深蹲、髋铰链、弓步——再分别孤立股四头肌、腘绳肌与小腿。",
+      es: "Sentadilla, bisagra de cadera y zancadas — luego aisla cuádriceps, isquiotibiales y gemelos.",
     },
     focus: ["quads", "hamstrings", "glutes", "calves"],
     slots: [
@@ -76,10 +79,11 @@ export const FOCUS_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 45,
-    name: { en: "Glutes Focus", zh: "臀部专项" },
+    name: { en: "Glutes Focus", zh: "臀部专项", es: "Enfoque en glúteos" },
     desc: {
       en: "Hip thrusts, squats and hinges for glute-dominant volume.",
       zh: "臀推、深蹲与髋铰链，打造以臀为主导的训练量。",
+      es: "Empujes de cadera, sentadillas y bisagras para un volumen centrado en los glúteos.",
     },
     focus: ["glutes", "hamstrings", "quads"],
     slots: [
@@ -97,10 +101,11 @@ export const FOCUS_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 40,
-    name: { en: "Shoulders Focus", zh: "肩部专项" },
+    name: { en: "Shoulders Focus", zh: "肩部专项", es: "Enfoque en hombros" },
     desc: {
       en: "Press, then hit all three deltoid heads.",
       zh: "推举之后，三角肌前中后三束全面刺激。",
+      es: "Press y después trabaja las tres cabezas del deltoides.",
     },
     focus: ["delts", "traps"],
     slots: [
@@ -119,10 +124,11 @@ export const FOCUS_PRESETS = [
     equipment: "gym",
     level: "intermediate",
     durationMin: 40,
-    name: { en: "Arms Focus", zh: "手臂专项" },
+    name: { en: "Arms Focus", zh: "手臂专项", es: "Enfoque en brazos" },
     desc: {
       en: "Biceps and triceps volume after a compound warm-up.",
       zh: "复合动作热身后，肱二头肌与肱三头肌充分训练。",
+      es: "Volumen de bíceps y tríceps tras un calentamiento con ejercicios compuestos.",
     },
     focus: ["biceps", "triceps", "forearms"],
     slots: [
@@ -141,10 +147,11 @@ export const FOCUS_PRESETS = [
     equipment: "gym",
     level: "beginner",
     durationMin: 25,
-    name: { en: "Core Focus (Gym)", zh: "核心专项（健身房）" },
+    name: { en: "Core Focus (Gym)", zh: "核心专项（健身房）", es: "Enfoque en core (gimnasio)" },
     desc: {
       en: "Weighted and cabled ab work in high-rep ranges.",
       zh: "负重与绳索腹肌训练，高次数区间。",
+      es: "Trabajo abdominal con peso y polea en rangos de muchas repeticiones.",
     },
     focus: ["abs"],
     slots: [
@@ -162,10 +169,11 @@ export const FOCUS_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 25,
-    name: { en: "Chest Focus (Bodyweight)", zh: "胸部专项（徒手）" },
+    name: { en: "Chest Focus (Bodyweight)", zh: "胸部专项（徒手）", es: "Enfoque en pecho (peso corporal)" },
     desc: {
       en: "Push-up variations from every angle — no equipment.",
       zh: "各种角度的俯卧撑变式——无需器械。",
+      es: "Variantes de flexiones desde todos los ángulos — sin equipo.",
     },
     focus: ["pectorals", "triceps"],
     slots: [
@@ -182,10 +190,11 @@ export const FOCUS_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 20,
-    name: { en: "Core Focus (Bodyweight)", zh: "核心专项（徒手）" },
+    name: { en: "Core Focus (Bodyweight)", zh: "核心专项（徒手）", es: "Enfoque en core (peso corporal)" },
     desc: {
       en: "Floor-based ab circuit, no equipment needed.",
       zh: "垫上核心循环，无需任何器械。",
+      es: "Circuito abdominal en el suelo, sin necesidad de equipo.",
     },
     focus: ["abs"],
     slots: [
@@ -203,10 +212,11 @@ export const FOCUS_PRESETS = [
     equipment: "bodyweight",
     level: "beginner",
     durationMin: 25,
-    name: { en: "Legs Focus (Bodyweight)", zh: "腿部专项（徒手）" },
+    name: { en: "Legs Focus (Bodyweight)", zh: "腿部专项（徒手）", es: "Enfoque en piernas (peso corporal)" },
     desc: {
       en: "Jumps, squats and bridges for legs and glutes.",
       zh: "跳跃、深蹲与臀桥，练腿又练臀。",
+      es: "Saltos, sentadillas y puentes de glúteo para piernas y glúteos.",
     },
     focus: ["quads", "glutes", "hamstrings"],
     slots: [

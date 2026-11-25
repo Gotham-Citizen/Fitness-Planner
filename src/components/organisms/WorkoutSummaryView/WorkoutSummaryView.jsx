@@ -3,6 +3,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { resolveShowEffort } from "../../../lib/effort.js"
+import { buildExerciseMeta, lookupExercise } from "../../../lib/exerciseIds.js"
 import { exerciseName } from "../../../lib/muscles.js"
 import { isMaleGender, previousBestsByExercise, rankForWeight } from "../../../lib/ranks.js"
 import { formatDuration, summarizeSession } from "../../../lib/summary.js"
@@ -58,7 +59,7 @@ const RankBadge = ({ rank, inLbs, prefix }) => {
 // mode="finish" (post-workout: Done + View sessions) or
 // mode="history" (from a sessions card: single primary Back button at the top).
 // gender: 'male' | 'female' | 'other' | null (null = unspecified -> show both).
-export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, onDone, onHistory, onBack, previousSessions, gender, weightUnit = "kg" }) => {
+export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, onDone, onBack, previousSessions, gender, weightUnit = "kg" }) => {
   const { t, i18n } = useTranslation()
   const locale = localeFromI18n(i18n)
   const lang = normalizeLang(i18n.language)
@@ -72,12 +73,12 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
   const totalVolume = inLbs ? summary.totalVolumeLbs : summary.totalVolumeKg
   const comparison = inLbs ? summary.comparisonLbs : summary.comparison
 
-  const exerciseMeta = useMemo(() => new Map((list?.exercises || []).map((ex) => [ex.id, ex])), [list])
+  const exerciseMeta = useMemo(() => buildExerciseMeta(list?.exercises || []), [list])
 
   // Logged effort shows only on exercises with effort logging enabled
   // (see resolveShowEffort for the flag-unknown fallback).
   const showEffortFor = (exerciseId, exSets) => {
-    return resolveShowEffort(exerciseMeta.get(exerciseId), exSets)
+    return resolveShowEffort(lookupExercise(exerciseMeta, exerciseId), exSets)
   }
 
   const displaySetWeight = (s) => {
@@ -163,20 +164,21 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
       {specified && (
         <div className="rank-flip-row">
           <span>{t("summary.standards", { g: displayGender === "male" ? t("summary.male") : t("summary.female") })}</span>
-          <Button
-            variant="ghost"
-            size="rest-small"
-            onClick={() => setPreviewGender((p) => (p ?? resolvedUserGender) === "male" ? "female" : "male")}
-          >
-            {t("summary.viewOther", { g: otherGender === "male" ? t("summary.male") : t("summary.female") })}
-          </Button>
-          {previewGender && (
+          {previewGender ? (
             <Button
               variant="ghost"
               size="rest-small"
               onClick={() => setPreviewGender(null)}
             >
-              {t("summary.reset")}
+              {t("summary.resetGender", { g: t(`summary.${resolvedUserGender}`) })}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="rest-small"
+              onClick={() => setPreviewGender(otherGender)}
+            >
+              {t("summary.viewOther", { g: otherGender === "male" ? t("summary.male") : t("summary.female") })}
             </Button>
           )}
         </div>
@@ -185,7 +187,7 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
       <div className="summary-exercises">
         {summary.perExercise.map((ex) => {
           const max = inLbs ? ex.maxLbs : ex.maxKg
-          const meta = exerciseMeta.get(ex.exerciseId) || { name: ex.name }
+          const meta = lookupExercise(exerciseMeta, ex.exerciseId) || { name: ex.name }
           const prevMax = prevBests.get(ex.exerciseId)
           const isNewBest = prevMax !== undefined && ex.maxKg !== null && ex.maxKg > prevMax
 
@@ -195,7 +197,7 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
             return (
               <div key={ex.exerciseId} className="summary-exercise-card">
                 <div className="summary-exercise-header">
-                  <span className="summary-exercise-name">{exerciseName({ name: ex.name, nameZh: meta.nameZh }, lang)}</span>
+                  <span className="summary-exercise-name">{exerciseName({ name: ex.name, nameZh: meta.nameZh, nameEs: meta.nameEs }, lang)}</span>
                   <span className="summary-exercise-meta">
                     {t("summary.setCount", { count: ex.setCount })}
                     {max !== null ? ` · ${t("summary.max", { v: max, u: unit })}` : ""}
@@ -232,7 +234,7 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
           return (
             <div key={ex.exerciseId} className="summary-exercise-card">
               <div className="summary-exercise-header">
-                <span className="summary-exercise-name">{exerciseName({ name: ex.name, nameZh: meta.nameZh }, lang)}</span>
+                <span className="summary-exercise-name">{exerciseName({ name: ex.name, nameZh: meta.nameZh, nameEs: meta.nameEs }, lang)}</span>
                 <span className="summary-exercise-meta">
                   {t("summary.setCount", { count: ex.setCount })}
                   {max !== null ? ` · ${t("summary.max", { v: max, u: unit })}` : ""}
@@ -277,9 +279,6 @@ export const WorkoutSummaryView = ({ list, session, mode = "finish", heroTitle, 
         <div className="summary-actions">
           <Button onClick={onDone}>
             {t("summary.done")}
-          </Button>
-          <Button variant="ghost" onClick={onHistory}>
-            {t("summary.viewSessions")}
           </Button>
         </div>
       )}

@@ -6,6 +6,7 @@ import { SearchBar } from "../../components/molecules/index.js"
 import { AuthTemplate } from "../../components/templates/index.js"
 
 import { todayEntry, weekdayName } from "../../lib/schedule.js"
+import { appLocale } from "../../utils/locale.js"
 
 import "./HomePage.css"
 
@@ -26,7 +27,7 @@ export const HomePage = ({
   onStartSession,
 }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const locale = appLocale(i18n.language)
   useScrollMemory("home")
 
   // Resolve today's planned entry; a routine that was deleted after
@@ -43,7 +44,7 @@ export const HomePage = ({
       <section className="welcome">
         {showToday && (
           <section className={`home-today${isWorkoutDay ? " has-workout" : ""}`} aria-label={t("home.todayAria")}>
-            <p className="home-today-label">{t("home.today", { day: weekdayName(new Date().getDay(), lang) })}</p>
+            <p className="home-today-label">{t("home.today", { day: weekdayName(new Date().getDay(), locale) })}</p>
             {isWorkoutDay ? (
               <>
                 <h3 className="home-today-name">{plannedList.name}</h3>

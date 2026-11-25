@@ -1,11 +1,20 @@
 // Questionnaire -> weekly plan generator. Maps (goal, days/week, equipment,
-// experience, session length) to a sequence of preset days using ACSM
-// frequency guidance: novices thrive on 2-3 full-body days, intermediates
+// experience, session length, focus areas) to a sequence of preset days using
+// ACSM frequency guidance: novices thrive on 2-3 full-body days, intermediates
 // on 3-4 upper/lower days, advanced on 4-6 with a push/pull/legs or
-// upper/lower split. When the user asks for more days than the equipment
-// tier provides distinct presets for, the track cycles (e.g. Full Body A
-// twice a week is a legitimate novice pattern per ACSM).
-import { buildListPayload, EQUIPMENT_FALLBACK, getPreset, presetName } from "./presets/index.js"
+// upper/lower split. When a focus area is selected the matching preset leads;
+// remaining days fill from the goal's general track. When the requested days
+// exceed the available distinct presets, the track cycles.
+import { normalizeLang } from "../utils/locale.js"
+
+import {
+  buildListPayload,
+  EQUIPMENT_FALLBACK,
+  getPreset,
+  presetBodyPart,
+  presetName,
+  PRESETS,
+} from "./presets/index.js"
 
 // Tracks per goal+equipment. Arrays are ordered day sequences; `byDays`
 // overrides with a curated split when the day count has a better fit.
@@ -27,6 +36,9 @@ const TRACKS = {
     bodyweight: {
       cycle: ["strength-fb-bodyweight-a", "strength-fb-bodyweight-b"],
     },
+    band: {
+      cycle: ["cv-strength-full-body-band"],
+    },
   },
   build: {
     gym: {
@@ -45,6 +57,9 @@ const TRACKS = {
     bodyweight: {
       cycle: ["build-upper-bodyweight", "build-lower-bodyweight", "build-core-bodyweight"],
     },
+    band: {
+      cycle: ["cv-build-full-body-band"],
+    },
   },
   slim: {
     gym: {
@@ -56,6 +71,9 @@ const TRACKS = {
     bodyweight: {
       cycle: ["slim-circuit-bodyweight"],
     },
+    band: {
+      cycle: ["cv-slim-full-body-band"],
+    },
   },
   endurance: {
     gym: {
@@ -66,6 +84,9 @@ const TRACKS = {
     },
     bodyweight: {
       cycle: ["end-core-bodyweight", "end-cardio-bodyweight"],
+    },
+    band: {
+      cycle: ["cv-endurance-full-body-band"],
     },
   },
 }
@@ -88,30 +109,72 @@ const trackIds = (goal, equipment, days) => {
   return []
 }
 
-// Day label used in generated list names ("Day 1 · Full Body A").
-const dayPrefix = (dayNumber, lang) =>
-  lang === "zh" ? `第 ${dayNumber} 天 · ` : `Day ${dayNumber} · `
+// Presets for one focus area, ordered by equipment-tier priority. Every
+// goal × equipment × focus cell has at least one preset in the library.
+const focusPresetIds = (goal, equipment, part) => {
+  const tiers = EQUIPMENT_FALLBACK[equipment] || EQUIPMENT_FALLBACK.gym
+  const candidates = PRESETS.filter(
+    (p) => p.goal === goal && presetBodyPart(p) === part && tiers.includes(p.equipment),
+  )
+  return tiers
+    .flatMap((tier) => candidates.filter((p) => p.equipment === tier).map((p) => p.id))
+    .filter((id, index, list) => list.indexOf(id) === index)
+}
 
-// The shared lib only knows "en"/"zh"; default anything else to English.
-const normalizeLangOrEn = (lang) => (String(lang || "").toLowerCase().startsWith("zh") ? "zh" : "en")
+// Ordered preset IDs for the week. Focus areas lead (in selection order),
+// then unused days fill from the general goal track; the general track cycles
+// if more days are requested than distinct presets exist.
+const selectPresetIds = ({ goal, equipment, dayCount, focus }) => {
+  const generalIds = trackIds(goal, equipment, dayCount)
+  const focusParts = (focus || []).filter((part) => part && part !== "full-body")
+  if (!focusParts.length) return generalIds
+
+  const used = new Set()
+  const ids = []
+  for (const part of focusParts) {
+    if (ids.length >= dayCount) break
+    const id = focusPresetIds(goal, equipment, part).find((candidate) => !used.has(candidate))
+    if (!id) continue
+    used.add(id)
+    ids.push(id)
+  }
+  const fill = generalIds.filter((id) => !used.has(id))
+  for (let i = 0; ids.length < dayCount; i += 1) {
+    const id = fill.length ? fill[i % fill.length] : generalIds[i % generalIds.length]
+    if (!id) break
+    ids.push(id)
+  }
+  return ids.slice(0, dayCount)
+}
+
+// Day label used in generated list names ("Day 1 · Full Body A").
+const DAY_PREFIX = {
+  zh: (n) => `第 ${n} 天 · `,
+  es: (n) => `Día ${n} · `,
+  en: (n) => `Day ${n} · `,
+}
+const dayPrefix = (dayNumber, lang) => (DAY_PREFIX[normalizeLang(lang)] || DAY_PREFIX.en)(dayNumber)
 
 /**
- * Build the weekly plan: one list payload per training day.
- * Returns [{ preset, payload }] where payload is the POST /api/workoutlists
- * body (name, exercises with prescribed sets/reps + rest settings).
+ * Build the weekly plan from questionnaire answers.
+ * Returns { lists, weekdays }: each list is a POST /api/workoutlists body
+ * (name, exercises with prescribed sets/reps + rest settings) and each
+ * weekday is the intended 0-6 slot for that list, spread across the week.
+ * A skipped day keeps its original weekday so the two arrays stay aligned.
  */
 export const generatePlan = (
-  { goal, experience, days, equipment, sessionMinutes },
+  { goal, experience, daysPerWeek, days, equipment, sessionMinutes, focus },
   exercises,
   lang = "en",
 ) => {
-  const dayCount = Math.min(6, Math.max(2, Number(days) || 3))
-  const ids = trackIds(goal, equipment, dayCount)
-  return ids
+  const requestedDays = Number(daysPerWeek ?? days) || 3
+  const dayCount = Math.min(6, Math.max(1, requestedDays))
+  const ids = selectPresetIds({ goal, equipment, dayCount, focus })
+  const builtDays = ids
     .map((id, index) => {
       const preset = getPreset(id)
       if (!preset) return null
-      const name = `${dayPrefix(index + 1, normalizeLangOrEn(lang))}${presetName(preset, lang)}`
+      const name = `${dayPrefix(index + 1, lang)}${presetName(preset, lang)}`
       const payload = buildListPayload(preset, exercises, {
         experience,
         sessionMinutes,
@@ -119,7 +182,11 @@ export const generatePlan = (
         lang,
       })
       if (!payload.exercises.length) return null
-      return { preset, payload }
+      return { dayIndex: index, payload }
     })
     .filter(Boolean)
+  return {
+    lists: builtDays.map(({ payload }) => payload),
+    weekdays: builtDays.map(({ dayIndex }) => Math.floor((dayIndex * 7) / dayCount)),
+  }
 }

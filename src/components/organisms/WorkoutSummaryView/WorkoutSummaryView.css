@@ -112,7 +112,6 @@
 
 .summary-actions {
   display: flex;
-  gap: 10px;
   justify-content: center;
   padding-bottom: 12px;
 }

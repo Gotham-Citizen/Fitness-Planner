@@ -4,8 +4,10 @@ import { useTranslation } from "react-i18next"
 
 import { login, signup } from "../../../lib/api.js"
 import {
+  bodyPartName,
   equipmentName,
   goalName,
+  PRESET_BODY_PARTS,
   PRESET_EQUIPMENT,
   PRESET_GOALS,
   QUESTIONNAIRE_DAYS,
@@ -18,7 +20,11 @@ import "./AuthView.css"
 
 import { BrandLogo, Button, TextInput } from "../../atoms/index.js"
 
-const STEP_COUNT = 6
+const STEP_COUNT = 7
+
+const SCHEDULE_MODES = ["fixed", "rotation"]
+const LOOP_MIN = 1
+const LOOP_MAX = 6
 
 const EXPERIENCE_OPTIONS = [
   { id: "beginner", icon: "🌱" },
@@ -27,7 +33,6 @@ const EXPERIENCE_OPTIONS = [
 ]
 
 const GENDER_OPTIONS = [
-  { id: "", key: "preferNot" },
   { id: "male", key: "male" },
   { id: "female", key: "female" },
   { id: "other", key: "other" },
@@ -41,7 +46,7 @@ const isValidName = (value) => {
 // Single-line signup progress — one slim segment per step, reached segments
 // filled. Rendered at the top of the auth page (like most register flows).
 // Segments are decorative; the progressbar role carries the step info for
-// screen readers via the localized "Step N of 6" label.
+// screen readers via the localized "Step N of total" label.
 const SignupProgress = ({ step }) => {
   const { t } = useTranslation()
   return (
@@ -51,7 +56,7 @@ const SignupProgress = ({ step }) => {
       aria-valuemin={1}
       aria-valuemax={STEP_COUNT}
       aria-valuenow={step}
-      aria-label={t("auth.stepOf", { n: step })}
+      aria-label={t("auth.stepOf", { n: step, total: STEP_COUNT })}
     >
       {Array.from({ length: STEP_COUNT }, (_, i) => (
         <span key={i} className={`auth-progress-segment${i < step ? " is-reached" : ""}`} aria-hidden="true" />
@@ -68,7 +73,7 @@ const SignupProgress = ({ step }) => {
 // to the app so a starter plan can be generated right after signup.
 export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
   const { t, i18n } = useTranslation()
-  const lang = String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"
+  const lang = normalizeLang(i18n.language)
   const [mode, setMode] = useState(initialMode)
   const [step, setStep] = useState(1)
   const [name, setName] = useState("")
@@ -77,7 +82,11 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
   const [gender, setGender] = useState("")
   const [goal, setGoal] = useState("")
   const [experience, setExperience] = useState("")
+  const [focus, setFocus] = useState(["full-body"])
+  const [scheduleMode, setScheduleMode] = useState("fixed")
   const [daysPerWeek, setDaysPerWeek] = useState("")
+  const [workoutDays, setWorkoutDays] = useState(2)
+  const [restDays, setRestDays] = useState(1)
   const [sessionMinutes, setSessionMinutes] = useState("")
   const [equipment, setEquipment] = useState("")
   const [generatePlan, setGeneratePlan] = useState("yes")
@@ -108,7 +117,11 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
         setGender("")
         setGoal("")
         setExperience("")
+        setFocus(["full-body"])
+        setScheduleMode("fixed")
         setDaysPerWeek("")
+        setWorkoutDays(2)
+        setRestDays(1)
         setSessionMinutes("")
         setEquipment("")
         setGeneratePlan("yes")
@@ -125,15 +138,23 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
   }
 
   const stepAnswersComplete = () => {
+    if (step === 2) return Boolean(gender)
     if (step === 3) return Boolean(goal && experience)
-    if (step === 4) return Boolean(daysPerWeek)
-    if (step === 5) return Boolean(equipment)
+    if (step === 4) return focus.length > 0
+    if (step === 5) return scheduleMode === "rotation"
+      ? Boolean(workoutDays && restDays)
+      : Boolean(daysPerWeek)
+    if (step === 6) return Boolean(equipment)
     return true
   }
 
   const validateStep = () => {
     if (step === 1 && !isValidName(name)) {
       setError(t("auth.errName"))
+      return false
+    }
+    if (step === 2 && !gender) {
+      setError(t("auth.errGender"))
       return false
     }
     if (step === 3 && !goal) {
@@ -144,11 +165,15 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
       setError(t("auth.errExperience"))
       return false
     }
-    if (step === 4 && !daysPerWeek) {
+    if (step === 4 && !focus.length) {
+      setError(t("auth.errFocus"))
+      return false
+    }
+    if (step === 5 && scheduleMode === "fixed" && !daysPerWeek) {
       setError(t("auth.errDays"))
       return false
     }
-    if (step === 5 && !equipment) {
+    if (step === 6 && !equipment) {
       setError(t("auth.errEquipment"))
       return false
     }
@@ -165,6 +190,61 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
     setError(null)
     setStep((s) => Math.max(1, s - 1))
   }
+
+  // "General / full body" is exclusive; selecting another area clears it,
+  // and clearing the last area restores the general option.
+  const toggleFocus = (partId) => {
+    setError(null)
+    setFocus((current) => {
+      if (partId === "full-body") return ["full-body"]
+      const selected = current.filter((part) => part !== "full-body")
+      const next = selected.includes(partId)
+        ? selected.filter((part) => part !== partId)
+        : [...selected, partId]
+      return next.length ? next : ["full-body"]
+    })
+  }
+
+  const changeLoopPart = (field, delta) => {
+    setError(null)
+    const setter = field === "workoutDays" ? setWorkoutDays : setRestDays
+    setter((current) => Math.min(LOOP_MAX, Math.max(LOOP_MIN, current + delta)))
+  }
+
+  // One repeating cycle laid out across a week: workout days then rest days.
+  const loopPreview = Array.from({ length: 7 }, (_, index) => {
+    const position = index % (workoutDays + restDays)
+    return position < workoutDays
+      ? { key: index, kind: "workout", label: `${t("auth.workoutShort")}${position + 1}` }
+      : { key: index, kind: "rest", label: t("auth.restShort") }
+  })
+
+  const stepperField = (label, field, value) => (
+    <div className="auth-stepper-row">
+      <span className="auth-field-label">{label}</span>
+      <div className="auth-stepper">
+        <button
+          type="button"
+          className="auth-stepper-button"
+          onClick={() => changeLoopPart(field, -1)}
+          disabled={value <= LOOP_MIN}
+          aria-label={`${t("auth.stepperMinus")} ${label}`}
+        >
+          −
+        </button>
+        <span className="auth-stepper-value" aria-live="polite">{value}</span>
+        <button
+          type="button"
+          className="auth-stepper-button"
+          onClick={() => changeLoopPart(field, 1)}
+          disabled={value >= LOOP_MAX}
+          aria-label={`${t("auth.stepperPlus")} ${label}`}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  )
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -198,14 +278,24 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
       setStep(3)
       return
     }
-    if (!daysPerWeek) {
-      setError(t("auth.errDays"))
+    if (!focus.length) {
+      setError(t("auth.errFocus"))
       setStep(4)
+      return
+    }
+    if (scheduleMode === "fixed" && !daysPerWeek) {
+      setError(t("auth.errDays"))
+      setStep(5)
+      return
+    }
+    if (scheduleMode === "rotation" && (!workoutDays || !restDays)) {
+      setError(t("auth.errDays"))
+      setStep(5)
       return
     }
     if (!equipment) {
       setError(t("auth.errEquipment"))
-      setStep(5)
+      setStep(6)
       return
     }
     if (!isValidEmail(email)) {
@@ -221,7 +311,11 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
       const questionnaire = {
         goal,
         experience,
-        daysPerWeek: Number(daysPerWeek),
+        focus,
+        scheduleMode,
+        daysPerWeek: Number(scheduleMode === "rotation" ? workoutDays : daysPerWeek),
+        workoutDays,
+        restDays,
         equipment,
       }
       if (sessionMinutes) questionnaire.sessionMinutes = Number(sessionMinutes)
@@ -260,9 +354,10 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
     1: t("auth.subName"),
     2: t("auth.subGender"),
     3: t("auth.subGoal"),
-    4: t("auth.subSchedule"),
-    5: t("auth.subEquipment"),
-    6: t("auth.subSecure"),
+    4: t("auth.subFocus"),
+    5: t("auth.subSchedule"),
+    6: t("auth.subEquipment"),
+    7: t("auth.subSecure"),
   }
   const title = isSignup ? t("auth.titleSignup") : t("auth.titleLogin")
   const subtitle = !isSignup ? t("auth.subLogin") : subtitleMap[step]
@@ -381,7 +476,7 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
                           <span className="auth-option-icon" aria-hidden="true">{goalOption.icon}</span>
                           <span>
                             <strong>{goalName(goalOption.id, lang)}</strong>
-                            <small>{lang === "zh" ? goalOption.tagline.zh : goalOption.tagline.en}</small>
+                            <small>{goalOption.tagline[lang] || goalOption.tagline.en}</small>
                           </span>
                         </span>
                       ),
@@ -409,20 +504,78 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
               </>
             ) : step === 4 ? (
               <>
-                {optionField(t("auth.daysLabel"), (
-                  <div className="auth-options auth-options-row">
-                    {QUESTIONNAIRE_DAYS.map((days) => optionButton({
-                      key: days,
-                      selected: daysPerWeek === days,
-                      onClick: () => { setDaysPerWeek(days); setError(null) },
+                {optionField(t("auth.focusLabel"), (
+                  <div className="auth-options auth-options-focus">
+                    {PRESET_BODY_PARTS.map((part) => optionButton({
+                      key: part.id,
+                      selected: focus.includes(part.id),
+                      onClick: () => toggleFocus(part.id),
                       children: (
                         <span className="auth-option-inner auth-option-plain">
-                          <strong>{t("questionnaire.daysOption", { count: days })}</strong>
+                          <strong>{bodyPartName(part.id, lang)}</strong>
                         </span>
                       ),
                     }))}
                   </div>
                 ))}
+                <p className="auth-field-hint">{t("auth.focusHint")}</p>
+              </>
+            ) : step === 5 ? (
+              <>
+                {optionField(t("auth.scheduleModeLabel"), (
+                  <div className="auth-options auth-options-row">
+                    {SCHEDULE_MODES.map((modeOption) => (
+                      optionButton({
+                        key: modeOption,
+                        selected: scheduleMode === modeOption,
+                        onClick: () => { setScheduleMode(modeOption); setError(null) },
+                        children: (
+                          <span className="auth-option-inner">
+                            <span>
+                              <strong>{t(`schedule.mode${modeOption === "fixed" ? "Fixed" : "Rotation"}`)}</strong>
+                              <small>{t(`schedule.mode${modeOption === "fixed" ? "Fixed" : "Rotation"}Hint`)}</small>
+                            </span>
+                          </span>
+                        ),
+                      })
+                    ))}
+                  </div>
+                ))}
+                {scheduleMode === "fixed" ? (
+                  optionField(t("auth.daysLabel"), (
+                    <div className="auth-options auth-options-row auth-options-days">
+                      {QUESTIONNAIRE_DAYS.map((days) => optionButton({
+                        key: days,
+                        selected: daysPerWeek === days,
+                        onClick: () => { setDaysPerWeek(days); setError(null) },
+                        children: (
+                          <span className="auth-option-inner auth-option-plain">
+                            <strong>{t("questionnaire.daysOption", { count: days })}</strong>
+                          </span>
+                        ),
+                      }))}
+                    </div>
+                  ))
+                ) : (
+                  <div className="auth-field">
+                    <span className="auth-field-label">{t("auth.schedulePatternLabel")}</span>
+                    <div className="auth-loop-steppers">
+                      {stepperField(t("auth.workoutDaysLabel"), "workoutDays", workoutDays)}
+                      {stepperField(t("auth.restDaysLabel"), "restDays", restDays)}
+                    </div>
+                    <div className="auth-loop-preview" aria-label={t("auth.loopPreviewLabel")}>
+                      {loopPreview.map((cell) => (
+                        <span
+                          key={cell.key}
+                          className={`auth-loop-cell${cell.kind === "rest" ? " is-rest" : ""}`}
+                        >
+                          {cell.label}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="auth-field-hint">{t("auth.loopHint")}</p>
+                  </div>
+                )}
                 {optionField(t("auth.sessionLabel"), (
                   <div className="auth-options auth-options-row">
                     {optionButton({
@@ -448,7 +601,7 @@ export const AuthView = ({ onAuth, initialMode = "login", onBack }) => {
                   </div>
                 ))}
               </>
-            ) : step === 5 ? (
+            ) : step === 6 ? (
               optionField(t("auth.equipmentLabel"), (
                 <div className="auth-options">
                   {PRESET_EQUIPMENT.map((equipmentOption) => optionButton({

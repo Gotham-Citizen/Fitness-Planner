@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 
 import { uploadExerciseGif } from "../../../lib/api.js"
 import { localizedCategory, localizedEquipment, localizedTarget } from "../../../lib/muscles.js"
+import { normalizeLang } from "../../../utils/locale.js"
 
 import "./CustomExerciseForm.css"
 
@@ -101,7 +102,7 @@ export const CustomExerciseForm = ({ hierarchy, equipments, onCreate, onClose })
         gifUrl: resolvedGif || null,
         instructionSteps: cleanSteps,
         instructions: cleanSteps.join("\n"),
-        instructionsLang: String(i18n.language || "").toLowerCase().startsWith("zh") ? "zh" : "en",
+        instructionsLang: normalizeLang(i18n.language),
       })
     } catch (err) {
       setError(err?.message || t("custom.failed"))

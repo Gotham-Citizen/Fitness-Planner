@@ -14,6 +14,8 @@ import { useLayoutEffect, useRef, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
+import { appLocale } from "../../../utils/locale.js"
+
 import "./LineChart.css"
 
 const W = 340 // viewBox width; the svg stretches to its container, height comes from `h`
@@ -37,7 +39,7 @@ const fmtMonth = (date, locale) => {
 
 export const LineChart = ({ points, h = 150, unit = "", color = "var(--accent)", axes = true, goal = null, invert = false, locale }) => {
   const { t, i18n } = useTranslation()
-  const resolvedLocale = locale || (i18n?.language?.toLowerCase?.().startsWith("zh") ? "zh-CN" : "en-US")
+  const resolvedLocale = locale || appLocale(i18n?.language)
   const svgRef = useRef(null)
   const wrapRef = useRef(null)
   const tipRef = useRef(null)
