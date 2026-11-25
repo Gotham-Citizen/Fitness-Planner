@@ -89,11 +89,11 @@ npm run preview
 
 - **1,324-exercise library** — browse body part → target muscle → movements, with looping GIF demos, thumbnails, equipment, target/primary/secondary muscles, and step-by-step instructions
 - **Search that speaks 中文** — matches English, Chinese, or pinyin (`wo tui` finds 腿部 movements); the search box is IME-safe so pinyin composition never trips it
-- **Preset workouts** — 40+ curated, evidence-based routines (ACSM position-stand loading/sets/rest/frequency) grouped by goal (strength, muscle build, slim down, endurance), equipment (gym / dumbbells / bodyweight), and focus body part; shown on Home as "Recommended for you", "Popular", and per-body-part groups, or browsable with goal/equipment/muscle filters
-- **Goals questionnaire** — asked once right after signup (skippable) and refillable from Account → Goals & plan; answers drive the Home recommendations and can auto-generate a weekly workout plan — one workout list per training day, with prescribed sets/reps shown while you train
+- **Preset workouts** — 40+ curated, evidence-based routines (ACSM position-stand loading/sets/rest/frequency) plus generated coverage plans for under-served goal/equipment/focus combinations, grouped by goal (strength, muscle build, slim down, endurance), equipment (gym / dumbbells / bodyweight / bands), and focus body part; shown on Home as "Recommended for you", "Popular", and per-body-part groups, or browsable with goal/equipment/muscle filters
+- **Goals questionnaire** — asked once right after signup (skippable) and refillable from Account → Goals & plan; answers (goal, experience, training days, equipment, focus areas, session length) drive the Home recommendations and can auto-generate a weekly workout plan — one workout list per training day, with prescribed sets/reps shown while you train
 - **Weekly plan scheduling** — two modes in Account → Schedule: **Fixed** (pick a specific list for each weekday) or **Rotation** (ordered list of workouts + rest days that cycles automatically); the active day's list is surfaced on Home and in the session starter
 - **Equipment browser** — 23 photo cards (one PNG per equipment type in `public/equipment/`, "Other" pinned last) that drill down into that equipment's movements; sort by count, A→Z, or difficulty
-- **Custom exercises** — create, edit, and delete your own movements (name, category, target muscle, equipment); they merge into the library and are scoped to your account; upload custom GIFs (base64-encoded, capped at 1.4 MB raw to fit D1's 2 MB row limit)
+- **Custom exercises** — create, edit, and delete your own movements (name, category, target muscle, equipment); they merge into the library and are scoped to your account; upload custom GIFs (base64-encoded, capped at 1.4 MB raw to fit D1's 2 MB row limit) or paste a GIF URL; instructions can be written in English, Chinese, or Spanish
 - **Accounts** — email + password signup/login with JWT sessions; profile with display name, gender, bodyweight + bodyweight unit (kg/lb), general weight unit for exercise/set weights (kg/lb), effort scale, timer alert settings, and UI language
 - **Workout lists** — named lists with add/remove exercises, per-exercise rest-timer settings, rename, and delete; duplicate names are caught case-insensitively; drag-to-reorder exercises in the list editor
 - **Live sessions** — start a workout from any list; log sets with reps, weight, kg/lb, and effort; edit or delete sets; **Finish** blocks sets that have weight but no reps
@@ -108,12 +108,12 @@ npm run preview
 - **Recovery tracking** — per-target-muscle recovery state computed from your recent sessions, shown on the Workouts page
 - **Recent muscles** — recently viewed/trained targets resurface in the library's Recent tab, with "not explored yet" markers
 - **Bodyweight tracking** — weigh-ins with trend chart, target weight goal, and unit toggle (kg/lbs); the latest weigh-in mirrors to your profile
-- **Bilingual, themed, responsive** — English/中文 UI (browser detection, overridable per account), dark/light themes, and a mobile tab-bar layout
-- **Zero external dependencies at runtime** — no third-party trackers, no external media CDN; every GIF, thumbnail, and equipment photo is bundled locally
+- **Trilingual, themed, responsive** — English / 中文 / Español UI (browser detection, overridable per account), with curated Spanish names for the exercise catalog and localized preset workouts; dark/light themes and a mobile tab-bar layout
+- **Zero tracking, locally bundled media** — no third-party trackers or external media CDN for the seed library; every GIF, thumbnail, and equipment photo is bundled locally (custom exercises may optionally reference a pasted GIF URL, decoded to a cover via `/api/gif-cover`)
 
 ## How It Works
 
-1. The exercise library loads from the API (`/api/exercises`) — 1,324 movements from the [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) with GIFs and thumbnails bundled locally in `public/`.
+1. The exercise library loads a slim catalog from the API (`/api/exercises`) — 1,324 movements from the [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) with GIFs and thumbnails bundled locally in `public/`; full details load on demand from `/api/exercises/:id`.
 2. Guests browse freely (the endpoint uses optional auth); signing in unlocks custom exercises, workout lists, and logging.
 3. A live session is created from a list (`POST /api/workoutlists/:id/sessions`); every set is persisted individually as you log it, so the session survives reloads and can be edited mid-workout.
 4. Finishing (`PUT /api/sessions/:id/complete`) validates sets, stores the summary, and feeds the journal, history, recovery, balance, and rank features — all computed client-side from your session history.
@@ -124,27 +124,28 @@ npm run preview
 | Method | Route | Description |
 | --- | --- | --- |
 | GET | `/api/health` | Liveness check |
-| POST | `/api/auth/signup` | Create account `{ email, password, name, gender?, language? }` |
+| POST | `/api/auth/signup` | Create account `{ email, password, name, gender?, language?, questionnaire? }` — language is `en`/`zh`/`es`; questionnaire answers can be saved during signup |
 | POST | `/api/auth/login` | Log in `{ email, password }` |
 | GET | `/api/auth/me` | Current user (includes `questionnaire` answers) |
-| PUT | `/api/auth/questionnaire` | Save goal questionnaire answers `{ answers: { goal, experience, daysPerWeek, equipment, sessionMinutes? } }` |
-| PUT | `/api/auth/profile` | Update `{ email?, name?, gender?, bodyweight?, bodyweightUnit?, unit?, effortScale?, timerSound?, timerPlaySound?, timerVibrate?, timerFlash?, language?, schedule? }` |
+| PUT | `/api/auth/questionnaire` | Save goal questionnaire answers `{ answers: { goal, experience, daysPerWeek, equipment, focus?, sessionMinutes? } }` |
+| PUT | `/api/auth/profile` | Update `{ email?, name?, gender?, bodyweight?, bodyweightUnit?, unit?, effortScale?, timerSound?, timerPlaySound?, timerVibrate?, timerFlash?, language?, schedule?, plan? }` |
 | DELETE | `/api/auth/me` | Delete account |
-| GET | `/api/exercises` | All exercises (guests get the seed library; authed users also get their custom ones) |
-| POST | `/api/exercises` | Create a custom exercise |
+| GET | `/api/exercises` | Slim exercise list (guests get the seed library; authed users also get their custom ones) — load full detail via `/api/exercises/:id` |
+| POST | `/api/exercises` | Create a custom exercise `{ name, category, target, equipment?, gifUrl?, instructions?, instructionSteps?, instructionsLang? }` |
 | GET | `/api/exercises/:id` | Single exercise detail |
-| PUT | `/api/exercises/:id` | Update a custom exercise |
-| DELETE | `/api/exercises/:id` | Delete a custom exercise |
-| POST | `/api/exercises/:id/media` | Upload a custom GIF for a custom exercise (multipart, base64 in response) |
+| PUT | `/api/exercises/:id` | Update a custom exercise `{ name?, instructions?, instructionSteps?, instructionsLang? }` |
+| DELETE | `/api/exercises/:id` | Delete a custom exercise (its uploaded GIF is removed too) |
+| POST | `/api/media` | Upload a custom-exercise GIF (raw `image/gif` body, max 1.4 MB) → `{ id, url }` |
 | GET | `/api/media/:id` | Serve a custom exercise GIF |
-| DELETE | `/api/media/:id` | Delete a custom exercise GIF |
+| GET | `/api/gif-cover?url=…` | Decode a pasted GIF URL into a cached PNG cover |
 | GET | `/api/workoutlists` | All workout lists, with their exercises |
 | POST | `/api/workoutlists` | Create a list `{ name, exerciseId? }` or a preset/plan list `{ name, exercises: [{ exerciseId, prescribedSets?, prescribedReps?, restSecs? }] }` |
 | PUT | `/api/workoutlists/:id` | Rename a list `{ name }` |
 | DELETE | `/api/workoutlists/:id` | Delete a list (sessions survive in the journal) |
 | POST | `/api/workoutlists/:id/exercises` | Add an exercise `{ exerciseId, prescribedSets?, prescribedReps?, restSecs? }` |
 | DELETE | `/api/workoutlists/:id/exercises/:exerciseId` | Remove an exercise from a list |
-| PUT | `/api/workoutlists/:id/exercises/:exerciseId` | Update per-exercise settings (rest timer, prescribed sets/reps) |
+| PUT | `/api/workoutlists/:id/exercises/:exerciseId` | Update per-exercise settings `{ restSecs?, restEnabled?, rirEnabled?, prescribedSets?, prescribedReps? }` |
+| PUT | `/api/workoutlists/:id/exercises/reorder` | Persist the full exercise `order` after drag-to-reorder |
 | POST | `/api/workoutlists/:id/sessions` | Start a session |
 | GET | `/api/workoutlists/:id/sessions` | Session history for one list |
 | DELETE | `/api/workoutlists/:id/sessions` | Clear a list's history |
@@ -167,10 +168,10 @@ npm run preview
 
 - **React 19** — UI components and hooks
 - **Vite** — dev server, proxy, and build tooling
-- **i18next + react-i18next** — full i18n with browser detection and per-account language; translations live in `src/utils/locales/{en,zh}/translation.js`
+- **i18next + react-i18next** — full i18n (`en`/`zh`/`es`) with browser detection and per-account language; translations live in `src/utils/locales/{en,zh,es}/translation.js`
 - **pinyin-pro** — pinyin romanization so Chinese search also matches typed pinyin
 - **Atomic component architecture** — `src/components/` is layered atoms → molecules → organisms → templates, each with a barrel `index.js`
-- **CSS Modules / plain CSS** — scoped styling with global theme variables in `src/index.css`
+- **Plain CSS** — co-located component stylesheets plus global theme variables in `src/index.css`
 - **ESLint flat config** — import sorting, React hooks, refresh, and simple-import-sort rules
 
 ### Backend / Infrastructure
@@ -179,6 +180,7 @@ npm run preview
 - **Cloudflare D1** (SQLite) — exercises, custom exercises, users, workout lists, sessions, sets, weigh-ins (`server/sql/schema.sql`)
 - **jose** — JWT signing/verification (HS256) with the secret held server-side
 - **Web Crypto PBKDF2** — password hashing (100k iterations, SHA-256, per-user salt)
+- **imagescript** — decodes pasted GIF URLs into cached PNG covers (`/api/gif-cover`)
 - **Wrangler** — Workers/D1 CLI for local dev (Miniflare) and deployment
 - **GitHub Actions** — CI/CD pipeline to build and deploy to GitHub Pages
 
@@ -198,6 +200,7 @@ npm run preview
 │   ├── comparisons/                 # Volume-comparison pictures (<slug>.<ext>, 14 rungs)
 │   ├── icons.svg                    # Inline SVG sprite for UI icons
 │   └── favicon.svg
+├── media/                           # README demo assets (demo.gif / demo.png / demo.mp4)
 ├── scripts/
 │   ├── download-assets.mjs          # Fetch dataset + media into public/ and server/data/
 │   ├── generate-seed.mjs            # Emit server/sql/generated/seed.sql (adds pinyin, zh + es names, difficulty)
@@ -222,19 +225,22 @@ npm run preview
 └── src/
     ├── main.jsx                     # React mount point
     ├── index.css                    # Global styles + theme variables
-    ├── app/                         # One folder per screen/view
+    ├── app/                         # Thin page shells — one folder per view
     │   ├── App.jsx                  # Root state machine: auth, lists, sessions, navigation
-    │   ├── HomePage.jsx             # Landing dashboard + search entry + schedule surfacing
-    │   ├── PlannerPage.jsx          # Library browser (hierarchy / search / equipment)
-    │   ├── WorkoutsPage.jsx         # Workout lists + recovery panel
-    │   ├── SessionPage.jsx          # Live workout logging
-    │   ├── SummaryPage.jsx          # Post-session summary (ranks, previous bests, volume comparison)
-    │   ├── HistoryPage.jsx          # Per-list session history
-    │   ├── JournalPage.jsx          # Day-by-day journal + bodyweight card
-    │   ├── BalancePage.jsx          # Muscle balance + structural balance
-    │   ├── AccountPage.jsx          # Profile settings (questionnaire, schedule, timer alerts)
-    │   ├── AuthPage.jsx             # Login / signup
-    │   └── TimerAlertsPage.jsx      # Rest-timer alert settings
+    │   ├── HomePage/                # Landing dashboard + search entry + schedule surfacing
+    │   ├── PlannerPage/             # Library browser (hierarchy / search / equipment)
+    │   ├── WorkoutsPage/            # Workout lists + recovery panel
+    │   ├── SessionPage/             # Live workout logging
+    │   ├── SummaryPage/             # Post-session summary (ranks, previous bests, volume comparison)
+    │   ├── HistoryPage/             # Per-list session history
+    │   ├── WorkoutHistoryPage/      # All-sessions history view
+    │   ├── JournalPage/             # Day-by-day journal + bodyweight card
+    │   ├── PersonalRecordsPage/     # Full personal-records page
+    │   ├── BalancePage/             # Muscle balance + structural balance
+    │   ├── PlanSchedulePage/        # Weekly plan schedule editor
+    │   ├── AccountPage/             # Profile settings (questionnaire, schedule, timer alerts)
+    │   ├── AuthPage/                # Login / signup (with onboarding questionnaire)
+    │   └── TimerAlertsPage/         # Rest-timer alert settings
     ├── components/
     │   ├── atoms/                   # Single-purpose UI (Button, TextInput, LineChart,
     │   │                            #   EquipmentImage, ThemeToggle, SegmentedToggle, …)
@@ -243,28 +249,33 @@ npm run preview
     │   ├── organisms/               # Full views (ExerciseLibrary, MovementDetail,
     │   │                            #   WorkoutSessionView, StructuralBalance, RecoveryPanel, …)
     │   └── templates/               # Page shells (AppShell, AuthTemplate, PlannerTemplate, …)
-    ├── hooks/
-    │   └── usePanelDrawer.js        # Drawer open/close a11y hook
+    ├── hooks/                       # Reusable hooks (drawer, drag reorder, scroll memory, …)
     ├── lib/                         # Domain logic (pure modules, unit-testable)
     │   ├── api.js                   # API client (fetch + JWT + same-origin or VITE_API_BASE)
     │   ├── muscles.js               # Hierarchy builders, search (en/zh/pinyin), media URLs
-    │   ├── presets/                 # Preset-workout library (41 ACSM-grounded routines):
-    │   │                            #   goals.js (goal/equipment/level metadata), strength.js,
-    │   │                            #   build.js, slim.js, endurance.js, focus.js (data) and
-    │   │                            #   index.js (resolution, body-part grouping, payloads)
+    │   ├── exerciseIds.js           # Preset exercise-name → catalog id mapping
     │   ├── planGenerator.js         # Questionnaire answers -> weekly plan (one list per day)
+    │   ├── presets/                 # Preset workouts: curated + generated coverage plans:
+    │   │                            #   goals.js, bodyParts.js, localize.js, coverage.js,
+    │   │                            #   strength.js, build.js, slim.js, endurance.js, focus.js,
+    │   │                            #   index.js (resolution, grouping, localization, payloads)
     │   ├── equipmentGroups.js       # Canonical equipment grouping (23 cards, "Other" bucket)
     │   ├── effort.js                # RIR/RPE conversion + effort statistics
     │   ├── ranks.js                 # Iron→Challenger rank tables (StrengthLevel-calibrated)
     │   ├── onerm.js                 # Estimated 1RM formulas (Epley, Brzycki, etc.)
+    │   ├── personalRecords.js       # PR detection + history
     │   ├── structuralBalance.js     # Strength standards vs bodyweight (gender-aware)
+    │   ├── structuralBalanceTemplates.js # Workout templates for structural balance
     │   ├── recovery.js              # Per-muscle recovery computation
     │   ├── bodyweight.js            # Bodyweight conversion + profile helpers
+    │   ├── bodyweightChart.js       # Weigh-in trend chart data
     │   ├── summary.js               # Session summary aggregation + volume comparison
     │   ├── journal.js               # Journal day keys + session grouping
     │   ├── timerAlert.js            # Timer sounds (beep/chime/bell), vibrate, flash
     │   ├── schedule.js              # Weekly plan schedule (fixed/rotation) normalization
     │   ├── dates.js                 # Date helpers (week boundaries, formatting)
+    │   ├── timeWindow.js            # Recent-window helpers (recovery / stats)
+    │   ├── muscleMap.js             # Shared muscle → body-part map
     │   ├── units.js                 # kg/lbs conversion
     │   ├── storage.js               # localStorage helpers (theme, language, recent)
     │   ├── recent.js                # Recently viewed/trained muscle tracking
@@ -272,25 +283,28 @@ npm run preview
     │   ├── format.js                # Number/date formatting
     │   └── validation.js            # Client-side form validation
     └── utils/
-        ├── i18n.js                  # i18next setup + language persistence
+        ├── i18n.js                  # i18next setup (en/zh/es) + language persistence
         ├── locale.js                # App language → Intl locale mapping
+        ├── themes.js                # Theme tokens
         ├── format.js                # Number/date formatting
         ├── validation.js            # Client-side form validation
         └── locales/
             ├── en/translation.js    # English UI strings + muscle/equipment dictionary
-            └── zh/translation.js    # Chinese UI strings + muscle/equipment dictionary
+            ├── zh/translation.js    # Chinese UI strings + muscle/equipment dictionary
+            └── es/translation.js    # Spanish UI strings + muscle/equipment dictionary
 ```
 
 ## Language Support
 
-The UI follows your browser's language on first visit, remembers your choice (`localStorage`), and switches to your account's saved language after login. Search matches English, Chinese, or pinyin romanization.
+The UI follows your browser's language on first visit, remembers your choice (`localStorage`), and switches to your account's saved language after login (logging out clears the cache and returns to browser language). New accounts default to the language chosen at signup. Search matches English, Chinese, or pinyin romanization.
 
 | Language | UI detection | Search matching |
 | --- | --- | --- |
 | English | `navigator.language` fallback (default) | English text |
 | 中文 | browser starts with `zh`, or profile setting | Chinese characters + typed pinyin (`pinyin-pro`) |
+| Español | browser starts with `es`, or profile setting | English text (Spanish catalog names are display-only) |
 
-To add a new language: add a translation file under `src/utils/locales/<lang>/translation.js` (including the `muscles.*` taxonomy dictionary used for body-part/equipment names), register it in `src/utils/i18n.js`, extend the language mapping in `src/utils/locale.js`, and accept the new value in the server's profile update handler. Pinyin matching is Chinese-only and can be skipped.
+Supported UI languages are declared once in `SUPPORTED_LANGUAGES` / `normalizeLanguage` in `src/utils/i18n.js`; the server accepts them at signup and in profile updates. To add a new language: add a translation file under `src/utils/locales/<lang>/translation.js` (including the `muscles.*` taxonomy dictionary used for body-part/equipment names), register it in `src/utils/i18n.js`, extend the language mapping in `src/utils/locale.js`, and accept the new value in the server's signup and profile update handlers. Pinyin matching is Chinese-only and can be skipped.
 
 ## Development Workflow
 
@@ -337,7 +351,7 @@ Key tables (see `server/sql/schema.sql` for full DDL):
 | Table | Purpose |
 | --- | --- |
 | `users` | Identity + preferences (questionnaire, schedule, bodyweight, effort scale, timer alerts, language) |
-| `exercises` | Shared seed library (`user_id` NULL) + per-user custom exercises; includes zh name/pinyin/initials for search |
+| `exercises` | Shared seed library (`user_id` NULL) + per-user custom exercises; includes zh/es display names, pinyin/initials for search, difficulty band, and optional pasted `gif_url` |
 | `exercise_media` | Base64-encoded custom GIFs (capped at 1.4 MB raw) |
 | `workout_lists` | Named lists per user; unique name per user (case-insensitive) |
 | `workout_list_exercises` | Exercises in a list with per-exercise settings (rest, prescribed sets/reps, manual `position`) |
@@ -349,7 +363,7 @@ Indexes support common query patterns: exercises by category/target/user, workou
 
 ## Security Note
 
-Passwords never leave the server in plain form — they are hashed with Web Crypto PBKDF2 (100k iterations, SHA-256, 16-byte per-user salt) in `server/auth.js`. Session tokens are JWTs signed with a server-side `JWT_SECRET` (a Worker secret in production, `server/.dev.vars` locally — both gitignored); the client only stores the token and sends it as a Bearer header. CORS is configurable via `CORS_ORIGIN` (default `*` — restrict it to your Pages domain in production). There are no third-party trackers or external media: every GIF, thumbnail, and equipment photo is bundled with the app.
+Passwords never leave the server in plain form — they are hashed with Web Crypto PBKDF2 (100k iterations, SHA-256, 16-byte per-user salt) in `server/auth.js`. Session tokens are JWTs signed with a server-side `JWT_SECRET` (a Worker secret in production, `server/.dev.vars` locally — both gitignored); the client only stores the token and sends it as a Bearer header. CORS is configurable via `CORS_ORIGIN` (default `*` — restrict it to your Pages domain in production). There are no third-party trackers, and the seed library's GIFs, thumbnails, and equipment photos are bundled with the app. Custom exercises may optionally reference a pasted GIF URL; covers are decoded server-side through `/api/gif-cover` (validated http(s) URL, size/magic-byte checks, cached).
 
 ## Extending the Project
 
@@ -357,19 +371,19 @@ Passwords never leave the server in plain form — they are hashed with Web Cryp
 
 1. Add it to the upstream [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) or fork the dataset.
 2. Run `npm run fetch:data` to pull the updated JSON + media.
-3. If the exercise needs a Chinese name, add an entry to `server/data/exercise-names-zh.json` (key = exercise id, value = Chinese name).
+3. If the exercise needs a Chinese name, add an entry to `server/data/exercise-names-zh.json` (key = exercise id, value = Chinese name); for Spanish, add it to `server/curated/exercise-names-es.json` (same key format).
 4. Run `npm run db:gen` → `npm run db:data:local` (or remote).
 
 ### Add a new preset workout
 
-Edit the data files in `src/lib/presets/` (`strength.js`, `build.js`, `slim.js`, `endurance.js`, `focus.js`) following the existing schema, then rebuild. The `goals.js` metadata maps goal/equipment/level to the appropriate preset file.
+Edit the data files in `src/lib/presets/` (`strength.js`, `build.js`, `slim.js`, `endurance.js`, `focus.js`, plus the `coverage.js` pools that fill remaining goal/equipment/focus gaps) following the existing schema, then rebuild. Names/descriptions are inline `{ en, zh, es }` (see `localize.js`); `goals.js` metadata maps goal/equipment/level to the appropriate preset file.
 
 ### Add a new language
 
 1. Create `src/utils/locales/<lang>/translation.js` with all UI strings + the `muscles.*` taxonomy.
 2. Register it in `src/utils/i18n.js` (add to `resources`).
 3. Extend `src/utils/locale.js` (language → Intl locale map).
-4. Update `server/validate.js` and the profile update handler in `server/app.js` to accept the new language code.
+4. Accept the new language code in the signup and profile update handlers in `server/app.js`.
 5. Run `npm run dev` to test.
 
 ## License
